@@ -1,0 +1,14 @@
+name: shooting_companion_domain
+description: Platform-independent domain model for Shooting Companion.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  meta: ^1.18.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.26.0

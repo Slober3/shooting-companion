@@ -1,0 +1,11 @@
+name: shooting_companion_photo_geometry
+description: Pure Dart geometry for manually aligning target-card photos.
+version: 0.2.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.26.0

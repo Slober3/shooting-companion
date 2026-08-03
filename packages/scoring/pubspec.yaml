@@ -1,0 +1,17 @@
+name: shooting_companion_scoring
+description: Deterministic, platform-independent target scoring and group metrics.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  shooting_companion_domain:
+    path: ../domain
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.26.0
+  shooting_companion_target_profiles:
+    path: ../target_profiles

@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.8
+          channel: stable
+          cache: true
+      - name: Resolve app
+        working-directory: apps/mobile
+        run: flutter pub get
+      - name: Verify generated database
+        working-directory: apps/mobile
+        run: dart run build_runner build --delete-conflicting-outputs
+      - name: Format
+        run: dart format --output=none --set-exit-if-changed apps/mobile/lib apps/mobile/test packages
+      - name: Analyze
+        working-directory: apps/mobile
+        run: flutter analyze
+      - name: Flutter tests
+        working-directory: apps/mobile
+        run: flutter test
+      - name: Dart package tests
+        shell: bash
+        run: |
+          for package in packages/domain packages/target_profiles packages/scoring packages/photo_geometry; do
+            (cd "$package" && dart pub get && dart test)
+          done
+      - name: Build release APK
+        working-directory: apps/mobile
+        run: flutter build apk --release
+      - name: Reject forbidden permissions in built APK
+        shell: bash
+        run: |
+          APK="apps/mobile/build/app/outputs/flutter-apk/app-release.apk"
+          PERMISSIONS="$($ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer manifest permissions "$APK")"
+          echo "$PERMISSIONS"
+          if echo "$PERMISSIONS" | grep -E "android.permission.(INTERNET|RECORD_AUDIO|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|ACCESS_NETWORK_STATE)"; then
+            echo "Forbidden Android permission found in release APK" >&2
+            exit 1
+          fi

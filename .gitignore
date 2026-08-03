@@ -1,0 +1,41 @@
+# Local toolchains
+.tooling/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+**/build_verify_test/
+coverage/
+*.iml
+.idea/
+
+# Android signing and local configuration
+**/android/key.properties
+**/android/local.properties
+*.jks
+*.keystore
+
+# Native and Python build output
+**/.cxx/
+**/CMakeFiles/
+**/CMakeCache.txt
+__pycache__/
+.pytest_cache/
+.venv/
+*.pyc
+
+# User data and private target imagery
+data/private/
+datasets/private/
+*.scbackup
+exports/
+artifacts/*.apk
+artifacts/*.sha256
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
