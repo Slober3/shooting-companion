@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/app_database.dart';
+import '../../widgets/app_expandable_section.dart';
 import '../../widgets/app_form_scaffold.dart';
 import '../../widgets/app_multiline_field.dart';
 import '../../widgets/app_select_field.dart';
@@ -146,9 +147,8 @@ class _SessionEditSheetState extends State<_SessionEditSheet> {
               validator: (value) => _maximumLength(value, 2000),
             ),
             const SizedBox(height: 24),
-            ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              title: const Text('Meer details'),
+            AppExpandableSection(
+              title: 'Meer details',
               children: [
                 AppMultilineField(
                   controller: _goal,

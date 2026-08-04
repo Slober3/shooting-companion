@@ -22,6 +22,7 @@ class PhotoOverlayCanvas extends StatelessWidget {
     this.onCanvasTap,
     this.onImpactMoved,
     this.onImpactSelected,
+    this.onImpactLongPressed,
     this.onImpactMoveStart,
     this.onImpactMoveEnd,
     this.onImpactMoveCancel,
@@ -44,6 +45,7 @@ class PhotoOverlayCanvas extends StatelessWidget {
   final ValueChanged<PhotoCanvasPosition>? onCanvasTap;
   final PhotoImpactMoved? onImpactMoved;
   final ValueChanged<String?>? onImpactSelected;
+  final ValueChanged<String>? onImpactLongPressed;
   final ValueChanged<String>? onImpactMoveStart;
   final ValueChanged<String>? onImpactMoveEnd;
   final ValueChanged<String>? onImpactMoveCancel;
@@ -85,6 +87,7 @@ class PhotoOverlayCanvas extends StatelessWidget {
           onCanvasTap?.call(position);
         },
         onMarkerSelected: (id) => onImpactSelected?.call(id),
+        onMarkerLongPressed: onImpactLongPressed,
         onMarkerDragStart: onImpactMoveStart,
         onMarkerDragEnd: onImpactMoveEnd,
         onMarkerDragCancel: onImpactMoveCancel,

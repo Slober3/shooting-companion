@@ -13,6 +13,7 @@ class TargetCanvas extends StatelessWidget {
     required this.projectileDiameterMm,
     this.onChanged,
     this.onImpactSelected,
+    this.onImpactLongPressed,
     this.onImpactMoveStart,
     this.onImpactMoveEnd,
     this.onImpactMoveCancel,
@@ -31,6 +32,7 @@ class TargetCanvas extends StatelessWidget {
   final double projectileDiameterMm;
   final ValueChanged<List<ShotImpact>>? onChanged;
   final ValueChanged<String?>? onImpactSelected;
+  final ValueChanged<String>? onImpactLongPressed;
   final ValueChanged<String>? onImpactMoveStart;
   final ValueChanged<String>? onImpactMoveEnd;
   final ValueChanged<String>? onImpactMoveCancel;
@@ -82,6 +84,7 @@ class TargetCanvas extends StatelessWidget {
           onImpactSelected?.call(impact.id);
         },
         onMarkerSelected: (id) => onImpactSelected?.call(id),
+        onMarkerLongPressed: onImpactLongPressed,
         onMarkerDragStart: onImpactMoveStart,
         onMarkerDragEnd: onImpactMoveEnd,
         onMarkerDragCancel: onImpactMoveCancel,

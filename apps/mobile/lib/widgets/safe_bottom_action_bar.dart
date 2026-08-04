@@ -24,7 +24,7 @@ class SafeBottomActionBar extends StatelessWidget {
       padding.left == 0 ? 12 : padding.left,
       8,
       padding.right == 0 ? 12 : padding.right,
-      0,
+      padding.bottom < 12 ? 12 : padding.bottom,
     ),
   );
 }

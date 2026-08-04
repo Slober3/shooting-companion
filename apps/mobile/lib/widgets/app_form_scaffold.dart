@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'app_action_dock.dart';
@@ -24,6 +26,54 @@ class AppFormScaffold extends StatefulWidget {
 
 class _AppFormScaffoldState extends State<AppFormScaffold> {
   var _allowPop = false;
+  final _scrollController = ScrollController();
+  var _focusGeneration = 0;
+  Timer? _focusRevealTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addListener(_handlePrimaryFocusChanged);
+  }
+
+  @override
+  void dispose() {
+    _focusRevealTimer?.cancel();
+    FocusManager.instance.removeListener(_handlePrimaryFocusChanged);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _handlePrimaryFocusChanged() {
+    final focus = FocusManager.instance.primaryFocus;
+    if (focus == null || !focus.hasFocus) return;
+    final generation = ++_focusGeneration;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _revealFocusedField(focus, generation);
+    });
+    _focusRevealTimer?.cancel();
+    _focusRevealTimer = Timer(const Duration(milliseconds: 260), () {
+      _revealFocusedField(focus, generation);
+    });
+  }
+
+  void _revealFocusedField(FocusNode focus, int generation) {
+    if (!mounted || generation != _focusGeneration || !focus.hasFocus) return;
+    final fieldContext = focus.context;
+    if (fieldContext == null || !_scrollController.hasClients) return;
+    final scrollable = Scrollable.maybeOf(fieldContext);
+    if (scrollable == null ||
+        scrollable.position != _scrollController.position) {
+      return;
+    }
+    Scrollable.ensureVisible(
+      fieldContext,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      alignment: .12,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+    );
+  }
 
   Future<bool> _confirmDiscard(BuildContext context) async {
     if (!widget.dirty || widget.busy) return !widget.busy;
@@ -61,6 +111,7 @@ class _AppFormScaffoldState extends State<AppFormScaffold> {
       }
     },
     child: Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(title: Text(widget.title)),
       body: SafeArea(
         top: false,
@@ -69,13 +120,9 @@ class _AppFormScaffoldState extends State<AppFormScaffold> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: SingleChildScrollView(
+              controller: _scrollController,
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: EdgeInsets.fromLTRB(
-                16,
-                16,
-                16,
-                24 + MediaQuery.viewInsetsOf(context).bottom,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               child: widget.body,
             ),
           ),

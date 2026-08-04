@@ -288,8 +288,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   Future<void> _addSessionPhoto(SessionDetail detail) async {
     final source = await showSafeModalSheet<ImageSource>(
       context: context,
+      presentation: SafeSheetPresentation.compact,
       builder: (sheetContext) => SafeSheetScaffold(
         title: 'Foto toevoegen',
+        contentSized: true,
         body: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -305,12 +307,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(sheetContext),
-            child: const Text('Annuleren'),
-          ),
-        ],
+        actions: const [],
       ),
     );
     if (source == null || !mounted) return;

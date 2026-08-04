@@ -14,6 +14,7 @@ import '../../app/providers.dart';
 import '../../data/app_database.dart';
 import '../../data/shooting_repository.dart';
 import '../../services/image_storage_service.dart';
+import '../../widgets/app_action_dock.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
 import '../photo/photo.dart';
 import '../scoring/target_canvas.dart';
@@ -68,8 +69,8 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
   Future<void> _saveQueue = Future.value();
   ScoringTool _tool = ScoringTool.place;
   bool _precisionMode = false;
-  final List<List<domain.ShotImpact>> _undoStack = [];
-  List<domain.ShotImpact>? _dragStartSnapshot;
+  final List<_EditorUndoEntry> _undoStack = [];
+  _EditorUndoEntry? _dragStartEntry;
   bool _dragBecameInvalid = false;
   DateTime? _lastInvalidFeedbackAt;
 
@@ -175,24 +176,25 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
       onPhoto: _choosePhoto,
       vertical: vertical,
     );
-    Widget selectedControls() => _selectedImpact == null
-        ? const SizedBox.shrink()
-        : _SelectedImpactBar(
-            impact: _selectedImpact!,
-            index: _impacts.indexOf(_selectedImpact!) + 1,
-            score: scoreById[_selectedImpact!.id] ?? 0,
-            onDecrease: _decreaseMultiplicity,
-            onIncrease: _increaseMultiplicity,
-            onDelete: _deleteSelected,
-          );
+    Widget selectedControls() => _SelectedImpactBar(
+      impact: _selectedImpact!,
+      index: _impacts.indexOf(_selectedImpact!) + 1,
+      score: scoreById[_selectedImpact!.id] ?? 0,
+      onDecrease: _decreaseMultiplicity,
+      onIncrease: _increaseMultiplicity,
+      onDelete: _deleteSelected,
+    );
     Widget controls() => Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         canvasToolbar(),
-        if (_selectedImpact != null) ...[
-          const SizedBox(height: 6),
-          selectedControls(),
-        ],
+        const SizedBox(height: 6),
+        SizedBox(
+          height: 84,
+          child: _selectedImpact == null
+              ? const SizedBox.shrink()
+              : selectedControls(),
+        ),
       ],
     );
 
@@ -422,14 +424,15 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
                 )
                 .toList(),
             selectedId: id,
-            recordUndo: _dragStartSnapshot == null,
-            scheduleSave: _dragStartSnapshot == null,
+            recordUndo: _dragStartEntry == null,
+            scheduleSave: _dragStartEntry == null,
           );
         },
         onImpactSelected: (id) => setState(() {
           _tool = ScoringTool.edit;
           _selectedImpactId = id;
         }),
+        onImpactLongPressed: _selectImpactFromLongPress,
         onImpactMoveStart: _beginImpactMove,
         onImpactMoveEnd: _endImpactMove,
         onImpactMoveCancel: _cancelImpactMove,
@@ -449,14 +452,15 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
       onImpactSelected: (id) => setState(() {
         _selectedImpactId = id;
       }),
+      onImpactLongPressed: _selectImpactFromLongPress,
       onImpactMoveStart: _beginImpactMove,
       onImpactMoveEnd: _endImpactMove,
       onImpactMoveCancel: _cancelImpactMove,
       onInvalidPosition: _handleInvalidPosition,
       onChanged: (value) => _changeImpacts(
         _detachPhotoCoordinatesAfterTargetMove(value),
-        recordUndo: _dragStartSnapshot == null,
-        scheduleSave: _dragStartSnapshot == null,
+        recordUndo: _dragStartEntry == null,
+        scheduleSave: _dragStartEntry == null,
       ),
     );
   }
@@ -480,7 +484,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
       _impacts.where((impact) => impact.id == _selectedImpactId).firstOrNull;
 
   void _handleInvalidPosition() {
-    if (_dragStartSnapshot != null) _dragBecameInvalid = true;
+    if (_dragStartEntry != null) _dragBecameInvalid = true;
     final now = DateTime.now();
     if (_lastInvalidFeedbackAt != null &&
         now.difference(_lastInvalidFeedbackAt!) <
@@ -496,6 +500,15 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
           content: Text('Buiten de uitgelijnde kaart — gebruik Misser / 0.'),
         ),
       );
+  }
+
+  void _selectImpactFromLongPress(String id) {
+    if (!_impacts.any((impact) => impact.id == id)) return;
+    setState(() {
+      _selectedImpactId = id;
+      _tool = ScoringTool.edit;
+      _precisionMode = false;
+    });
   }
 
   void _placeAtCrosshair() {
@@ -727,7 +740,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
     bool recordUndo = true,
     bool scheduleSave = true,
   }) {
-    if (recordUndo) _pushUndo(_impacts);
+    if (recordUndo) _pushUndo(_impacts, _selectedImpactId);
     setState(() {
       _impacts = impacts;
       _selectedImpactId = selectedId ?? _selectedImpactId;
@@ -738,8 +751,13 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
     if (scheduleSave) _scheduleAutosave();
   }
 
-  void _pushUndo(List<domain.ShotImpact> snapshot) {
-    _undoStack.add(List<domain.ShotImpact>.from(snapshot));
+  void _pushUndo(List<domain.ShotImpact> snapshot, String? selectedImpactId) {
+    _undoStack.add(
+      _EditorUndoEntry(
+        impacts: List<domain.ShotImpact>.from(snapshot),
+        selectedImpactId: selectedImpactId,
+      ),
+    );
     if (_undoStack.length > 50) _undoStack.removeAt(0);
   }
 
@@ -749,32 +767,42 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
     if (hadPendingAutosave) {
       unawaited(_persistSnapshot().catchError((_) {}));
     }
-    _dragStartSnapshot = List<domain.ShotImpact>.from(_impacts);
+    _dragStartEntry = _EditorUndoEntry(
+      impacts: List<domain.ShotImpact>.from(_impacts),
+      selectedImpactId: _selectedImpactId,
+    );
     _dragBecameInvalid = false;
   }
 
   void _endImpactMove(String id) {
-    final before = _dragStartSnapshot;
-    _dragStartSnapshot = null;
+    final before = _dragStartEntry;
+    _dragStartEntry = null;
     if (before == null) return;
     if (_dragBecameInvalid) {
-      setState(() => _impacts = before);
+      setState(() {
+        _impacts = before.impacts;
+        _selectedImpactId = before.selectedImpactId;
+      });
       _dragBecameInvalid = false;
       _scheduleAutosave();
       return;
     }
-    if (!_sameImpacts(before, _impacts)) {
-      _pushUndo(before);
+    if (!_sameImpacts(before.impacts, _impacts)) {
+      _undoStack.add(before);
+      if (_undoStack.length > 50) _undoStack.removeAt(0);
       _scheduleAutosave();
     }
   }
 
   void _cancelImpactMove(String id) {
-    final before = _dragStartSnapshot;
-    _dragStartSnapshot = null;
+    final before = _dragStartEntry;
+    _dragStartEntry = null;
     _dragBecameInvalid = false;
     if (before != null) {
-      setState(() => _impacts = before);
+      setState(() {
+        _impacts = before.impacts;
+        _selectedImpactId = before.selectedImpactId;
+      });
       _scheduleAutosave();
     }
   }
@@ -814,12 +842,14 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
 
   void _undo() {
     if (_undoStack.isEmpty) return;
+    _viewportController.cancelInteraction();
     final previous = _undoStack.removeLast();
     setState(() {
-      _impacts = previous;
-      if (!_impacts.any((impact) => impact.id == _selectedImpactId)) {
-        _selectedImpactId = null;
-      }
+      _impacts = previous.impacts;
+      _selectedImpactId =
+          _impacts.any((impact) => impact.id == previous.selectedImpactId)
+          ? previous.selectedImpactId
+          : null;
     });
     _scheduleAutosave();
   }
@@ -1016,14 +1046,18 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
 
   void _restoreActiveDragForPersistence() {
     _viewportController.cancelInteraction();
-    final before = _dragStartSnapshot;
+    final before = _dragStartEntry;
     if (before == null) return;
-    _dragStartSnapshot = null;
+    _dragStartEntry = null;
     _dragBecameInvalid = false;
     if (mounted) {
-      setState(() => _impacts = before);
+      setState(() {
+        _impacts = before.impacts;
+        _selectedImpactId = before.selectedImpactId;
+      });
     } else {
-      _impacts = before;
+      _impacts = before.impacts;
+      _selectedImpactId = before.selectedImpactId;
     }
   }
 
@@ -1180,6 +1214,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
   Future<void> _choosePhoto() async {
     final choice = await showSafeModalSheet<_PhotoChoice>(
       context: context,
+      presentation: SafeSheetPresentation.compact,
       builder: (context) => const _PhotoChoiceSheet(),
     );
     if (choice == null || !mounted) return;
@@ -1675,25 +1710,20 @@ class _SelectedImpactBar extends StatelessWidget {
         if (compact) {
           return MediaQuery.withClampedTextScaling(
             maxScaleFactor: 1.3,
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                actions,
+                Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
+                Align(alignment: Alignment.centerRight, child: actions),
               ],
             ),
           );
         }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        return Row(
           children: [
-            Text(label),
-            Align(alignment: Alignment.centerRight, child: actions),
+            Expanded(child: Text(label)),
+            actions,
           ],
         );
       },
@@ -1719,79 +1749,42 @@ class _SeriesBottomActionBar extends StatelessWidget {
   final VoidCallback onSaveNext;
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: Theme.of(context).colorScheme.surfaceContainer,
-    elevation: 3,
-    child: SafeArea(
-      top: false,
-      minimum: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact =
-              constraints.maxWidth < 520 ||
-              MediaQuery.textScalerOf(context).scale(1) >= 1.3;
-          final score = Text(
-            scoreText,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleSmall,
-          );
-          final save = FilledButton(
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(48, 48),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-            ),
-            onPressed: canSave ? onSave : null,
-            child: Text(saving ? 'Bewaren…' : 'Bewaren'),
-          );
-          final next = OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(48, 48),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-            ),
-            onPressed: canSave ? onSaveNext : null,
-            child: const Text('Volgende'),
-          );
-          if (!compact) {
-            return Row(
-              children: [
-                Expanded(child: score),
-                const SizedBox(width: 8),
-                save,
-                if (showNext) ...[const SizedBox(width: 8), next],
-              ],
-            );
-          }
-          return MediaQuery.withClampedTextScaling(
-            maxScaleFactor: 1.3,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                score,
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Expanded(child: save),
-                    if (showNext) ...[
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Semantics(
-                          label: 'Bewaren en volgende reeks',
-                          button: true,
-                          child: next,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
+  Widget build(BuildContext context) => MediaQuery.withClampedTextScaling(
+    maxScaleFactor: 1.3,
+    child: AppActionDock(
+      leading: Text(
+        scoreText,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.titleSmall,
       ),
+      actions: [
+        FilledButton(
+          onPressed: canSave ? onSave : null,
+          child: Text(saving ? 'Bewaren…' : 'Bewaren'),
+        ),
+        if (showNext)
+          Semantics(
+            label: 'Bewaren en volgende reeks',
+            button: true,
+            child: OutlinedButton(
+              onPressed: canSave ? onSaveNext : null,
+              child: const Text('Volgende'),
+            ),
+          ),
+      ],
     ),
   );
+}
+
+class _EditorUndoEntry {
+  const _EditorUndoEntry({
+    required this.impacts,
+    required this.selectedImpactId,
+  });
+
+  final List<domain.ShotImpact> impacts;
+  final String? selectedImpactId;
 }
 
 class _PhotoChoice {
@@ -1807,6 +1800,7 @@ class _PhotoChoiceSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SafeSheetScaffold(
     title: 'Foto toevoegen',
+    contentSized: true,
     body: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1847,12 +1841,7 @@ class _PhotoChoiceSheet extends StatelessWidget {
         ),
       ],
     ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Annuleren'),
-      ),
-    ],
+    actions: const [],
   );
 }
 

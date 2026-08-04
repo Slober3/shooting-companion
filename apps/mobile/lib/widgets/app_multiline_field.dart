@@ -29,6 +29,7 @@ class AppMultilineField extends StatelessWidget {
     minLines: minLines,
     maxLines: maxLines,
     maxLength: maxLength,
+    scrollPadding: const EdgeInsets.fromLTRB(20, 20, 20, 96),
     textAlignVertical: TextAlignVertical.top,
     decoration: InputDecoration(
       labelText: label,

@@ -6,7 +6,6 @@ import 'package:shooting_companion/app/providers.dart';
 import 'package:shooting_companion/data/app_database.dart';
 import 'package:shooting_companion/data/shooting_repository.dart';
 import 'package:shooting_companion/features/scoring/target_canvas.dart';
-import 'package:shooting_companion/features/scoring/transformable_scoring_viewport.dart';
 import 'package:shooting_companion/features/session/manual_series_screen.dart';
 
 void main() {
@@ -79,38 +78,62 @@ void main() {
         lessThan(1),
       );
 
-      await tester.tap(find.byIcon(Icons.edit_location_alt_outlined));
+      await tester.tap(find.byTooltip('Eén schot meer'));
       await tester.pump();
       expect(
         tester
-            .widget<SegmentedButton<ScoringTool>>(
-              find.byType(SegmentedButton<ScoringTool>),
-            )
-            .selected,
-        {ScoringTool.edit},
+            .widget<TargetCanvas>(find.byType(TargetCanvas))
+            .impacts
+            .single
+            .multiplicity,
+        2,
       );
-      final drag = await tester.startGesture(originalMarkerCenter);
-      await drag.moveBy(const Offset(30, 0));
-      await drag.up();
-      await tester.pump();
-      expect(
-        (tester.getCenter(marker) - originalMarkerCenter).distance,
-        greaterThan(20),
-      );
-      final undoButton = tester.widget<IconButton>(
-        find
-            .ancestor(
-              of: find.byIcon(Icons.undo),
-              matching: find.byType(IconButton),
-            )
-            .first,
-      );
+      final targetRectBeforeUndo = tester.getRect(find.byType(TargetCanvas));
+      final undoFinder = find
+          .ancestor(
+            of: find.byIcon(Icons.undo),
+            matching: find.byType(IconButton),
+          )
+          .first;
+      final undoCenterBefore = tester.getCenter(undoFinder);
+      final undoButton = tester.widget<IconButton>(undoFinder);
       expect(undoButton.onPressed, isNotNull);
       undoButton.onPressed!();
       await tester.pump();
       expect(
         (tester.getCenter(marker) - originalMarkerCenter).distance,
         lessThan(1),
+      );
+      expect(
+        tester
+            .widget<TargetCanvas>(find.byType(TargetCanvas))
+            .impacts
+            .single
+            .multiplicity,
+        1,
+      );
+      expect(
+        (tester.getCenter(undoFinder) - undoCenterBefore).distance,
+        lessThanOrEqualTo(1),
+      );
+      final targetRectAfterUndo = tester.getRect(find.byType(TargetCanvas));
+      expect(
+        (targetRectAfterUndo.topLeft - targetRectBeforeUndo.topLeft).distance,
+        lessThanOrEqualTo(1),
+      );
+      expect(
+        (targetRectAfterUndo.bottomRight - targetRectBeforeUndo.bottomRight)
+            .distance,
+        lessThanOrEqualTo(1),
+      );
+
+      // A rapid second tap at the same screen coordinate must still hit undo,
+      // never the canvas that used to shift underneath it.
+      await tester.tapAt(undoCenterBefore);
+      await tester.pump();
+      expect(
+        tester.widget<TargetCanvas>(find.byType(TargetCanvas)).impacts,
+        isEmpty,
       );
 
       final save = find.widgetWithText(FilledButton, 'Bewaren');

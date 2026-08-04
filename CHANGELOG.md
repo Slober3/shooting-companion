@@ -44,6 +44,14 @@ All notable changes follow [Semantic Versioning](https://semver.org/).
 - PDF bullets, accents, smart apostrophes and en/em dashes render correctly.
 - Selected values remain readable in every palette and multiline labels stay
   at the top-left instead of floating in the middle of their field.
+- Undo preserves the scoring viewport and action positions, including during
+  rapid repeated input on compact screens.
+- A long press selects an existing marker for editing without moving it or
+  creating an additional impact.
+- Expanded form sections no longer clip labels and focused fields stay visible
+  above the keyboard and detached action dock.
+- Photo choices now use compact, content-sized sheets without a redundant
+  full-width cancel action.
 
 ## 0.2.0 - 2026-08-03
 

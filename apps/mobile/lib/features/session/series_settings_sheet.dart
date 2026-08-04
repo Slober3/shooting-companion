@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:shooting_companion_domain/domain.dart';
 
 import '../../data/app_database.dart';
+import '../../widgets/app_expandable_section.dart';
 import '../../widgets/app_form_scaffold.dart';
 import '../../widgets/app_multiline_field.dart';
 import '../../widgets/app_select_field.dart';
@@ -82,7 +83,10 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
     _target = widget.initial.target;
     _cartridgeId = widget.initial.cartridgeId;
     _firearmId = widget.initial.firearmId;
-    _ammoLotId = widget.initial.ammoLotId;
+    _ammoLotId = _validAmmoLotId(
+      widget.initial.ammoLotId,
+      widget.initial.cartridgeId,
+    );
     _distance = TextEditingController(
       text: widget.initial.distanceMeters.toStringAsFixed(
         widget.initial.distanceMeters % 1 == 0 ? 0 : 1,
@@ -94,6 +98,21 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
   }
 
   void _changed() => setState(() {});
+
+  @override
+  void didUpdateWidget(covariant _SeriesSettingsSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _ammoLotId = _validAmmoLotId(_ammoLotId, _cartridgeId);
+  }
+
+  String? _validAmmoLotId(String? candidate, String cartridgeId) {
+    if (candidate == null) return null;
+    return widget.ammoLots.any(
+          (lot) => lot.id == candidate && lot.cartridgeId == cartridgeId,
+        )
+        ? candidate
+        : null;
+  }
 
   bool get _dirty =>
       _target.versionedId != widget.initial.target.versionedId ||
@@ -119,11 +138,6 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
     final filteredLots = widget.ammoLots
         .where((lot) => lot.cartridgeId == _cartridgeId)
         .toList();
-    if (_ammoLotId != null &&
-        !filteredLots.any((lot) => lot.id == _ammoLotId)) {
-      _ammoLotId = null;
-    }
-
     return AppFormScaffold(
       title: 'Reeksinstellingen',
       dirty: _dirty && !_submitted,
@@ -196,11 +210,10 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
               ],
             ),
             const SizedBox(height: 24),
-            ExpansionTile(
-              tilePadding: EdgeInsets.zero,
+            AppExpandableSection(
+              title: 'Materiaal en notitie',
               initiallyExpanded: _materialExpanded,
               onExpansionChanged: (value) => _materialExpanded = value,
-              title: const Text('Materiaal en notitie'),
               children: [
                 AppSelectField<String?>(
                   label: 'Wapen (optioneel)',
