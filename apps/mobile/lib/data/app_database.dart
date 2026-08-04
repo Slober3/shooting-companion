@@ -191,11 +191,40 @@ class Goals extends Table {
   RealColumn get distanceMeters => real()();
   TextColumn get firearmId => text().nullable().references(Firearms, #id)();
   TextColumn get ammoLotId => text().nullable().references(AmmoLots, #id)();
-  RealColumn get targetPercentage => real()();
+  TextColumn get metric => text()();
+  RealColumn get targetValue => real()();
+  TextColumn get comparison => text()();
   BoolColumn get active => boolean().withDefault(const Constant(true))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
+}
+
+@DataClassName('SeriesReflectionRecord')
+class SeriesReflections extends Table {
+  TextColumn get seriesId =>
+      text().references(ShootingSeries, #id, onDelete: KeyAction.cascade)();
+  TextColumn get perceivedQuality => text()();
+  TextColumn get contextTagsJson => text().withDefault(const Constant('[]'))();
+  TextColumn get note => text().nullable()();
+  DateTimeColumn get createdAtUtc => dateTime()();
+  DateTimeColumn get updatedAtUtc => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {seriesId};
+}
+
+@DataClassName('CoachFeedbackRecord')
+class CoachFeedback extends Table {
+  TextColumn get insightFingerprint => text()();
+  TextColumn get ruleId => text()();
+  IntColumn get ruleVersion => integer()();
+  TextColumn get response => text()();
+  DateTimeColumn get snoozedUntilUtc => dateTime().nullable()();
+  DateTimeColumn get updatedAtUtc => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {insightFingerprint};
 }
 
 @DataClassName('PreferenceRecord')
@@ -235,6 +264,8 @@ class TargetProfiles extends Table {
     ShotImpacts,
     PhotoAlignments,
     Goals,
+    SeriesReflections,
+    CoachFeedback,
     Preferences,
     TargetProfiles,
   ],
@@ -245,7 +276,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -264,6 +295,9 @@ class AppDatabase extends _$AppDatabase {
       // so their v4 columns already exist after _migrateFromV1.
       if (from >= 2 && from <= 3 && to >= 4) {
         await _migrateToV4(migrator);
+      }
+      if (from <= 4 && to >= 5) {
+        await _migrateToV5(migrator);
       }
     },
     beforeOpen: (details) async {
@@ -330,6 +364,18 @@ class AppDatabase extends _$AppDatabase {
       CREATE UNIQUE INDEX IF NOT EXISTS target_profile_versions
       ON target_profiles(profile_id, profile_version)
     ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS active_goals_by_cohort
+      ON goals(active, target_profile_versioned_id, distance_meters)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS reflections_by_updated
+      ON series_reflections(updated_at_utc DESC)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS coach_feedback_by_rule
+      ON coach_feedback(rule_id, rule_version)
+    ''');
   }
 
   Future<void> _migrateToV3(Migrator migrator) async {
@@ -350,6 +396,38 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'UPDATE shot_impacts SET raw_score_value = score_value',
     );
+  }
+
+  Future<void> _migrateToV5(Migrator migrator) async {
+    await customStatement('ALTER TABLE goals RENAME TO goals_v4');
+    await migrator.createTable(goals);
+    await customStatement('''
+      INSERT INTO goals (
+        id,
+        target_profile_versioned_id,
+        distance_meters,
+        firearm_id,
+        ammo_lot_id,
+        metric,
+        target_value,
+        comparison,
+        active
+      )
+      SELECT
+        id,
+        target_profile_versioned_id,
+        distance_meters,
+        firearm_id,
+        ammo_lot_id,
+        'scorePercentage',
+        target_percentage,
+        'atLeast',
+        active
+      FROM goals_v4
+    ''');
+    await customStatement('DROP TABLE goals_v4');
+    await migrator.createTable(seriesReflections);
+    await migrator.createTable(coachFeedback);
   }
 
   Future<void> _migrateFromV1(Migrator migrator) async {
@@ -610,6 +688,10 @@ class AppDatabase extends _$AppDatabase {
             ..where((row) => row.seriesId.equals(seriesId))
             ..orderBy([(row) => OrderingTerm.desc(row.createdAtUtc)]))
           .watch();
+
+  Stream<ImageAssetRecord?> watchImage(String imageId) => (select(
+    imageAssets,
+  )..where((row) => row.id.equals(imageId))).watchSingleOrNull();
 
   Stream<List<FirearmRecord>> watchFirearms() =>
       (select(firearms)

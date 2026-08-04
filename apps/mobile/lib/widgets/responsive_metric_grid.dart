@@ -23,7 +23,11 @@ class ResponsiveMetricGrid extends StatelessWidget {
       builder: (context, constraints) {
         const spacing = 8.0;
         final textScale = MediaQuery.textScalerOf(context).scale(1);
-        final columns = constraints.maxWidth >= 680 && textScale < 1.5 ? 4 : 2;
+        final columns = textScale >= 1.8
+            ? 1
+            : constraints.maxWidth >= 680 && textScale < 1.5
+            ? 4
+            : 2;
         final itemWidth =
             (constraints.maxWidth - (columns - 1) * spacing) / columns;
         return Wrap(

@@ -48,6 +48,53 @@ enum LibraryRemovalResult {
   blockedDependency,
 }
 
+enum GoalMetric {
+  scorePercentage,
+  meanRadiusMm,
+  extremeSpreadMm,
+  absoluteHorizontalBiasMm,
+  absoluteVerticalBiasMm,
+  trainingCount,
+  completedBr50Bulls,
+  consistency,
+}
+
+enum GoalComparison { atLeast, atMost }
+
+enum PerceivedQuality { good, neutral, difficult }
+
+enum ReflectionContextTag {
+  sightPicture,
+  trigger,
+  gripOrPosition,
+  breathing,
+  followThrough,
+  tempo,
+  lightOrWind,
+  equipment,
+  perceivedFatigue,
+}
+
+enum StoredCoachFeedbackResponse { useful, notUseful, later, dismiss }
+
+class AnalysisSeriesData {
+  const AnalysisSeriesData({
+    required this.series,
+    required this.impacts,
+    required this.firearm,
+    required this.ammoLot,
+    required this.cartridge,
+    required this.reflection,
+  });
+
+  final SeriesRecord series;
+  final List<ImpactRecord> impacts;
+  final FirearmRecord? firearm;
+  final AmmoLotRecord? ammoLot;
+  final CartridgeRecord? cartridge;
+  final SeriesReflectionRecord? reflection;
+}
+
 class QuickSessionResult {
   const QuickSessionResult({
     required this.sessionId,
@@ -489,6 +536,41 @@ class ShootingRepository {
   Stream<List<SeriesRecord>> watchConfirmedSeries() =>
       database.watchConfirmedSeries();
 
+  Stream<List<AnalysisSeriesData>> watchAnalysisDataset() => database
+      .customSelect(
+        'SELECT 1',
+        readsFrom: {
+          database.shootingSeries,
+          database.shotImpacts,
+          database.firearms,
+          database.ammoLots,
+          database.cartridges,
+          database.seriesReflections,
+        },
+      )
+      .watch()
+      .asyncMap((_) => _loadAnalysisDataset());
+
+  Stream<List<GoalRecord>> watchGoals({bool activeOnly = false}) {
+    final query = database.select(database.goals)
+      ..orderBy([(row) => OrderingTerm.asc(row.targetProfileVersionedId)]);
+    if (activeOnly) query.where((row) => row.active.equals(true));
+    return query.watch();
+  }
+
+  Stream<SeriesReflectionRecord?> watchSeriesReflection(String seriesId) =>
+      (database.select(
+        database.seriesReflections,
+      )..where((row) => row.seriesId.equals(seriesId))).watchSingleOrNull();
+
+  Stream<List<SeriesReflectionRecord>> watchSeriesReflections() =>
+      (database.select(
+        database.seriesReflections,
+      )..orderBy([(row) => OrderingTerm.desc(row.updatedAtUtc)])).watch();
+
+  Stream<List<CoachFeedbackRecord>> watchCoachFeedback() =>
+      database.select(database.coachFeedback).watch();
+
   Stream<List<ImpactRecord>> watchImpacts(String seriesId) =>
       database.watchImpacts(seriesId);
 
@@ -497,6 +579,9 @@ class ShootingRepository {
 
   Stream<List<ImageAssetRecord>> watchSeriesImages(String seriesId) =>
       database.watchSeriesImages(seriesId);
+
+  Stream<ImageAssetRecord?> watchImage(String imageId) =>
+      database.watchImage(imageId);
 
   Stream<SessionDetail?> watchSessionDetail(String sessionId) => database
       .customSelect(
@@ -551,6 +636,151 @@ class ShootingRepository {
 
   Stream<List<TargetProfileRecord>> watchAllTargetProfiles() =>
       database.watchAllTargetProfiles();
+
+  Future<String> saveGoal({
+    String? id,
+    required String targetProfileVersionedId,
+    required double distanceMeters,
+    String? firearmId,
+    String? ammoLotId,
+    required GoalMetric metric,
+    required double targetValue,
+    required GoalComparison comparison,
+    bool active = true,
+  }) async {
+    if (targetProfileVersionedId.trim().isEmpty ||
+        !distanceMeters.isFinite ||
+        distanceMeters <= 0 ||
+        !targetValue.isFinite ||
+        targetValue < 0) {
+      throw ArgumentError('Doelkaart, afstand en doelwaarde zijn verplicht.');
+    }
+    final goalId = id ?? _uuid.v7();
+    await database.transaction(() async {
+      final targetExists =
+          await (database.select(database.targetProfiles)..where(
+                (row) => row.versionedId.equals(targetProfileVersionedId),
+              ))
+              .getSingleOrNull();
+      if (targetExists == null) {
+        throw ArgumentError('De gekozen doelkaart bestaat niet meer.');
+      }
+      await database
+          .into(database.goals)
+          .insertOnConflictUpdate(
+            GoalsCompanion.insert(
+              id: goalId,
+              targetProfileVersionedId: targetProfileVersionedId,
+              distanceMeters: distanceMeters,
+              firearmId: Value(firearmId),
+              ammoLotId: Value(ammoLotId),
+              metric: metric.name,
+              targetValue: targetValue,
+              comparison: comparison.name,
+              active: Value(active),
+            ),
+          );
+    });
+    return goalId;
+  }
+
+  Future<void> deleteGoal(String id) =>
+      (database.delete(database.goals)..where((row) => row.id.equals(id))).go();
+
+  Future<void> saveSeriesReflection({
+    required String seriesId,
+    required PerceivedQuality perceivedQuality,
+    Set<ReflectionContextTag> contextTags = const {},
+    String? note,
+  }) async {
+    if (contextTags.length > 3) {
+      throw ArgumentError('Kies maximaal drie contexttags.');
+    }
+    final existing = await (database.select(
+      database.seriesReflections,
+    )..where((row) => row.seriesId.equals(seriesId))).getSingleOrNull();
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.seriesReflections)
+        .insertOnConflictUpdate(
+          SeriesReflectionsCompanion.insert(
+            seriesId: seriesId,
+            perceivedQuality: perceivedQuality.name,
+            contextTagsJson: Value(
+              jsonEncode(contextTags.map((tag) => tag.name).toList()..sort()),
+            ),
+            note: Value(_nullIfBlank(note)),
+            createdAtUtc: existing?.createdAtUtc ?? now,
+            updatedAtUtc: now,
+          ),
+        );
+  }
+
+  Future<void> deleteSeriesReflection(String seriesId) => (database.delete(
+    database.seriesReflections,
+  )..where((row) => row.seriesId.equals(seriesId))).go();
+
+  Future<void> saveCoachFeedback({
+    required String insightFingerprint,
+    required String ruleId,
+    required int ruleVersion,
+    required StoredCoachFeedbackResponse response,
+    DateTime? snoozedUntilUtc,
+  }) async {
+    if (insightFingerprint.trim().isEmpty ||
+        ruleId.trim().isEmpty ||
+        ruleVersion < 1) {
+      throw ArgumentError('Ongeldige coachfeedback.');
+    }
+    await database
+        .into(database.coachFeedback)
+        .insertOnConflictUpdate(
+          CoachFeedbackCompanion.insert(
+            insightFingerprint: insightFingerprint,
+            ruleId: ruleId,
+            ruleVersion: ruleVersion,
+            response: response.name,
+            snoozedUntilUtc: Value(snoozedUntilUtc?.toUtc()),
+            updatedAtUtc: DateTime.now().toUtc(),
+          ),
+        );
+  }
+
+  Future<List<AnalysisSeriesData>> _loadAnalysisDataset() async {
+    final series = await getConfirmedSeries();
+    if (series.isEmpty) return const [];
+    final impacts = await database.select(database.shotImpacts).get();
+    final firearms = await database.select(database.firearms).get();
+    final ammoLots = await database.select(database.ammoLots).get();
+    final cartridges = await database.select(database.cartridges).get();
+    final reflections = await database.select(database.seriesReflections).get();
+    final impactsBySeries = <String, List<ImpactRecord>>{};
+    for (final impact in impacts) {
+      impactsBySeries.putIfAbsent(impact.seriesId, () => []).add(impact);
+    }
+    final firearmById = {for (final item in firearms) item.id: item};
+    final ammoById = {for (final item in ammoLots) item.id: item};
+    final cartridgeById = {for (final item in cartridges) item.id: item};
+    final reflectionBySeries = {
+      for (final item in reflections) item.seriesId: item,
+    };
+    return series
+        .map(
+          (item) => AnalysisSeriesData(
+            series: item,
+            impacts: List.unmodifiable(impactsBySeries[item.id] ?? const []),
+            firearm: item.firearmId == null
+                ? null
+                : firearmById[item.firearmId],
+            ammoLot: item.ammoLotId == null ? null : ammoById[item.ammoLotId],
+            cartridge: item.cartridgeId == null
+                ? null
+                : cartridgeById[item.cartridgeId],
+            reflection: reflectionBySeries[item.id],
+          ),
+        )
+        .toList(growable: false);
+  }
 
   Future<void> seedDefaults() async {
     await database.batch((batch) {
@@ -1522,18 +1752,23 @@ class ShootingRepository {
         await _touchSession(image.sessionId, now);
       });
 
-  Future<void> updateImageCaption(String imageId, String? caption) async {
-    final changed =
-        await (database.update(
-          database.imageAssets,
-        )..where((row) => row.id.equals(imageId))).write(
-          ImageAssetsCompanion(
-            caption: Value(_nullIfBlank(caption)),
-            updatedAtUtc: Value(DateTime.now().toUtc()),
-          ),
-        );
-    if (changed != 1) throw StateError('De foto bestaat niet.');
-  }
+  Future<void> updateImageCaption(String imageId, String? caption) =>
+      database.transaction(() async {
+        final image = await _image(imageId);
+        if (image == null) throw StateError('De foto bestaat niet.');
+        final now = DateTime.now().toUtc();
+        final changed =
+            await (database.update(
+              database.imageAssets,
+            )..where((row) => row.id.equals(imageId))).write(
+              ImageAssetsCompanion(
+                caption: Value(_nullIfBlank(caption)),
+                updatedAtUtc: Value(now),
+              ),
+            );
+        if (changed != 1) throw StateError('De foto bestaat niet.');
+        await _touchSession(image.sessionId, now);
+      });
 
   Future<void> savePhotoAlignment(
     domain.StoredPhotoAlignment alignment,

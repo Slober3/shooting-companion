@@ -21,18 +21,21 @@ import '../photo/photo.dart';
 import '../scoring/target_canvas.dart';
 import '../scoring/transformable_scoring_viewport.dart';
 import 'series_settings_sheet.dart';
+import 'series_reflection_sheet.dart';
 
 class ManualSeriesScreen extends ConsumerStatefulWidget {
   const ManualSeriesScreen({
     required this.sessionId,
     this.seriesId,
     this.openPhotoPickerOnLoad = false,
+    this.alignImageIdOnLoad,
     super.key,
   });
 
   final String sessionId;
   final String? seriesId;
   final bool openPhotoPickerOnLoad;
+  final String? alignImageIdOnLoad;
 
   @override
   ConsumerState<ManualSeriesScreen> createState() => _ManualSeriesScreenState();
@@ -66,6 +69,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
   bool _sessionActive = true;
   bool _photoSafetyAcknowledged = false;
   bool _openedInitialPhotoPicker = false;
+  bool _openedInitialAlignment = false;
   Timer? _autosaveTimer;
   Future<void> _saveQueue = Future.value();
   ScoringTool _tool = ScoringTool.place;
@@ -755,6 +759,17 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) unawaited(_choosePhoto());
         });
+      } else if (widget.alignImageIdOnLoad != null &&
+          !_openedInitialAlignment) {
+        _openedInitialAlignment = true;
+        final image = detail.images
+            .where((item) => item.id == widget.alignImageIdOnLoad)
+            .firstOrNull;
+        if (image != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) unawaited(_alignAsPrimary(image));
+          });
+        }
       }
     } catch (error) {
       if (!mounted) return;
@@ -1183,6 +1198,14 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
       final wasDraft = _series!.status == domain.SeriesStatus.draft.name;
       if (wasDraft) await repository.confirmSeries(_seriesId!);
       if (!mounted) return;
+      if (wasDraft) {
+        await maybeShowSeriesReflectionPrompt(
+          context: context,
+          ref: ref,
+          seriesId: _seriesId!,
+        );
+        if (!mounted) return;
+      }
       if (saveNext && _sessionActive) {
         final next = await repository.createOrResumeDraftSeries(
           widget.sessionId,
@@ -1250,6 +1273,12 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
             ammoLotId: _ammoLotId,
             notes: _notes,
           );
+      if (!mounted) return;
+      await maybeShowSeriesReflectionPrompt(
+        context: context,
+        ref: ref,
+        seriesId: _seriesId!,
+      );
       if (!mounted) return;
       setState(() {
         _allowPop = true;
@@ -1399,6 +1428,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
             .firstOrNull;
         if (record != null) await _alignAsPrimary(record);
       }
+      if (mounted) _offerAddedPhotoCaption(imageId);
     } catch (error) {
       if (staged != null && stored == null) {
         await _storage.discardStagedImage(staged);
@@ -1410,6 +1440,24 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
         AppMessenger.error(context, 'Foto toevoegen mislukt: $error');
       }
     }
+  }
+
+  void _offerAddedPhotoCaption(String imageId) {
+    AppMessenger.show(
+      context,
+      kind: AppNoticeKind.success,
+      message: 'Foto toegevoegd',
+      action: AppNoticeAction(
+        label: 'Beschrijving',
+        onPressed: () => unawaited(_editAddedPhotoCaption(imageId)),
+      ),
+    );
+  }
+
+  Future<void> _editAddedPhotoCaption(String imageId) async {
+    final image = await ref.read(repositoryProvider).watchImage(imageId).first;
+    if (!mounted || image == null) return;
+    await editPhotoCaption(context: context, ref: ref, image: image);
   }
 
   Future<bool> _confirmPhotoSafety() async {

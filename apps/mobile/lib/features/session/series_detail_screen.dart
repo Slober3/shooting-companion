@@ -127,13 +127,13 @@ class SeriesDetailScreen extends ConsumerWidget {
   }
 }
 
-class _SeriesDetailBody extends StatelessWidget {
+class _SeriesDetailBody extends ConsumerWidget {
   const _SeriesDetailBody({required this.detail});
 
   final SeriesDetail detail;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final series = detail.series;
     final target = detail.target;
     final scoreValues = {
@@ -242,17 +242,21 @@ class _SeriesDetailBody extends StatelessWidget {
           Text('Foto’s', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           SizedBox(
-            height: 92,
+            height: 98 + MediaQuery.textScalerOf(context).scale(38),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: detail.images.length,
               separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final image = detail.images[index];
-                return _PhotoThumb(
+                final primary = image.id == detail.primaryImage?.id;
+                return PhotoThumbnailTile(
                   image: image,
-                  primary: image.id == detail.primaryImage?.id,
+                  badgeLabel: primary ? 'Scorefoto' : 'Reeksfoto',
                   onTap: () => _openPhoto(context, image),
+                  onLongPress: () => unawaited(
+                    _showPhotoActions(context, ref, image, primary),
+                  ),
                 );
               },
             ),
@@ -263,45 +267,97 @@ class _SeriesDetailBody extends StatelessWidget {
   }
 
   void _openPhoto(BuildContext context, ImageAssetRecord image) {
+    final isPrimary = image.id == detail.primaryImage?.id;
+    PhotoViewerOverlayData? overlayData;
     if (image.id == detail.primaryImage?.id && detail.photoAlignment != null) {
       final alignment = _decodeAlignment(detail);
       if (alignment != null) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => PhotoOverlayViewer(
-              imageProvider: FileImage(File(image.path)),
-              imagePixelSize: Size(
-                image.width.toDouble(),
-                image.height.toDouble(),
-              ),
-              alignment: alignment,
-              projectileDiameterMm: detail.series.projectileDiameterMm,
-              impacts: [
-                for (var index = 0; index < detail.impacts.length; index++)
-                  if (!detail.impacts[index].isMiss)
-                    PhotoCanvasImpact(
-                      id: detail.impacts[index].id,
-                      positionMm: geo.PhysicalPointMm(
-                        detail.impacts[index].xMm,
-                        detail.impacts[index].yMm,
-                      ),
-                      sequenceNumber: index + 1,
-                      scoreLabel: '${detail.impacts[index].scoreValue}',
-                      multiplicity: detail.impacts[index].multiplicity,
-                      isPositionUncertain:
-                          detail.impacts[index].isPositionUncertain,
-                    ),
-              ],
-            ),
-          ),
+        overlayData = PhotoViewerOverlayData(
+          alignment: alignment,
+          projectileDiameterMm: detail.series.projectileDiameterMm,
+          impacts: [
+            for (var index = 0; index < detail.impacts.length; index++)
+              if (!detail.impacts[index].isMiss)
+                PhotoCanvasImpact(
+                  id: detail.impacts[index].id,
+                  positionMm: geo.PhysicalPointMm(
+                    detail.impacts[index].xMm,
+                    detail.impacts[index].yMm,
+                  ),
+                  sequenceNumber: index + 1,
+                  scoreLabel: '${detail.impacts[index].scoreValue}',
+                  multiplicity: detail.impacts[index].multiplicity,
+                  isPositionUncertain:
+                      detail.impacts[index].isPositionUncertain,
+                ),
+          ],
         );
-        return;
       }
     }
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => _PlainPhotoViewer(image: image)));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PhotoViewerScreen(
+          imageId: image.id,
+          sourceLabel: isPrimary ? 'Scorefoto' : 'Reeksfoto',
+          overlayData: overlayData,
+          onMakePrimary: isPrimary
+              ? null
+              : () => _openAlignment(context, image),
+          onAdjustAlignment: isPrimary && detail.photoAlignment != null
+              ? () => _openAlignment(context, image)
+              : null,
+        ),
+      ),
+    );
   }
+
+  Future<void> _showPhotoActions(
+    BuildContext context,
+    WidgetRef ref,
+    ImageAssetRecord image,
+    bool primary,
+  ) async {
+    final action = await showPhotoActionsSheet(
+      context: context,
+      image: image,
+      canMakePrimary: !primary,
+      canAdjustAlignment: primary && detail.photoAlignment != null,
+    );
+    if (action == null || !context.mounted) return;
+    switch (action) {
+      case PhotoAction.view:
+        _openPhoto(context, image);
+        return;
+      case PhotoAction.resetView:
+        return;
+      case PhotoAction.editCaption:
+        await editPhotoCaption(context: context, ref: ref, image: image);
+        return;
+      case PhotoAction.makePrimary:
+      case PhotoAction.adjustAlignment:
+        await _openAlignment(context, image);
+        return;
+      case PhotoAction.delete:
+        await deletePhotoWithConfirmation(
+          context: context,
+          ref: ref,
+          image: image,
+          sourceLabel: primary ? 'Scorefoto' : 'Reeksfoto',
+        );
+        return;
+    }
+  }
+
+  Future<void> _openAlignment(BuildContext context, ImageAssetRecord image) =>
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ManualSeriesScreen(
+            sessionId: detail.series.sessionId,
+            seriesId: detail.series.id,
+            alignImageIdOnLoad: image.id,
+          ),
+        ),
+      );
 }
 
 class _TargetPreview extends StatelessWidget {
@@ -388,83 +444,4 @@ geo.ManualPhotoAlignment? _decodeAlignment(SeriesDetail detail) {
   } catch (_) {
     return null;
   }
-}
-
-class _PhotoThumb extends StatelessWidget {
-  const _PhotoThumb({
-    required this.image,
-    required this.primary,
-    required this.onTap,
-  });
-
-  final ImageAssetRecord image;
-  final bool primary;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    label: primary ? 'Primaire scorefoto' : 'Foto',
-    button: true,
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.file(
-              File(image.path),
-              width: 92,
-              height: 92,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const SizedBox.square(
-                dimension: 92,
-                child: ColoredBox(
-                  color: Colors.black12,
-                  child: Icon(Icons.broken_image_outlined),
-                ),
-              ),
-            ),
-          ),
-          if (primary)
-            const Positioned(
-              left: 4,
-              top: 4,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Colors.black87,
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  child: Text(
-                    'Scorefoto',
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    ),
-  );
-}
-
-class _PlainPhotoViewer extends StatelessWidget {
-  const _PlainPhotoViewer({required this.image});
-
-  final ImageAssetRecord image;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(image.caption ?? 'Foto')),
-    body: SafeArea(
-      top: false,
-      child: InteractiveViewer(
-        minScale: 1,
-        maxScale: 6,
-        child: Center(child: Image.file(File(image.path))),
-      ),
-    ),
-  );
 }

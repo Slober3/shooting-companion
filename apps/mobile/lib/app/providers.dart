@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/app_database.dart';
+import '../data/coaching_preferences_repository.dart';
 import '../data/shooting_repository.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -11,6 +12,15 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 
 final repositoryProvider = Provider<ShootingRepository>(
   (ref) => ShootingRepository(ref.watch(databaseProvider)),
+);
+
+final coachingPreferencesRepositoryProvider =
+    Provider<CoachingPreferencesRepository>(
+      (ref) => CoachingPreferencesRepository(ref.watch(databaseProvider)),
+    );
+
+final coachModeEnabledProvider = StreamProvider.autoDispose<bool>(
+  (ref) => ref.watch(coachingPreferencesRepositoryProvider).watchCoachMode(),
 );
 
 final initializationProvider = FutureProvider<void>(
@@ -44,6 +54,32 @@ final confirmedSeriesProvider = StreamProvider<List<SeriesRecord>>(
   (ref) => ref.watch(repositoryProvider).watchConfirmedSeries(),
 );
 
+final analysisDatasetProvider = StreamProvider<List<AnalysisSeriesData>>(
+  (ref) => ref.watch(repositoryProvider).watchAnalysisDataset(),
+);
+
+final activeGoalsProvider = StreamProvider<List<GoalRecord>>(
+  (ref) => ref.watch(repositoryProvider).watchGoals(activeOnly: true),
+);
+
+final allGoalsProvider = StreamProvider<List<GoalRecord>>(
+  (ref) => ref.watch(repositoryProvider).watchGoals(),
+);
+
+final seriesReflectionProvider =
+    StreamProvider.family<SeriesReflectionRecord?, String>(
+      (ref, seriesId) =>
+          ref.watch(repositoryProvider).watchSeriesReflection(seriesId),
+    );
+
+final seriesReflectionsProvider = StreamProvider<List<SeriesReflectionRecord>>(
+  (ref) => ref.watch(repositoryProvider).watchSeriesReflections(),
+);
+
+final coachFeedbackProvider = StreamProvider<List<CoachFeedbackRecord>>(
+  (ref) => ref.watch(repositoryProvider).watchCoachFeedback(),
+);
+
 final seriesDetailProvider = StreamProvider.family<SeriesDetail?, String>(
   (ref, seriesId) => ref.watch(repositoryProvider).watchSeriesDetail(seriesId),
 );
@@ -63,6 +99,10 @@ final seriesImagesProvider =
       (ref, seriesId) =>
           ref.watch(repositoryProvider).watchSeriesImages(seriesId),
     );
+
+final imageProvider = StreamProvider.family<ImageAssetRecord?, String>(
+  (ref, imageId) => ref.watch(repositoryProvider).watchImage(imageId),
+);
 
 final firearmsProvider = StreamProvider<List<FirearmRecord>>(
   (ref) => ref.watch(repositoryProvider).watchFirearms(),

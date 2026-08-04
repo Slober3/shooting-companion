@@ -837,6 +837,20 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
+  shooting_companion_analysis:
+    dependency: "direct main"
+    description:
+      path: "../../packages/analysis"
+      relative: true
+    source: path
+    version: "0.1.0"
+  shooting_companion_coaching:
+    dependency: "direct main"
+    description:
+      path: "../../packages/coaching"
+      relative: true
+    source: path
+    version: "0.1.0"
   shooting_companion_domain:
     dependency: "direct main"
     description:
@@ -862,6 +876,13 @@ packages:
     dependency: "direct main"
     description:
       path: "../../packages/target_profiles"
+      relative: true
+    source: path
+    version: "0.1.0"
+  shooting_companion_training:
+    dependency: "direct main"
+    description:
+      path: "../../packages/training"
       relative: true
     source: path
     version: "0.1.0"

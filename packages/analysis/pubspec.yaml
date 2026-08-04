@@ -1,0 +1,19 @@
+name: shooting_companion_analysis
+description: Deterministic, platform-independent shooting group analysis.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  shooting_companion_domain:
+    path: ../domain
+  shooting_companion_scoring:
+    path: ../scoring
+
+dev_dependencies:
+  lints: ^6.0.0
+  shooting_companion_target_profiles:
+    path: ../target_profiles
+  test: ^1.26.0

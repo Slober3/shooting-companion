@@ -9,6 +9,7 @@ import 'generated/schema/schema.dart';
 import 'generated/schema/schema_v1.dart' as v1;
 import 'generated/schema/schema_v2.dart' as v2;
 import 'generated/schema/schema_v3.dart' as v3;
+import 'generated/schema/schema_v4.dart' as v4;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -18,17 +19,17 @@ void main() {
     verifier = SchemaVerifier(GeneratedHelper());
   });
 
-  test('empty v1 schema migrates exactly to v4', () async {
+  test('empty v1 schema migrates exactly to v5', () async {
     final schema = await verifier.schemaAt(1);
     final database = AppDatabase.forTesting(schema.newConnection());
 
-    await verifier.migrateAndValidate(database, 4);
+    await verifier.migrateAndValidate(database, 5);
 
     await database.close();
     schema.close();
   });
 
-  test('v1 sessions, impacts and photos survive the v4 migration', () async {
+  test('v1 sessions, impacts and photos survive the v5 migration', () async {
     final schema = await verifier.schemaAt(1);
     final old = v1.DatabaseAtV1(schema.newConnection());
     final timestamp =
@@ -136,7 +137,7 @@ void main() {
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 4);
+    await verifier.migrateAndValidate(database, 5);
 
     final session = await database
         .select(database.trainingSessions)
@@ -237,7 +238,7 @@ void main() {
       await old.close();
 
       final database = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(database, 4);
+      await verifier.migrateAndValidate(database, 5);
 
       final migrated = await database
           .select(database.shootingSeries)
@@ -281,7 +282,7 @@ void main() {
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 4);
+    await verifier.migrateAndValidate(database, 5);
 
     final cartridge = await database.select(database.cartridges).getSingle();
     final ammo = await database.select(database.ammoLots).getSingle();
@@ -299,7 +300,7 @@ void main() {
     schema.close();
   });
 
-  test('v3 score records migrate to v4 without recalculation', () async {
+  test('v3 score records migrate to v5 without recalculation', () async {
     final schema = await verifier.schemaAt(3);
     final old = v3.DatabaseAtV3(schema.newConnection());
     final timestamp =
@@ -350,7 +351,7 @@ void main() {
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 4);
+    await verifier.migrateAndValidate(database, 5);
     final series = await database.select(database.shootingSeries).getSingle();
     final impact = await database.select(database.shotImpacts).getSingle();
 
@@ -362,6 +363,40 @@ void main() {
     expect(impact.rawScoreValue, 7);
     expect(impact.targetBullId, null);
     expect(impact.scoreDisposition, 'counted');
+    expect(
+      await database.customSelect('PRAGMA foreign_key_check').get(),
+      isEmpty,
+    );
+
+    await database.close();
+    schema.close();
+  });
+
+  test('v4 percentage goals migrate to typed v5 goals', () async {
+    final schema = await verifier.schemaAt(4);
+    final old = v4.DatabaseAtV4(schema.newConnection());
+
+    // Schema-v4 verification code intentionally exposes table metadata only,
+    // so seed the legacy row through SQL instead of a generated companion.
+    await old.customStatement(
+      'INSERT INTO goals '
+      '(id, target_profile_versioned_id, distance_meters, '
+      'target_percentage, active) VALUES (?, ?, ?, ?, ?)',
+      ['legacy-goal', 'target@1', 25.0, 82.5, 1],
+    );
+    await old.close();
+
+    final database = AppDatabase.forTesting(schema.newConnection());
+    await verifier.migrateAndValidate(database, 5);
+
+    final goal = await database.select(database.goals).getSingle();
+    expect(goal.id, 'legacy-goal');
+    expect(goal.metric, 'scorePercentage');
+    expect(goal.targetValue, 82.5);
+    expect(goal.comparison, 'atLeast');
+    expect(goal.active, isTrue);
+    expect(await database.select(database.seriesReflections).get(), isEmpty);
+    expect(await database.select(database.coachFeedback).get(), isEmpty);
     expect(
       await database.customSelect('PRAGMA foreign_key_check').get(),
       isEmpty,

@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.3.0+6
+version: 0.4.0+1
 
 environment:
   sdk: ^3.12.2
@@ -40,6 +40,12 @@ dependencies:
     path: ../../packages/target_profiles
   shooting_companion_photo_geometry:
     path: ../../packages/photo_geometry
+  shooting_companion_analysis:
+    path: ../../packages/analysis
+  shooting_companion_coaching:
+    path: ../../packages/coaching
+  shooting_companion_training:
+    path: ../../packages/training
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

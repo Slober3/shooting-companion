@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
+import 'package:drift/drift.dart' show OrderingTerm;
 import 'package:flutter/services.dart';
+import 'package:image/image.dart' as image_lib;
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -29,12 +32,15 @@ class ExportSeriesRow {
     required this.missCount,
     required this.projectileDiameterMm,
     required this.photoCount,
+    this.seriesId,
     this.firearmName,
     this.ammoLotName,
     this.notes,
+    this.photos = const [],
   });
 
   final String sessionId;
+  final String? seriesId;
   final DateTime sessionStartedAtUtc;
   final String sessionStatus;
   final int sequenceNumber;
@@ -50,6 +56,7 @@ class ExportSeriesRow {
   final String? firearmName;
   final String? ammoLotName;
   final String? notes;
+  final List<PdfReportPhoto> photos;
 
   String get materialDescription => [
     if (firearmName != null && firearmName!.trim().isNotEmpty)
@@ -60,6 +67,20 @@ class ExportSeriesRow {
 
   double get percentage =>
       maximumPossibleScore == 0 ? 0 : totalScore * 100 / maximumPossibleScore;
+}
+
+class PdfReportPhoto {
+  const PdfReportPhoto({
+    required this.id,
+    required this.bytes,
+    required this.roleLabel,
+    this.caption,
+  });
+
+  final String id;
+  final Uint8List bytes;
+  final String roleLabel;
+  final String? caption;
 }
 
 /// Pure formatting helpers used by CSV, PDF and regression tests.
@@ -147,6 +168,8 @@ class PdfReportData {
   int get totalScore => seriesRows.fold(0, (sum, row) => sum + row.totalScore);
   int get maximumPossibleScore =>
       seriesRows.fold(0, (sum, row) => sum + row.maximumPossibleScore);
+  int get includedPhotoCount =>
+      seriesRows.fold(0, (sum, row) => sum + row.photos.length);
 }
 
 class PdfReportBuilder {
@@ -168,7 +191,7 @@ class PdfReportBuilder {
         pageFormat: PdfPageFormat.a4.landscape,
         margin: const pw.EdgeInsets.fromLTRB(30, 28, 30, 30),
         theme: theme,
-        maxPages: data.seriesRows.length + 20,
+        maxPages: data.seriesRows.length + data.includedPhotoCount + 20,
         footer: (context) => pw.Container(
           padding: const pw.EdgeInsets.only(top: 8),
           decoration: const pw.BoxDecoration(
@@ -262,6 +285,34 @@ class PdfReportBuilder {
               fontWeight: pw.FontWeight.bold,
             ),
           ),
+          if (data.includedPhotoCount > 0) ...[
+            pw.NewPage(),
+            pw.Header(
+              level: 0,
+              child: pw.Text(
+                'Reeksfoto’s',
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ),
+            for (final row in data.seriesRows)
+              if (row.photos.isNotEmpty) ...[
+                pw.Header(
+                  level: 1,
+                  child: pw.Text(
+                    '${formatter.format(row.sessionStartedAtUtc.toLocal())} · '
+                    'Reeks ${row.sequenceNumber} · ${row.targetName}',
+                    style: pw.TextStyle(
+                      fontSize: 11,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ),
+                for (final photo in row.photos) _photo(photo),
+              ],
+          ],
         ],
       ),
     );
@@ -276,6 +327,38 @@ class PdfReportBuilder {
       ),
       pw.Text(label, style: const pw.TextStyle(fontSize: 9)),
     ],
+  );
+
+  static pw.Widget _photo(PdfReportPhoto photo) => pw.Container(
+    width: double.infinity,
+    margin: const pw.EdgeInsets.only(bottom: 14),
+    padding: const pw.EdgeInsets.all(10),
+    decoration: pw.BoxDecoration(
+      border: pw.Border.all(color: PdfColors.grey500, width: 0.5),
+      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+    ),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          photo.roleLabel,
+          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+        ),
+        pw.SizedBox(height: 6),
+        pw.Center(
+          child: pw.Image(
+            pw.MemoryImage(photo.bytes),
+            width: 430,
+            height: 225,
+            fit: pw.BoxFit.contain,
+          ),
+        ),
+        if (photo.caption case final caption?) ...[
+          pw.SizedBox(height: 7),
+          pw.Text(caption, style: const pw.TextStyle(fontSize: 9)),
+        ],
+      ],
+    ),
   );
 }
 
@@ -305,7 +388,7 @@ class ExportService {
   }
 
   Future<File> createPdfReport() async {
-    final rows = await _reportRows();
+    final rows = await _reportRows(includePdfPhotos: true);
     final bytes = await PdfReportBuilder.build(
       PdfReportData(seriesRows: rows, generatedAt: _now()),
       await _pdfFonts(),
@@ -319,12 +402,18 @@ class ExportService {
       .instance
       .share(ShareParams(files: [XFile(file.path)], text: label));
 
-  Future<List<ExportSeriesRow>> _reportRows() async {
+  Future<List<ExportSeriesRow>> _reportRows({
+    bool includePdfPhotos = false,
+  }) async {
+    final photosBySeries = includePdfPhotos
+        ? await _loadPdfPhotosBySeries()
+        : const <String, List<PdfReportPhoto>>{};
     final queryRows = await database
         .customSelect(
           '''
         SELECT
           series.session_id,
+          series.id AS series_id,
           session.started_at_utc,
           session.status AS session_status,
           series.sequence_number,
@@ -367,6 +456,7 @@ class ExportService {
       for (final row in queryRows)
         ExportSeriesRow(
           sessionId: row.read<String>('session_id'),
+          seriesId: row.read<String>('series_id'),
           sessionStartedAtUtc: row.read<DateTime>('started_at_utc'),
           sessionStatus: row.read<String>('session_status'),
           sequenceNumber: row.read<int>('sequence_number'),
@@ -385,8 +475,50 @@ class ExportService {
           firearmName: row.readNullable<String>('firearm_name'),
           ammoLotName: row.readNullable<String>('ammo_lot_name'),
           notes: row.readNullable<String>('notes'),
+          photos: photosBySeries[row.read<String>('series_id')] ?? const [],
         ),
     ];
+  }
+
+  Future<Map<String, List<PdfReportPhoto>>> _loadPdfPhotosBySeries() async {
+    final records =
+        await (database.select(database.imageAssets)
+              ..where((row) => row.seriesId.isNotNull())
+              ..orderBy([
+                (row) => OrderingTerm.desc(row.role),
+                (row) => OrderingTerm.asc(row.createdAtUtc),
+              ]))
+            .get();
+    final result = <String, List<PdfReportPhoto>>{};
+    for (final record in records) {
+      final seriesId = record.seriesId;
+      if (seriesId == null) continue;
+      final file = File(record.path);
+      if (!await file.exists()) continue;
+      try {
+        final originalBytes = await file.readAsBytes();
+        final preparedBytes = await Isolate.run(
+          () => _preparePdfPhoto(originalBytes),
+        );
+        if (preparedBytes == null) continue;
+        result
+            .putIfAbsent(seriesId, () => [])
+            .add(
+              PdfReportPhoto(
+                id: record.id,
+                bytes: preparedBytes,
+                roleLabel: record.role == 'primaryScoringPhoto'
+                    ? 'Scorefoto'
+                    : 'Reeksfoto',
+                caption: _nullIfBlank(record.caption),
+              ),
+            );
+      } on Exception {
+        // A removed or unreadable original is omitted without blocking the
+        // complete report. The stored database record is not modified.
+      }
+    }
+    return result;
   }
 
   String _stamp() => DateFormat('yyyyMMdd-HHmmss').format(_now());
@@ -401,4 +533,22 @@ class ExportService {
     await directory.create(recursive: true);
     return File(path.join(directory.path, name));
   }
+}
+
+Uint8List? _preparePdfPhoto(Uint8List originalBytes) {
+  var decoded = image_lib.decodeImage(originalBytes);
+  if (decoded == null) return null;
+  decoded = image_lib.bakeOrientation(decoded);
+  const maximumDimension = 1600;
+  if (decoded.width > maximumDimension || decoded.height > maximumDimension) {
+    decoded = decoded.width >= decoded.height
+        ? image_lib.copyResize(decoded, width: maximumDimension)
+        : image_lib.copyResize(decoded, height: maximumDimension);
+  }
+  return image_lib.encodeJpg(decoded, quality: 85);
+}
+
+String? _nullIfBlank(String? value) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
 }

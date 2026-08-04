@@ -6268,15 +6268,35 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, GoalRecord> {
       'REFERENCES ammo_lots (id)',
     ),
   );
-  static const VerificationMeta _targetPercentageMeta = const VerificationMeta(
-    'targetPercentage',
+  static const VerificationMeta _metricMeta = const VerificationMeta('metric');
+  @override
+  late final GeneratedColumn<String> metric = GeneratedColumn<String>(
+    'metric',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetValueMeta = const VerificationMeta(
+    'targetValue',
   );
   @override
-  late final GeneratedColumn<double> targetPercentage = GeneratedColumn<double>(
-    'target_percentage',
+  late final GeneratedColumn<double> targetValue = GeneratedColumn<double>(
+    'target_value',
     aliasedName,
     false,
     type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _comparisonMeta = const VerificationMeta(
+    'comparison',
+  );
+  @override
+  late final GeneratedColumn<String> comparison = GeneratedColumn<String>(
+    'comparison',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
   static const VerificationMeta _activeMeta = const VerificationMeta('active');
@@ -6299,7 +6319,9 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, GoalRecord> {
     distanceMeters,
     firearmId,
     ammoLotId,
-    targetPercentage,
+    metric,
+    targetValue,
+    comparison,
     active,
   ];
   @override
@@ -6353,16 +6375,32 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, GoalRecord> {
         ammoLotId.isAcceptableOrUnknown(data['ammo_lot_id']!, _ammoLotIdMeta),
       );
     }
-    if (data.containsKey('target_percentage')) {
+    if (data.containsKey('metric')) {
       context.handle(
-        _targetPercentageMeta,
-        targetPercentage.isAcceptableOrUnknown(
-          data['target_percentage']!,
-          _targetPercentageMeta,
+        _metricMeta,
+        metric.isAcceptableOrUnknown(data['metric']!, _metricMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_metricMeta);
+    }
+    if (data.containsKey('target_value')) {
+      context.handle(
+        _targetValueMeta,
+        targetValue.isAcceptableOrUnknown(
+          data['target_value']!,
+          _targetValueMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_targetPercentageMeta);
+      context.missing(_targetValueMeta);
+    }
+    if (data.containsKey('comparison')) {
+      context.handle(
+        _comparisonMeta,
+        comparison.isAcceptableOrUnknown(data['comparison']!, _comparisonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_comparisonMeta);
     }
     if (data.containsKey('active')) {
       context.handle(
@@ -6399,9 +6437,17 @@ class $GoalsTable extends Goals with TableInfo<$GoalsTable, GoalRecord> {
         DriftSqlType.string,
         data['${effectivePrefix}ammo_lot_id'],
       ),
-      targetPercentage: attachedDatabase.typeMapping.read(
+      metric: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metric'],
+      )!,
+      targetValue: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
-        data['${effectivePrefix}target_percentage'],
+        data['${effectivePrefix}target_value'],
+      )!,
+      comparison: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}comparison'],
       )!,
       active: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
@@ -6422,7 +6468,9 @@ class GoalRecord extends DataClass implements Insertable<GoalRecord> {
   final double distanceMeters;
   final String? firearmId;
   final String? ammoLotId;
-  final double targetPercentage;
+  final String metric;
+  final double targetValue;
+  final String comparison;
   final bool active;
   const GoalRecord({
     required this.id,
@@ -6430,7 +6478,9 @@ class GoalRecord extends DataClass implements Insertable<GoalRecord> {
     required this.distanceMeters,
     this.firearmId,
     this.ammoLotId,
-    required this.targetPercentage,
+    required this.metric,
+    required this.targetValue,
+    required this.comparison,
     required this.active,
   });
   @override
@@ -6447,7 +6497,9 @@ class GoalRecord extends DataClass implements Insertable<GoalRecord> {
     if (!nullToAbsent || ammoLotId != null) {
       map['ammo_lot_id'] = Variable<String>(ammoLotId);
     }
-    map['target_percentage'] = Variable<double>(targetPercentage);
+    map['metric'] = Variable<String>(metric);
+    map['target_value'] = Variable<double>(targetValue);
+    map['comparison'] = Variable<String>(comparison);
     map['active'] = Variable<bool>(active);
     return map;
   }
@@ -6463,7 +6515,9 @@ class GoalRecord extends DataClass implements Insertable<GoalRecord> {
       ammoLotId: ammoLotId == null && nullToAbsent
           ? const Value.absent()
           : Value(ammoLotId),
-      targetPercentage: Value(targetPercentage),
+      metric: Value(metric),
+      targetValue: Value(targetValue),
+      comparison: Value(comparison),
       active: Value(active),
     );
   }
@@ -6481,7 +6535,9 @@ class GoalRecord extends DataClass implements Insertable<GoalRecord> {
       distanceMeters: serializer.fromJson<double>(json['distanceMeters']),
       firearmId: serializer.fromJson<String?>(json['firearmId']),
       ammoLotId: serializer.fromJson<String?>(json['ammoLotId']),
-      targetPercentage: serializer.fromJson<double>(json['targetPercentage']),
+      metric: serializer.fromJson<String>(json['metric']),
+      targetValue: serializer.fromJson<double>(json['targetValue']),
+      comparison: serializer.fromJson<String>(json['comparison']),
       active: serializer.fromJson<bool>(json['active']),
     );
   }
@@ -6496,7 +6552,9 @@ class GoalRecord extends DataClass implements Insertable<GoalRecord> {
       'distanceMeters': serializer.toJson<double>(distanceMeters),
       'firearmId': serializer.toJson<String?>(firearmId),
       'ammoLotId': serializer.toJson<String?>(ammoLotId),
-      'targetPercentage': serializer.toJson<double>(targetPercentage),
+      'metric': serializer.toJson<String>(metric),
+      'targetValue': serializer.toJson<double>(targetValue),
+      'comparison': serializer.toJson<String>(comparison),
       'active': serializer.toJson<bool>(active),
     };
   }
@@ -6507,7 +6565,9 @@ class GoalRecord extends DataClass implements Insertable<GoalRecord> {
     double? distanceMeters,
     Value<String?> firearmId = const Value.absent(),
     Value<String?> ammoLotId = const Value.absent(),
-    double? targetPercentage,
+    String? metric,
+    double? targetValue,
+    String? comparison,
     bool? active,
   }) => GoalRecord(
     id: id ?? this.id,
@@ -6516,7 +6576,9 @@ class GoalRecord extends DataClass implements Insertable<GoalRecord> {
     distanceMeters: distanceMeters ?? this.distanceMeters,
     firearmId: firearmId.present ? firearmId.value : this.firearmId,
     ammoLotId: ammoLotId.present ? ammoLotId.value : this.ammoLotId,
-    targetPercentage: targetPercentage ?? this.targetPercentage,
+    metric: metric ?? this.metric,
+    targetValue: targetValue ?? this.targetValue,
+    comparison: comparison ?? this.comparison,
     active: active ?? this.active,
   );
   GoalRecord copyWithCompanion(GoalsCompanion data) {
@@ -6530,9 +6592,13 @@ class GoalRecord extends DataClass implements Insertable<GoalRecord> {
           : this.distanceMeters,
       firearmId: data.firearmId.present ? data.firearmId.value : this.firearmId,
       ammoLotId: data.ammoLotId.present ? data.ammoLotId.value : this.ammoLotId,
-      targetPercentage: data.targetPercentage.present
-          ? data.targetPercentage.value
-          : this.targetPercentage,
+      metric: data.metric.present ? data.metric.value : this.metric,
+      targetValue: data.targetValue.present
+          ? data.targetValue.value
+          : this.targetValue,
+      comparison: data.comparison.present
+          ? data.comparison.value
+          : this.comparison,
       active: data.active.present ? data.active.value : this.active,
     );
   }
@@ -6545,7 +6611,9 @@ class GoalRecord extends DataClass implements Insertable<GoalRecord> {
           ..write('distanceMeters: $distanceMeters, ')
           ..write('firearmId: $firearmId, ')
           ..write('ammoLotId: $ammoLotId, ')
-          ..write('targetPercentage: $targetPercentage, ')
+          ..write('metric: $metric, ')
+          ..write('targetValue: $targetValue, ')
+          ..write('comparison: $comparison, ')
           ..write('active: $active')
           ..write(')'))
         .toString();
@@ -6558,7 +6626,9 @@ class GoalRecord extends DataClass implements Insertable<GoalRecord> {
     distanceMeters,
     firearmId,
     ammoLotId,
-    targetPercentage,
+    metric,
+    targetValue,
+    comparison,
     active,
   );
   @override
@@ -6570,7 +6640,9 @@ class GoalRecord extends DataClass implements Insertable<GoalRecord> {
           other.distanceMeters == this.distanceMeters &&
           other.firearmId == this.firearmId &&
           other.ammoLotId == this.ammoLotId &&
-          other.targetPercentage == this.targetPercentage &&
+          other.metric == this.metric &&
+          other.targetValue == this.targetValue &&
+          other.comparison == this.comparison &&
           other.active == this.active);
 }
 
@@ -6580,7 +6652,9 @@ class GoalsCompanion extends UpdateCompanion<GoalRecord> {
   final Value<double> distanceMeters;
   final Value<String?> firearmId;
   final Value<String?> ammoLotId;
-  final Value<double> targetPercentage;
+  final Value<String> metric;
+  final Value<double> targetValue;
+  final Value<String> comparison;
   final Value<bool> active;
   final Value<int> rowid;
   const GoalsCompanion({
@@ -6589,7 +6663,9 @@ class GoalsCompanion extends UpdateCompanion<GoalRecord> {
     this.distanceMeters = const Value.absent(),
     this.firearmId = const Value.absent(),
     this.ammoLotId = const Value.absent(),
-    this.targetPercentage = const Value.absent(),
+    this.metric = const Value.absent(),
+    this.targetValue = const Value.absent(),
+    this.comparison = const Value.absent(),
     this.active = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -6599,20 +6675,26 @@ class GoalsCompanion extends UpdateCompanion<GoalRecord> {
     required double distanceMeters,
     this.firearmId = const Value.absent(),
     this.ammoLotId = const Value.absent(),
-    required double targetPercentage,
+    required String metric,
+    required double targetValue,
+    required String comparison,
     this.active = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        targetProfileVersionedId = Value(targetProfileVersionedId),
        distanceMeters = Value(distanceMeters),
-       targetPercentage = Value(targetPercentage);
+       metric = Value(metric),
+       targetValue = Value(targetValue),
+       comparison = Value(comparison);
   static Insertable<GoalRecord> custom({
     Expression<String>? id,
     Expression<String>? targetProfileVersionedId,
     Expression<double>? distanceMeters,
     Expression<String>? firearmId,
     Expression<String>? ammoLotId,
-    Expression<double>? targetPercentage,
+    Expression<String>? metric,
+    Expression<double>? targetValue,
+    Expression<String>? comparison,
     Expression<bool>? active,
     Expression<int>? rowid,
   }) {
@@ -6623,7 +6705,9 @@ class GoalsCompanion extends UpdateCompanion<GoalRecord> {
       if (distanceMeters != null) 'distance_meters': distanceMeters,
       if (firearmId != null) 'firearm_id': firearmId,
       if (ammoLotId != null) 'ammo_lot_id': ammoLotId,
-      if (targetPercentage != null) 'target_percentage': targetPercentage,
+      if (metric != null) 'metric': metric,
+      if (targetValue != null) 'target_value': targetValue,
+      if (comparison != null) 'comparison': comparison,
       if (active != null) 'active': active,
       if (rowid != null) 'rowid': rowid,
     });
@@ -6635,7 +6719,9 @@ class GoalsCompanion extends UpdateCompanion<GoalRecord> {
     Value<double>? distanceMeters,
     Value<String?>? firearmId,
     Value<String?>? ammoLotId,
-    Value<double>? targetPercentage,
+    Value<String>? metric,
+    Value<double>? targetValue,
+    Value<String>? comparison,
     Value<bool>? active,
     Value<int>? rowid,
   }) {
@@ -6646,7 +6732,9 @@ class GoalsCompanion extends UpdateCompanion<GoalRecord> {
       distanceMeters: distanceMeters ?? this.distanceMeters,
       firearmId: firearmId ?? this.firearmId,
       ammoLotId: ammoLotId ?? this.ammoLotId,
-      targetPercentage: targetPercentage ?? this.targetPercentage,
+      metric: metric ?? this.metric,
+      targetValue: targetValue ?? this.targetValue,
+      comparison: comparison ?? this.comparison,
       active: active ?? this.active,
       rowid: rowid ?? this.rowid,
     );
@@ -6672,8 +6760,14 @@ class GoalsCompanion extends UpdateCompanion<GoalRecord> {
     if (ammoLotId.present) {
       map['ammo_lot_id'] = Variable<String>(ammoLotId.value);
     }
-    if (targetPercentage.present) {
-      map['target_percentage'] = Variable<double>(targetPercentage.value);
+    if (metric.present) {
+      map['metric'] = Variable<String>(metric.value);
+    }
+    if (targetValue.present) {
+      map['target_value'] = Variable<double>(targetValue.value);
+    }
+    if (comparison.present) {
+      map['comparison'] = Variable<String>(comparison.value);
     }
     if (active.present) {
       map['active'] = Variable<bool>(active.value);
@@ -6692,8 +6786,897 @@ class GoalsCompanion extends UpdateCompanion<GoalRecord> {
           ..write('distanceMeters: $distanceMeters, ')
           ..write('firearmId: $firearmId, ')
           ..write('ammoLotId: $ammoLotId, ')
-          ..write('targetPercentage: $targetPercentage, ')
+          ..write('metric: $metric, ')
+          ..write('targetValue: $targetValue, ')
+          ..write('comparison: $comparison, ')
           ..write('active: $active, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SeriesReflectionsTable extends SeriesReflections
+    with TableInfo<$SeriesReflectionsTable, SeriesReflectionRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SeriesReflectionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _seriesIdMeta = const VerificationMeta(
+    'seriesId',
+  );
+  @override
+  late final GeneratedColumn<String> seriesId = GeneratedColumn<String>(
+    'series_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES shooting_series (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _perceivedQualityMeta = const VerificationMeta(
+    'perceivedQuality',
+  );
+  @override
+  late final GeneratedColumn<String> perceivedQuality = GeneratedColumn<String>(
+    'perceived_quality',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contextTagsJsonMeta = const VerificationMeta(
+    'contextTagsJson',
+  );
+  @override
+  late final GeneratedColumn<String> contextTagsJson = GeneratedColumn<String>(
+    'context_tags_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    seriesId,
+    perceivedQuality,
+    contextTagsJson,
+    note,
+    createdAtUtc,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'series_reflections';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SeriesReflectionRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('series_id')) {
+      context.handle(
+        _seriesIdMeta,
+        seriesId.isAcceptableOrUnknown(data['series_id']!, _seriesIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_seriesIdMeta);
+    }
+    if (data.containsKey('perceived_quality')) {
+      context.handle(
+        _perceivedQualityMeta,
+        perceivedQuality.isAcceptableOrUnknown(
+          data['perceived_quality']!,
+          _perceivedQualityMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_perceivedQualityMeta);
+    }
+    if (data.containsKey('context_tags_json')) {
+      context.handle(
+        _contextTagsJsonMeta,
+        contextTagsJson.isAcceptableOrUnknown(
+          data['context_tags_json']!,
+          _contextTagsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtUtcMeta);
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtUtcMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {seriesId};
+  @override
+  SeriesReflectionRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SeriesReflectionRecord(
+      seriesId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}series_id'],
+      )!,
+      perceivedQuality: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}perceived_quality'],
+      )!,
+      contextTagsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}context_tags_json'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $SeriesReflectionsTable createAlias(String alias) {
+    return $SeriesReflectionsTable(attachedDatabase, alias);
+  }
+}
+
+class SeriesReflectionRecord extends DataClass
+    implements Insertable<SeriesReflectionRecord> {
+  final String seriesId;
+  final String perceivedQuality;
+  final String contextTagsJson;
+  final String? note;
+  final DateTime createdAtUtc;
+  final DateTime updatedAtUtc;
+  const SeriesReflectionRecord({
+    required this.seriesId,
+    required this.perceivedQuality,
+    required this.contextTagsJson,
+    this.note,
+    required this.createdAtUtc,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['series_id'] = Variable<String>(seriesId);
+    map['perceived_quality'] = Variable<String>(perceivedQuality);
+    map['context_tags_json'] = Variable<String>(contextTagsJson);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  SeriesReflectionsCompanion toCompanion(bool nullToAbsent) {
+    return SeriesReflectionsCompanion(
+      seriesId: Value(seriesId),
+      perceivedQuality: Value(perceivedQuality),
+      contextTagsJson: Value(contextTagsJson),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      createdAtUtc: Value(createdAtUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory SeriesReflectionRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SeriesReflectionRecord(
+      seriesId: serializer.fromJson<String>(json['seriesId']),
+      perceivedQuality: serializer.fromJson<String>(json['perceivedQuality']),
+      contextTagsJson: serializer.fromJson<String>(json['contextTagsJson']),
+      note: serializer.fromJson<String?>(json['note']),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'seriesId': serializer.toJson<String>(seriesId),
+      'perceivedQuality': serializer.toJson<String>(perceivedQuality),
+      'contextTagsJson': serializer.toJson<String>(contextTagsJson),
+      'note': serializer.toJson<String?>(note),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  SeriesReflectionRecord copyWith({
+    String? seriesId,
+    String? perceivedQuality,
+    String? contextTagsJson,
+    Value<String?> note = const Value.absent(),
+    DateTime? createdAtUtc,
+    DateTime? updatedAtUtc,
+  }) => SeriesReflectionRecord(
+    seriesId: seriesId ?? this.seriesId,
+    perceivedQuality: perceivedQuality ?? this.perceivedQuality,
+    contextTagsJson: contextTagsJson ?? this.contextTagsJson,
+    note: note.present ? note.value : this.note,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  SeriesReflectionRecord copyWithCompanion(SeriesReflectionsCompanion data) {
+    return SeriesReflectionRecord(
+      seriesId: data.seriesId.present ? data.seriesId.value : this.seriesId,
+      perceivedQuality: data.perceivedQuality.present
+          ? data.perceivedQuality.value
+          : this.perceivedQuality,
+      contextTagsJson: data.contextTagsJson.present
+          ? data.contextTagsJson.value
+          : this.contextTagsJson,
+      note: data.note.present ? data.note.value : this.note,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeriesReflectionRecord(')
+          ..write('seriesId: $seriesId, ')
+          ..write('perceivedQuality: $perceivedQuality, ')
+          ..write('contextTagsJson: $contextTagsJson, ')
+          ..write('note: $note, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    seriesId,
+    perceivedQuality,
+    contextTagsJson,
+    note,
+    createdAtUtc,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SeriesReflectionRecord &&
+          other.seriesId == this.seriesId &&
+          other.perceivedQuality == this.perceivedQuality &&
+          other.contextTagsJson == this.contextTagsJson &&
+          other.note == this.note &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class SeriesReflectionsCompanion
+    extends UpdateCompanion<SeriesReflectionRecord> {
+  final Value<String> seriesId;
+  final Value<String> perceivedQuality;
+  final Value<String> contextTagsJson;
+  final Value<String?> note;
+  final Value<DateTime> createdAtUtc;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const SeriesReflectionsCompanion({
+    this.seriesId = const Value.absent(),
+    this.perceivedQuality = const Value.absent(),
+    this.contextTagsJson = const Value.absent(),
+    this.note = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SeriesReflectionsCompanion.insert({
+    required String seriesId,
+    required String perceivedQuality,
+    this.contextTagsJson = const Value.absent(),
+    this.note = const Value.absent(),
+    required DateTime createdAtUtc,
+    required DateTime updatedAtUtc,
+    this.rowid = const Value.absent(),
+  }) : seriesId = Value(seriesId),
+       perceivedQuality = Value(perceivedQuality),
+       createdAtUtc = Value(createdAtUtc),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<SeriesReflectionRecord> custom({
+    Expression<String>? seriesId,
+    Expression<String>? perceivedQuality,
+    Expression<String>? contextTagsJson,
+    Expression<String>? note,
+    Expression<DateTime>? createdAtUtc,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (seriesId != null) 'series_id': seriesId,
+      if (perceivedQuality != null) 'perceived_quality': perceivedQuality,
+      if (contextTagsJson != null) 'context_tags_json': contextTagsJson,
+      if (note != null) 'note': note,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SeriesReflectionsCompanion copyWith({
+    Value<String>? seriesId,
+    Value<String>? perceivedQuality,
+    Value<String>? contextTagsJson,
+    Value<String?>? note,
+    Value<DateTime>? createdAtUtc,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return SeriesReflectionsCompanion(
+      seriesId: seriesId ?? this.seriesId,
+      perceivedQuality: perceivedQuality ?? this.perceivedQuality,
+      contextTagsJson: contextTagsJson ?? this.contextTagsJson,
+      note: note ?? this.note,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (seriesId.present) {
+      map['series_id'] = Variable<String>(seriesId.value);
+    }
+    if (perceivedQuality.present) {
+      map['perceived_quality'] = Variable<String>(perceivedQuality.value);
+    }
+    if (contextTagsJson.present) {
+      map['context_tags_json'] = Variable<String>(contextTagsJson.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeriesReflectionsCompanion(')
+          ..write('seriesId: $seriesId, ')
+          ..write('perceivedQuality: $perceivedQuality, ')
+          ..write('contextTagsJson: $contextTagsJson, ')
+          ..write('note: $note, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CoachFeedbackTable extends CoachFeedback
+    with TableInfo<$CoachFeedbackTable, CoachFeedbackRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CoachFeedbackTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _insightFingerprintMeta =
+      const VerificationMeta('insightFingerprint');
+  @override
+  late final GeneratedColumn<String> insightFingerprint =
+      GeneratedColumn<String>(
+        'insight_fingerprint',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _ruleIdMeta = const VerificationMeta('ruleId');
+  @override
+  late final GeneratedColumn<String> ruleId = GeneratedColumn<String>(
+    'rule_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ruleVersionMeta = const VerificationMeta(
+    'ruleVersion',
+  );
+  @override
+  late final GeneratedColumn<int> ruleVersion = GeneratedColumn<int>(
+    'rule_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _responseMeta = const VerificationMeta(
+    'response',
+  );
+  @override
+  late final GeneratedColumn<String> response = GeneratedColumn<String>(
+    'response',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _snoozedUntilUtcMeta = const VerificationMeta(
+    'snoozedUntilUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> snoozedUntilUtc =
+      GeneratedColumn<DateTime>(
+        'snoozed_until_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    insightFingerprint,
+    ruleId,
+    ruleVersion,
+    response,
+    snoozedUntilUtc,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'coach_feedback';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CoachFeedbackRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('insight_fingerprint')) {
+      context.handle(
+        _insightFingerprintMeta,
+        insightFingerprint.isAcceptableOrUnknown(
+          data['insight_fingerprint']!,
+          _insightFingerprintMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_insightFingerprintMeta);
+    }
+    if (data.containsKey('rule_id')) {
+      context.handle(
+        _ruleIdMeta,
+        ruleId.isAcceptableOrUnknown(data['rule_id']!, _ruleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ruleIdMeta);
+    }
+    if (data.containsKey('rule_version')) {
+      context.handle(
+        _ruleVersionMeta,
+        ruleVersion.isAcceptableOrUnknown(
+          data['rule_version']!,
+          _ruleVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_ruleVersionMeta);
+    }
+    if (data.containsKey('response')) {
+      context.handle(
+        _responseMeta,
+        response.isAcceptableOrUnknown(data['response']!, _responseMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_responseMeta);
+    }
+    if (data.containsKey('snoozed_until_utc')) {
+      context.handle(
+        _snoozedUntilUtcMeta,
+        snoozedUntilUtc.isAcceptableOrUnknown(
+          data['snoozed_until_utc']!,
+          _snoozedUntilUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtUtcMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {insightFingerprint};
+  @override
+  CoachFeedbackRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CoachFeedbackRecord(
+      insightFingerprint: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}insight_fingerprint'],
+      )!,
+      ruleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rule_id'],
+      )!,
+      ruleVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rule_version'],
+      )!,
+      response: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}response'],
+      )!,
+      snoozedUntilUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}snoozed_until_utc'],
+      ),
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $CoachFeedbackTable createAlias(String alias) {
+    return $CoachFeedbackTable(attachedDatabase, alias);
+  }
+}
+
+class CoachFeedbackRecord extends DataClass
+    implements Insertable<CoachFeedbackRecord> {
+  final String insightFingerprint;
+  final String ruleId;
+  final int ruleVersion;
+  final String response;
+  final DateTime? snoozedUntilUtc;
+  final DateTime updatedAtUtc;
+  const CoachFeedbackRecord({
+    required this.insightFingerprint,
+    required this.ruleId,
+    required this.ruleVersion,
+    required this.response,
+    this.snoozedUntilUtc,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['insight_fingerprint'] = Variable<String>(insightFingerprint);
+    map['rule_id'] = Variable<String>(ruleId);
+    map['rule_version'] = Variable<int>(ruleVersion);
+    map['response'] = Variable<String>(response);
+    if (!nullToAbsent || snoozedUntilUtc != null) {
+      map['snoozed_until_utc'] = Variable<DateTime>(snoozedUntilUtc);
+    }
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  CoachFeedbackCompanion toCompanion(bool nullToAbsent) {
+    return CoachFeedbackCompanion(
+      insightFingerprint: Value(insightFingerprint),
+      ruleId: Value(ruleId),
+      ruleVersion: Value(ruleVersion),
+      response: Value(response),
+      snoozedUntilUtc: snoozedUntilUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(snoozedUntilUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory CoachFeedbackRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CoachFeedbackRecord(
+      insightFingerprint: serializer.fromJson<String>(
+        json['insightFingerprint'],
+      ),
+      ruleId: serializer.fromJson<String>(json['ruleId']),
+      ruleVersion: serializer.fromJson<int>(json['ruleVersion']),
+      response: serializer.fromJson<String>(json['response']),
+      snoozedUntilUtc: serializer.fromJson<DateTime?>(json['snoozedUntilUtc']),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'insightFingerprint': serializer.toJson<String>(insightFingerprint),
+      'ruleId': serializer.toJson<String>(ruleId),
+      'ruleVersion': serializer.toJson<int>(ruleVersion),
+      'response': serializer.toJson<String>(response),
+      'snoozedUntilUtc': serializer.toJson<DateTime?>(snoozedUntilUtc),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  CoachFeedbackRecord copyWith({
+    String? insightFingerprint,
+    String? ruleId,
+    int? ruleVersion,
+    String? response,
+    Value<DateTime?> snoozedUntilUtc = const Value.absent(),
+    DateTime? updatedAtUtc,
+  }) => CoachFeedbackRecord(
+    insightFingerprint: insightFingerprint ?? this.insightFingerprint,
+    ruleId: ruleId ?? this.ruleId,
+    ruleVersion: ruleVersion ?? this.ruleVersion,
+    response: response ?? this.response,
+    snoozedUntilUtc: snoozedUntilUtc.present
+        ? snoozedUntilUtc.value
+        : this.snoozedUntilUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  CoachFeedbackRecord copyWithCompanion(CoachFeedbackCompanion data) {
+    return CoachFeedbackRecord(
+      insightFingerprint: data.insightFingerprint.present
+          ? data.insightFingerprint.value
+          : this.insightFingerprint,
+      ruleId: data.ruleId.present ? data.ruleId.value : this.ruleId,
+      ruleVersion: data.ruleVersion.present
+          ? data.ruleVersion.value
+          : this.ruleVersion,
+      response: data.response.present ? data.response.value : this.response,
+      snoozedUntilUtc: data.snoozedUntilUtc.present
+          ? data.snoozedUntilUtc.value
+          : this.snoozedUntilUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CoachFeedbackRecord(')
+          ..write('insightFingerprint: $insightFingerprint, ')
+          ..write('ruleId: $ruleId, ')
+          ..write('ruleVersion: $ruleVersion, ')
+          ..write('response: $response, ')
+          ..write('snoozedUntilUtc: $snoozedUntilUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    insightFingerprint,
+    ruleId,
+    ruleVersion,
+    response,
+    snoozedUntilUtc,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CoachFeedbackRecord &&
+          other.insightFingerprint == this.insightFingerprint &&
+          other.ruleId == this.ruleId &&
+          other.ruleVersion == this.ruleVersion &&
+          other.response == this.response &&
+          other.snoozedUntilUtc == this.snoozedUntilUtc &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class CoachFeedbackCompanion extends UpdateCompanion<CoachFeedbackRecord> {
+  final Value<String> insightFingerprint;
+  final Value<String> ruleId;
+  final Value<int> ruleVersion;
+  final Value<String> response;
+  final Value<DateTime?> snoozedUntilUtc;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const CoachFeedbackCompanion({
+    this.insightFingerprint = const Value.absent(),
+    this.ruleId = const Value.absent(),
+    this.ruleVersion = const Value.absent(),
+    this.response = const Value.absent(),
+    this.snoozedUntilUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CoachFeedbackCompanion.insert({
+    required String insightFingerprint,
+    required String ruleId,
+    required int ruleVersion,
+    required String response,
+    this.snoozedUntilUtc = const Value.absent(),
+    required DateTime updatedAtUtc,
+    this.rowid = const Value.absent(),
+  }) : insightFingerprint = Value(insightFingerprint),
+       ruleId = Value(ruleId),
+       ruleVersion = Value(ruleVersion),
+       response = Value(response),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<CoachFeedbackRecord> custom({
+    Expression<String>? insightFingerprint,
+    Expression<String>? ruleId,
+    Expression<int>? ruleVersion,
+    Expression<String>? response,
+    Expression<DateTime>? snoozedUntilUtc,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (insightFingerprint != null) 'insight_fingerprint': insightFingerprint,
+      if (ruleId != null) 'rule_id': ruleId,
+      if (ruleVersion != null) 'rule_version': ruleVersion,
+      if (response != null) 'response': response,
+      if (snoozedUntilUtc != null) 'snoozed_until_utc': snoozedUntilUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CoachFeedbackCompanion copyWith({
+    Value<String>? insightFingerprint,
+    Value<String>? ruleId,
+    Value<int>? ruleVersion,
+    Value<String>? response,
+    Value<DateTime?>? snoozedUntilUtc,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return CoachFeedbackCompanion(
+      insightFingerprint: insightFingerprint ?? this.insightFingerprint,
+      ruleId: ruleId ?? this.ruleId,
+      ruleVersion: ruleVersion ?? this.ruleVersion,
+      response: response ?? this.response,
+      snoozedUntilUtc: snoozedUntilUtc ?? this.snoozedUntilUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (insightFingerprint.present) {
+      map['insight_fingerprint'] = Variable<String>(insightFingerprint.value);
+    }
+    if (ruleId.present) {
+      map['rule_id'] = Variable<String>(ruleId.value);
+    }
+    if (ruleVersion.present) {
+      map['rule_version'] = Variable<int>(ruleVersion.value);
+    }
+    if (response.present) {
+      map['response'] = Variable<String>(response.value);
+    }
+    if (snoozedUntilUtc.present) {
+      map['snoozed_until_utc'] = Variable<DateTime>(snoozedUntilUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CoachFeedbackCompanion(')
+          ..write('insightFingerprint: $insightFingerprint, ')
+          ..write('ruleId: $ruleId, ')
+          ..write('ruleVersion: $ruleVersion, ')
+          ..write('response: $response, ')
+          ..write('snoozedUntilUtc: $snoozedUntilUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7524,6 +8507,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $GoalsTable goals = $GoalsTable(this);
+  late final $SeriesReflectionsTable seriesReflections =
+      $SeriesReflectionsTable(this);
+  late final $CoachFeedbackTable coachFeedback = $CoachFeedbackTable(this);
   late final $PreferencesTable preferences = $PreferencesTable(this);
   late final $TargetProfilesTable targetProfiles = $TargetProfilesTable(this);
   @override
@@ -7541,6 +8527,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     shotImpacts,
     photoAlignments,
     goals,
+    seriesReflections,
+    coachFeedback,
     preferences,
     targetProfiles,
   ];
@@ -7587,6 +8575,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('photo_alignments', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'shooting_series',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('series_reflections', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -10251,6 +11246,30 @@ final class $$ShootingSeriesTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $SeriesReflectionsTable,
+    List<SeriesReflectionRecord>
+  >
+  _seriesReflectionsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.seriesReflections,
+        aliasName: 'shooting_series__id__series_reflections__series_id',
+      );
+
+  $$SeriesReflectionsTableProcessedTableManager get seriesReflectionsRefs {
+    final manager = $$SeriesReflectionsTableTableManager(
+      $_db,
+      $_db.seriesReflections,
+    ).filter((f) => f.seriesId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _seriesReflectionsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ShootingSeriesTableFilterComposer
@@ -10490,6 +11509,31 @@ class $$ShootingSeriesTableFilterComposer
           }) => $$ShotImpactsTableFilterComposer(
             $db: $db,
             $table: $db.shotImpacts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> seriesReflectionsRefs(
+    Expression<bool> Function($$SeriesReflectionsTableFilterComposer f) f,
+  ) {
+    final $$SeriesReflectionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.seriesReflections,
+      getReferencedColumn: (t) => t.seriesId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SeriesReflectionsTableFilterComposer(
+            $db: $db,
+            $table: $db.seriesReflections,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -10932,6 +11976,32 @@ class $$ShootingSeriesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> seriesReflectionsRefs<T extends Object>(
+    Expression<T> Function($$SeriesReflectionsTableAnnotationComposer a) f,
+  ) {
+    final $$SeriesReflectionsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.seriesReflections,
+          getReferencedColumn: (t) => t.seriesId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$SeriesReflectionsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.seriesReflections,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ShootingSeriesTableTableManager
@@ -10954,6 +12024,7 @@ class $$ShootingSeriesTableTableManager
             bool ammoLotId,
             bool imageAssetsRefs,
             bool shotImpactsRefs,
+            bool seriesReflectionsRefs,
           })
         > {
   $$ShootingSeriesTableTableManager(
@@ -11089,12 +12160,14 @@ class $$ShootingSeriesTableTableManager
                 ammoLotId = false,
                 imageAssetsRefs = false,
                 shotImpactsRefs = false,
+                seriesReflectionsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (imageAssetsRefs) db.imageAssets,
                     if (shotImpactsRefs) db.shotImpacts,
+                    if (seriesReflectionsRefs) db.seriesReflections,
                   ],
                   addJoins:
                       <
@@ -11219,6 +12292,27 @@ class $$ShootingSeriesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (seriesReflectionsRefs)
+                        await $_getPrefetchedData<
+                          SeriesRecord,
+                          $ShootingSeriesTable,
+                          SeriesReflectionRecord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ShootingSeriesTableReferences
+                              ._seriesReflectionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ShootingSeriesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).seriesReflectionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.seriesId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -11246,6 +12340,7 @@ typedef $$ShootingSeriesTableProcessedTableManager =
         bool ammoLotId,
         bool imageAssetsRefs,
         bool shotImpactsRefs,
+        bool seriesReflectionsRefs,
       })
     >;
 typedef $$ImageAssetsTableCreateCompanionBuilder =
@@ -12973,7 +14068,9 @@ typedef $$GoalsTableCreateCompanionBuilder =
       required double distanceMeters,
       Value<String?> firearmId,
       Value<String?> ammoLotId,
-      required double targetPercentage,
+      required String metric,
+      required double targetValue,
+      required String comparison,
       Value<bool> active,
       Value<int> rowid,
     });
@@ -12984,7 +14081,9 @@ typedef $$GoalsTableUpdateCompanionBuilder =
       Value<double> distanceMeters,
       Value<String?> firearmId,
       Value<String?> ammoLotId,
-      Value<double> targetPercentage,
+      Value<String> metric,
+      Value<double> targetValue,
+      Value<String> comparison,
       Value<bool> active,
       Value<int> rowid,
     });
@@ -13051,8 +14150,18 @@ class $$GoalsTableFilterComposer extends Composer<_$AppDatabase, $GoalsTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<double> get targetPercentage => $composableBuilder(
-    column: $table.targetPercentage,
+  ColumnFilters<String> get metric => $composableBuilder(
+    column: $table.metric,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get targetValue => $composableBuilder(
+    column: $table.targetValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get comparison => $composableBuilder(
+    column: $table.comparison,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13132,8 +14241,18 @@ class $$GoalsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get targetPercentage => $composableBuilder(
-    column: $table.targetPercentage,
+  ColumnOrderings<String> get metric => $composableBuilder(
+    column: $table.metric,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get targetValue => $composableBuilder(
+    column: $table.targetValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get comparison => $composableBuilder(
+    column: $table.comparison,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -13211,8 +14330,16 @@ class $$GoalsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<double> get targetPercentage => $composableBuilder(
-    column: $table.targetPercentage,
+  GeneratedColumn<String> get metric =>
+      $composableBuilder(column: $table.metric, builder: (column) => column);
+
+  GeneratedColumn<double> get targetValue => $composableBuilder(
+    column: $table.targetValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get comparison => $composableBuilder(
+    column: $table.comparison,
     builder: (column) => column,
   );
 
@@ -13299,7 +14426,9 @@ class $$GoalsTableTableManager
                 Value<double> distanceMeters = const Value.absent(),
                 Value<String?> firearmId = const Value.absent(),
                 Value<String?> ammoLotId = const Value.absent(),
-                Value<double> targetPercentage = const Value.absent(),
+                Value<String> metric = const Value.absent(),
+                Value<double> targetValue = const Value.absent(),
+                Value<String> comparison = const Value.absent(),
                 Value<bool> active = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => GoalsCompanion(
@@ -13308,7 +14437,9 @@ class $$GoalsTableTableManager
                 distanceMeters: distanceMeters,
                 firearmId: firearmId,
                 ammoLotId: ammoLotId,
-                targetPercentage: targetPercentage,
+                metric: metric,
+                targetValue: targetValue,
+                comparison: comparison,
                 active: active,
                 rowid: rowid,
               ),
@@ -13319,7 +14450,9 @@ class $$GoalsTableTableManager
                 required double distanceMeters,
                 Value<String?> firearmId = const Value.absent(),
                 Value<String?> ammoLotId = const Value.absent(),
-                required double targetPercentage,
+                required String metric,
+                required double targetValue,
+                required String comparison,
                 Value<bool> active = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => GoalsCompanion.insert(
@@ -13328,7 +14461,9 @@ class $$GoalsTableTableManager
                 distanceMeters: distanceMeters,
                 firearmId: firearmId,
                 ammoLotId: ammoLotId,
-                targetPercentage: targetPercentage,
+                metric: metric,
+                targetValue: targetValue,
+                comparison: comparison,
                 active: active,
                 rowid: rowid,
               ),
@@ -13409,6 +14544,598 @@ typedef $$GoalsTableProcessedTableManager =
       (GoalRecord, $$GoalsTableReferences),
       GoalRecord,
       PrefetchHooks Function({bool firearmId, bool ammoLotId})
+    >;
+typedef $$SeriesReflectionsTableCreateCompanionBuilder =
+    SeriesReflectionsCompanion Function({
+      required String seriesId,
+      required String perceivedQuality,
+      Value<String> contextTagsJson,
+      Value<String?> note,
+      required DateTime createdAtUtc,
+      required DateTime updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$SeriesReflectionsTableUpdateCompanionBuilder =
+    SeriesReflectionsCompanion Function({
+      Value<String> seriesId,
+      Value<String> perceivedQuality,
+      Value<String> contextTagsJson,
+      Value<String?> note,
+      Value<DateTime> createdAtUtc,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+final class $$SeriesReflectionsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $SeriesReflectionsTable,
+          SeriesReflectionRecord
+        > {
+  $$SeriesReflectionsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ShootingSeriesTable _seriesIdTable(_$AppDatabase db) => db
+      .shootingSeries
+      .createAlias('series_reflections__series_id__shooting_series__id');
+
+  $$ShootingSeriesTableProcessedTableManager get seriesId {
+    final $_column = $_itemColumn<String>('series_id')!;
+
+    final manager = $$ShootingSeriesTableTableManager(
+      $_db,
+      $_db.shootingSeries,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_seriesIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SeriesReflectionsTableFilterComposer
+    extends Composer<_$AppDatabase, $SeriesReflectionsTable> {
+  $$SeriesReflectionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get perceivedQuality => $composableBuilder(
+    column: $table.perceivedQuality,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get contextTagsJson => $composableBuilder(
+    column: $table.contextTagsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ShootingSeriesTableFilterComposer get seriesId {
+    final $$ShootingSeriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.shootingSeries,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShootingSeriesTableFilterComposer(
+            $db: $db,
+            $table: $db.shootingSeries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SeriesReflectionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SeriesReflectionsTable> {
+  $$SeriesReflectionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get perceivedQuality => $composableBuilder(
+    column: $table.perceivedQuality,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get contextTagsJson => $composableBuilder(
+    column: $table.contextTagsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ShootingSeriesTableOrderingComposer get seriesId {
+    final $$ShootingSeriesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.shootingSeries,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShootingSeriesTableOrderingComposer(
+            $db: $db,
+            $table: $db.shootingSeries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SeriesReflectionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SeriesReflectionsTable> {
+  $$SeriesReflectionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get perceivedQuality => $composableBuilder(
+    column: $table.perceivedQuality,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get contextTagsJson => $composableBuilder(
+    column: $table.contextTagsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => column,
+  );
+
+  $$ShootingSeriesTableAnnotationComposer get seriesId {
+    final $$ShootingSeriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.shootingSeries,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShootingSeriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.shootingSeries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SeriesReflectionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SeriesReflectionsTable,
+          SeriesReflectionRecord,
+          $$SeriesReflectionsTableFilterComposer,
+          $$SeriesReflectionsTableOrderingComposer,
+          $$SeriesReflectionsTableAnnotationComposer,
+          $$SeriesReflectionsTableCreateCompanionBuilder,
+          $$SeriesReflectionsTableUpdateCompanionBuilder,
+          (SeriesReflectionRecord, $$SeriesReflectionsTableReferences),
+          SeriesReflectionRecord,
+          PrefetchHooks Function({bool seriesId})
+        > {
+  $$SeriesReflectionsTableTableManager(
+    _$AppDatabase db,
+    $SeriesReflectionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SeriesReflectionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SeriesReflectionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SeriesReflectionsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> seriesId = const Value.absent(),
+                Value<String> perceivedQuality = const Value.absent(),
+                Value<String> contextTagsJson = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SeriesReflectionsCompanion(
+                seriesId: seriesId,
+                perceivedQuality: perceivedQuality,
+                contextTagsJson: contextTagsJson,
+                note: note,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String seriesId,
+                required String perceivedQuality,
+                Value<String> contextTagsJson = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                required DateTime createdAtUtc,
+                required DateTime updatedAtUtc,
+                Value<int> rowid = const Value.absent(),
+              }) => SeriesReflectionsCompanion.insert(
+                seriesId: seriesId,
+                perceivedQuality: perceivedQuality,
+                contextTagsJson: contextTagsJson,
+                note: note,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SeriesReflectionsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({seriesId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (seriesId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.seriesId,
+                                referencedTable:
+                                    $$SeriesReflectionsTableReferences
+                                        ._seriesIdTable(db),
+                                referencedColumn:
+                                    $$SeriesReflectionsTableReferences
+                                        ._seriesIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SeriesReflectionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SeriesReflectionsTable,
+      SeriesReflectionRecord,
+      $$SeriesReflectionsTableFilterComposer,
+      $$SeriesReflectionsTableOrderingComposer,
+      $$SeriesReflectionsTableAnnotationComposer,
+      $$SeriesReflectionsTableCreateCompanionBuilder,
+      $$SeriesReflectionsTableUpdateCompanionBuilder,
+      (SeriesReflectionRecord, $$SeriesReflectionsTableReferences),
+      SeriesReflectionRecord,
+      PrefetchHooks Function({bool seriesId})
+    >;
+typedef $$CoachFeedbackTableCreateCompanionBuilder =
+    CoachFeedbackCompanion Function({
+      required String insightFingerprint,
+      required String ruleId,
+      required int ruleVersion,
+      required String response,
+      Value<DateTime?> snoozedUntilUtc,
+      required DateTime updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$CoachFeedbackTableUpdateCompanionBuilder =
+    CoachFeedbackCompanion Function({
+      Value<String> insightFingerprint,
+      Value<String> ruleId,
+      Value<int> ruleVersion,
+      Value<String> response,
+      Value<DateTime?> snoozedUntilUtc,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+class $$CoachFeedbackTableFilterComposer
+    extends Composer<_$AppDatabase, $CoachFeedbackTable> {
+  $$CoachFeedbackTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get insightFingerprint => $composableBuilder(
+    column: $table.insightFingerprint,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ruleId => $composableBuilder(
+    column: $table.ruleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get ruleVersion => $composableBuilder(
+    column: $table.ruleVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get response => $composableBuilder(
+    column: $table.response,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get snoozedUntilUtc => $composableBuilder(
+    column: $table.snoozedUntilUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CoachFeedbackTableOrderingComposer
+    extends Composer<_$AppDatabase, $CoachFeedbackTable> {
+  $$CoachFeedbackTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get insightFingerprint => $composableBuilder(
+    column: $table.insightFingerprint,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ruleId => $composableBuilder(
+    column: $table.ruleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get ruleVersion => $composableBuilder(
+    column: $table.ruleVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get response => $composableBuilder(
+    column: $table.response,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get snoozedUntilUtc => $composableBuilder(
+    column: $table.snoozedUntilUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CoachFeedbackTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CoachFeedbackTable> {
+  $$CoachFeedbackTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get insightFingerprint => $composableBuilder(
+    column: $table.insightFingerprint,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get ruleId =>
+      $composableBuilder(column: $table.ruleId, builder: (column) => column);
+
+  GeneratedColumn<int> get ruleVersion => $composableBuilder(
+    column: $table.ruleVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get response =>
+      $composableBuilder(column: $table.response, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get snoozedUntilUtc => $composableBuilder(
+    column: $table.snoozedUntilUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => column,
+  );
+}
+
+class $$CoachFeedbackTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CoachFeedbackTable,
+          CoachFeedbackRecord,
+          $$CoachFeedbackTableFilterComposer,
+          $$CoachFeedbackTableOrderingComposer,
+          $$CoachFeedbackTableAnnotationComposer,
+          $$CoachFeedbackTableCreateCompanionBuilder,
+          $$CoachFeedbackTableUpdateCompanionBuilder,
+          (
+            CoachFeedbackRecord,
+            BaseReferences<
+              _$AppDatabase,
+              $CoachFeedbackTable,
+              CoachFeedbackRecord
+            >,
+          ),
+          CoachFeedbackRecord,
+          PrefetchHooks Function()
+        > {
+  $$CoachFeedbackTableTableManager(_$AppDatabase db, $CoachFeedbackTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CoachFeedbackTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CoachFeedbackTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CoachFeedbackTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> insightFingerprint = const Value.absent(),
+                Value<String> ruleId = const Value.absent(),
+                Value<int> ruleVersion = const Value.absent(),
+                Value<String> response = const Value.absent(),
+                Value<DateTime?> snoozedUntilUtc = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CoachFeedbackCompanion(
+                insightFingerprint: insightFingerprint,
+                ruleId: ruleId,
+                ruleVersion: ruleVersion,
+                response: response,
+                snoozedUntilUtc: snoozedUntilUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String insightFingerprint,
+                required String ruleId,
+                required int ruleVersion,
+                required String response,
+                Value<DateTime?> snoozedUntilUtc = const Value.absent(),
+                required DateTime updatedAtUtc,
+                Value<int> rowid = const Value.absent(),
+              }) => CoachFeedbackCompanion.insert(
+                insightFingerprint: insightFingerprint,
+                ruleId: ruleId,
+                ruleVersion: ruleVersion,
+                response: response,
+                snoozedUntilUtc: snoozedUntilUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CoachFeedbackTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CoachFeedbackTable,
+      CoachFeedbackRecord,
+      $$CoachFeedbackTableFilterComposer,
+      $$CoachFeedbackTableOrderingComposer,
+      $$CoachFeedbackTableAnnotationComposer,
+      $$CoachFeedbackTableCreateCompanionBuilder,
+      $$CoachFeedbackTableUpdateCompanionBuilder,
+      (
+        CoachFeedbackRecord,
+        BaseReferences<_$AppDatabase, $CoachFeedbackTable, CoachFeedbackRecord>,
+      ),
+      CoachFeedbackRecord,
+      PrefetchHooks Function()
     >;
 typedef $$PreferencesTableCreateCompanionBuilder =
     PreferencesCompanion Function({
@@ -13871,6 +15598,10 @@ class $AppDatabaseManager {
       $$PhotoAlignmentsTableTableManager(_db, _db.photoAlignments);
   $$GoalsTableTableManager get goals =>
       $$GoalsTableTableManager(_db, _db.goals);
+  $$SeriesReflectionsTableTableManager get seriesReflections =>
+      $$SeriesReflectionsTableTableManager(_db, _db.seriesReflections);
+  $$CoachFeedbackTableTableManager get coachFeedback =>
+      $$CoachFeedbackTableTableManager(_db, _db.coachFeedback);
   $$PreferencesTableTableManager get preferences =>
       $$PreferencesTableTableManager(_db, _db.preferences);
   $$TargetProfilesTableTableManager get targetProfiles =>

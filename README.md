@@ -7,8 +7,8 @@ internetpermission.
 
 ## Huidige status
 
-Versie `0.3.0` focust op precieze puntplaatsing en robuuste bediening op kleine
-Android-schermen:
+Versie `0.4.0` behoudt de snelle puntplaatsing van 0.3 en voegt lokale,
+verklaarbare analyse en optionele coaching toe:
 
 - lokale bibliotheken voor wapens, kalibers, munitielots, standen en kaarten;
 - bibliotheekitems bekijken, bewerken, dupliceren en veilig verwijderen;
@@ -28,14 +28,26 @@ Android-schermen:
 - handmatig scoren op een getekende kaart of een zelf uitgelijnde kaartfoto;
 - meerdere sessie- en reeksfoto's met een onveranderlijk origineel;
 - compacte Logboekfilters en één geaggregeerde SQLite-query zonder query per rij;
+- groepsanalyse met centroid, bias, extreme spread, mean radius, R50/R90,
+  spreidingsellips, MOA/millirad en target-aware BR50-normalisatie;
+- reproduceerbare potential-scoreanalyse en voorzichtige subgroepsuggesties die
+  nooit treffers of scores wijzigen;
+- coachkaarten volgens `waarneming -> bewijs -> mogelijke verklaringen -> test`,
+  met strikte minimumsteekproeven en lokale feedback;
+- optionele vijfsecondenreflectie, persoonlijke doelen en volledig uit te
+  schakelen coachmodus;
+- een offline drillbibliotheek, A/B-experimentplanner en viziercalculator;
 - systeem/licht/donker met vier lokaal opgeslagen kleurpaletten;
 - CSV, Unicode-PDF met ingebedde fonts en AES-256-GCM/Argon2id-back-up;
-- migratie en back-upcompatibiliteit voor lokale gegevens uit versie 0.1.
-- databaseschema 4 en back-upmanifest 4, met import van v1-, v2- en v3-back-ups.
+- migratie en back-upcompatibiliteit voor lokale gegevens uit versie 0.1;
+- databaseschema 5 en back-upmanifest 5, met import van v1-v4-back-ups.
 
-Er is geen automatische trefferdetectie. De schutter duidt iedere treffer of
-misser expliciet aan; de deterministische score-engine berekent daarna ringwaarde,
-X-count, totaal en percentage. Daardoor blijft iedere score controleerbaar.
+Er is nog geen automatische trefferdetectie in de app. De schutter duidt iedere
+treffer of misser expliciet aan; de deterministische score-engine berekent daarna
+ringwaarde, X-count, totaal en percentage. De repository bevat wel afzonderlijke
+visioncontracten, een fail-closed native onderzoeksbasis en een versleutelde,
+privacyveilige `.scvision`-export. Die onderdelen maken geen score en krijgen pas
+een gebruikersflow nadat de vastgelegde validatiedrempels zijn gehaald.
 
 ## Snel starten
 
@@ -72,6 +84,12 @@ maar geen `INTERNET`, audio-, opslag- of netwerkstatuspermission.
 - `packages/scoring` — deterministische score- en spreidingsberekening.
 - `packages/target_profiles` — officiële, versioned kaartdefinities.
 - `packages/photo_geometry` — reproduceerbare vierpuntsuitlijning en homografie.
+- `packages/analysis` — pure, afgeleide groeps- en cohortanalyse.
+- `packages/coaching` — lokale, bewijsgebonden coachregels zonder generatief model.
+- `packages/training` — versioned drills, experimentplanning en vizierberekening.
+- `packages/vision_api` — immutable onderzoekscontracten voor kandidaten.
+- `packages/vision_research` — versleutelde, opgeschoonde onderzoeks-export.
+- `native/vision_core` — C++/C-ABI/CLI-basis met optionele OpenCV-backend.
 - `docs` — architectuur, scoreregels, back-up en releasebeleid.
 
 ## Belangrijke grens

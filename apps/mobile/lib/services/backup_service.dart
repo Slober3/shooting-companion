@@ -60,11 +60,11 @@ class NormalizedBackupPayload {
   );
 }
 
-/// Converts every supported SCB1 payload to the schema-4 JSON shape.
+/// Converts every supported SCB1 payload to the schema-5 JSON shape.
 class BackupPayloadAdapter {
   const BackupPayloadAdapter._();
 
-  static const currentFormatVersion = 4;
+  static const currentFormatVersion = 5;
   static const _formatName = 'shooting-companion-backup';
 
   static NormalizedBackupPayload normalize({
@@ -84,10 +84,11 @@ class BackupPayloadAdapter {
     }
 
     final normalized = switch (version) {
-      1 => _upgradeV4(_upgradeV2(_upgradeV1(data))),
-      2 => _upgradeV4(_upgradeV2(data)),
-      3 => _upgradeV4(_normalizeV3(data)),
-      _ => _normalizeV4(data),
+      1 => _upgradeV5(_upgradeV4(_upgradeV2(_upgradeV1(data)))),
+      2 => _upgradeV5(_upgradeV4(_upgradeV2(data))),
+      3 => _upgradeV5(_upgradeV4(_normalizeV3(data))),
+      4 => _upgradeV5(_normalizeV4(data)),
+      _ => _normalizeV5(data),
     };
     final sessionCount = _integer(manifest['sessionCount'], 'sessionCount');
     final seriesCount = _integer(manifest['seriesCount'], 'seriesCount');
@@ -124,6 +125,32 @@ class BackupPayloadAdapter {
   static Map<String, dynamic> _normalizeV4(Map<String, dynamic> data) {
     final result = _normalizeV3(data);
     _validateBullReferences(result);
+    return result;
+  }
+
+  static Map<String, dynamic> _normalizeV5(Map<String, dynamic> data) {
+    final result = _normalizeV4(data);
+    result['seriesReflections'] = _table(data, 'seriesReflections');
+    result['coachFeedback'] = _table(data, 'coachFeedback');
+    _validateInsightRelations(result);
+    return result;
+  }
+
+  static Map<String, dynamic> _upgradeV5(Map<String, dynamic> data) {
+    final result = <String, dynamic>{
+      for (final entry in data.entries) entry.key: entry.value,
+    };
+    result['goals'] = (result['goals']! as List).map((value) {
+      final row = Map<String, dynamic>.from(value as Map);
+      final targetPercentage = row.remove('targetPercentage');
+      return row
+        ..['metric'] = 'scorePercentage'
+        ..['targetValue'] = targetPercentage
+        ..['comparison'] = 'atLeast';
+    }).toList();
+    result['seriesReflections'] = <Map<String, dynamic>>[];
+    result['coachFeedback'] = <Map<String, dynamic>>[];
+    _validateInsightRelations(result);
     return result;
   }
 
@@ -217,6 +244,134 @@ class BackupPayloadAdapter {
       }
     }
   }
+
+  static void _validateInsightRelations(Map<String, dynamic> data) {
+    final seriesIds = (data['series']! as List)
+        .map((value) => (value as Map)['id'])
+        .whereType<String>()
+        .toSet();
+    final targetIds = (data['targetProfiles']! as List)
+        .map((value) => (value as Map)['versionedId'])
+        .whereType<String>()
+        .toSet();
+    final firearmIds = (data['firearms']! as List)
+        .map((value) => (value as Map)['id'])
+        .whereType<String>()
+        .toSet();
+    final ammoLotIds = (data['ammoLots']! as List)
+        .map((value) => (value as Map)['id'])
+        .whereType<String>()
+        .toSet();
+
+    for (final value in data['goals']! as List) {
+      final row = value as Map;
+      final targetId = row['targetProfileVersionedId'];
+      final firearmId = row['firearmId'];
+      final ammoLotId = row['ammoLotId'];
+      final distance = row['distanceMeters'];
+      final targetValue = row['targetValue'];
+      if (row['id'] is! String ||
+          targetId is! String ||
+          !targetIds.contains(targetId) ||
+          distance is! num ||
+          !distance.isFinite ||
+          distance <= 0 ||
+          targetValue is! num ||
+          !targetValue.isFinite ||
+          targetValue < 0 ||
+          !_goalMetrics.contains(row['metric']) ||
+          !_goalComparisons.contains(row['comparison']) ||
+          row['active'] is! bool ||
+          (firearmId != null &&
+              (firearmId is! String || !firearmIds.contains(firearmId))) ||
+          (ammoLotId != null &&
+              (ammoLotId is! String || !ammoLotIds.contains(ammoLotId)))) {
+        throw const FormatException(
+          'Persoonlijk doel bevat ongeldige of onbekende referenties.',
+        );
+      }
+    }
+
+    for (final value in data['seriesReflections']! as List) {
+      final row = value as Map;
+      if (row['seriesId'] is! String || !seriesIds.contains(row['seriesId'])) {
+        throw const FormatException(
+          'Reflectie verwijst naar een onbekende reeks.',
+        );
+      }
+      if (!_perceivedQualities.contains(row['perceivedQuality'])) {
+        throw const FormatException('Reflectie bevat een ongeldige ervaring.');
+      }
+      final rawTags = row['contextTagsJson'];
+      Object? decodedTags;
+      try {
+        decodedTags = rawTags is String ? jsonDecode(rawTags) : null;
+      } on FormatException {
+        throw const FormatException('Reflectie bevat ongeldige contexttags.');
+      }
+      if (decodedTags is! List ||
+          decodedTags.length > 3 ||
+          decodedTags.any(
+            (tag) => tag is! String || !_reflectionContextTags.contains(tag),
+          ) ||
+          decodedTags.whereType<String>().toSet().length !=
+              decodedTags.length) {
+        throw const FormatException('Reflectie bevat ongeldige contexttags.');
+      }
+    }
+
+    final feedbackFingerprints = <String>{};
+    for (final value in data['coachFeedback']! as List) {
+      final row = value as Map;
+      final fingerprint = row['insightFingerprint'];
+      final ruleId = row['ruleId'];
+      final ruleVersion = row['ruleVersion'];
+      if (fingerprint is! String ||
+          fingerprint.trim().isEmpty ||
+          !feedbackFingerprints.add(fingerprint) ||
+          ruleId is! String ||
+          ruleId.trim().isEmpty ||
+          ruleVersion is! int ||
+          ruleVersion < 1 ||
+          !_coachFeedbackResponses.contains(row['response'])) {
+        throw const FormatException('Coachfeedback is ongeldig.');
+      }
+    }
+  }
+
+  static const _goalMetrics = {
+    'scorePercentage',
+    'meanRadiusMm',
+    'extremeSpreadMm',
+    'absoluteHorizontalBiasMm',
+    'absoluteVerticalBiasMm',
+    'trainingCount',
+    'completedBr50Bulls',
+    'consistency',
+  };
+
+  static const _goalComparisons = {'atLeast', 'atMost'};
+
+  static const _perceivedQualities = {'good', 'neutral', 'difficult'};
+
+  static const _reflectionContextTags = {
+    'sightPicture',
+    'trigger',
+    'gripOrPosition',
+    'breathing',
+    'followThrough',
+    'tempo',
+    'lightOrWind',
+    'equipment',
+    'perceivedFatigue',
+  };
+
+  static const _coachFeedbackResponses = {
+    'useful',
+    'notUseful',
+    'later',
+    'dismiss',
+  };
 
   static Map<String, dynamic> _upgradeV1(Map<String, dynamic> data) {
     final firearms = _table(data, 'firearms');
@@ -508,6 +663,16 @@ class BackupService {
     final series = _rows(data, 'series', SeriesRecord.fromJson);
     final impacts = _rows(data, 'impacts', ImpactRecord.fromJson);
     final goals = _rows(data, 'goals', GoalRecord.fromJson);
+    final reflections = _rows(
+      data,
+      'seriesReflections',
+      SeriesReflectionRecord.fromJson,
+    );
+    final coachFeedback = _rows(
+      data,
+      'coachFeedback',
+      CoachFeedbackRecord.fromJson,
+    );
     final settings = _rows(data, 'settings', PreferenceRecord.fromJson);
     final imageRecords = _rows(data, 'images', ImageAssetRecord.fromJson);
     final alignments = _rows(
@@ -563,10 +728,12 @@ class BackupService {
         await database.batch((batch) {
           batch.deleteAll(database.photoAlignments);
           batch.deleteAll(database.shotImpacts);
+          batch.deleteAll(database.seriesReflections);
           batch.deleteAll(database.imageAssets);
           batch.deleteAll(database.shootingSeries);
           batch.deleteAll(database.trainingSessions);
           batch.deleteAll(database.goals);
+          batch.deleteAll(database.coachFeedback);
           batch.deleteAll(database.ammoLots);
           batch.deleteAll(database.firearms);
           batch.deleteAll(database.ranges);
@@ -585,6 +752,8 @@ class BackupService {
           batch.insertAll(database.shotImpacts, impacts);
           batch.insertAll(database.photoAlignments, alignments);
           batch.insertAll(database.goals, goals);
+          batch.insertAll(database.seriesReflections, reflections);
+          batch.insertAll(database.coachFeedback, coachFeedback);
           batch.insertAll(database.preferences, settings);
         });
       });
@@ -634,6 +803,8 @@ class BackupService {
     final images = await database.select(database.imageAssets).get();
     final alignments = await database.select(database.photoAlignments).get();
     final goals = await database.select(database.goals).get();
+    final reflections = await database.select(database.seriesReflections).get();
+    final coachFeedback = await database.select(database.coachFeedback).get();
     final settings = await database.select(database.preferences).get();
     final targetProfiles = await database.select(database.targetProfiles).get();
     final createdAt = _now().toUtc();
@@ -669,8 +840,8 @@ class BackupService {
         jsonEncode({
           'format': 'shooting-companion-backup',
           'formatVersion': BackupPayloadAdapter.currentFormatVersion,
-          'appVersion': '0.3.0+6',
-          'databaseSchemaVersion': 4,
+          'appVersion': '0.4.0+1',
+          'databaseSchemaVersion': 5,
           'minimumAppVersion': '0.2.0',
           'createdAtUtc': createdAt.toIso8601String(),
           'sessionCount': sessions.length,
@@ -694,6 +865,8 @@ class BackupService {
           'images': images.map((row) => row.toJson()).toList(),
           'photoAlignments': alignments.map((row) => row.toJson()).toList(),
           'goals': goals.map((row) => row.toJson()).toList(),
+          'seriesReflections': reflections.map((row) => row.toJson()).toList(),
+          'coachFeedback': coachFeedback.map((row) => row.toJson()).toList(),
           'settings': settings.map((row) => row.toJson()).toList(),
           'targetProfiles': targetProfiles.map((row) => row.toJson()).toList(),
         }),

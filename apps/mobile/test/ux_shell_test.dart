@@ -122,6 +122,11 @@ void main() {
 
     expect(find.byType(CompactPageScaffold), findsOneWidget);
     expect(find.text('Bibliotheek'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Back-up en herstel'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Back-up en herstel'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
