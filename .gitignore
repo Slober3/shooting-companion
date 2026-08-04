@@ -1,5 +1,6 @@
 # Local toolchains
 .tooling/
+.local-appdata/
 
 # Flutter / Dart
 .dart_tool/

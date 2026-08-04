@@ -1,0 +1,20 @@
+name: shooting_companion_vision_research
+description: Privacy-safe encrypted research exports for offline target vision.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  crypto: ^3.0.7
+  cryptography: ^2.9.0
+  image: ^4.9.1
+  shooting_companion_domain:
+    path: ../domain
+  shooting_companion_photo_geometry:
+    path: ../photo_geometry
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.26.0

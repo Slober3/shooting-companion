@@ -23,7 +23,7 @@ jobs:
         run: flutter pub get
       - name: Verify generated database
         working-directory: apps/mobile
-        run: dart run build_runner build --delete-conflicting-outputs
+        run: dart run build_runner build
       - name: Reject stale generated database code
         run: git diff --exit-code
       - name: Format
@@ -45,6 +45,7 @@ jobs:
           pdftotext "$PDF" build/test-output/unicode-report.txt
           grep -F "Offline trainingsrapport • gegenereerd" build/test-output/unicode-report.txt
           grep -F "é ë ï ’ – —" build/test-output/unicode-report.txt
+          grep -F "Opstelling é – onderschrift bij de foto" build/test-output/unicode-report.txt
           if grep -F $'\uFFFD' build/test-output/unicode-report.txt; then
             echo "Unicode replacement glyph found in PDF" >&2
             exit 1
@@ -60,8 +61,21 @@ jobs:
       - name: Dart package tests
         shell: bash
         run: |
-          for package in packages/domain packages/target_profiles packages/scoring packages/photo_geometry; do
-            (cd "$package" && dart pub get && dart test)
+          packages=(
+            packages/domain
+            packages/target_profiles
+            packages/scoring
+            packages/photo_geometry
+            packages/analysis
+            packages/coaching
+            packages/training
+            packages/vision_api
+            packages/vision_research
+          )
+          for package in "${packages[@]}"; do
+            echo "::group::$package"
+            (cd "$package" && dart pub get && dart analyze && dart test)
+            echo "::endgroup::"
           done
       - name: Build release APK
         working-directory: apps/mobile
@@ -76,3 +90,37 @@ jobs:
             echo "Forbidden Android permission found in release APK" >&2
             exit 1
           fi
+
+  native-vision-fallback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure geometry-only vision core
+        run: >-
+          cmake -S native/vision_core -B native/vision_core/build_ci
+          -DSC_VISION_ENABLE_OPENCV=OFF
+          -DSC_VISION_BUILD_TESTS=ON
+          -DSC_VISION_WARNINGS_AS_ERRORS=ON
+          -DCMAKE_BUILD_TYPE=Release
+      - name: Build geometry-only vision core
+        run: cmake --build native/vision_core/build_ci --config Release --parallel
+      - name: Test geometry-only vision core
+        run: >-
+          ctest --test-dir native/vision_core/build_ci
+          --build-config Release
+          --output-on-failure
+      - name: Verify honest unsupported CLI result
+        shell: bash
+        run: |
+          RESULT="$(native/vision_core/build_ci/vision_cli analyze \
+            --image native/vision_core/test/fixtures/checkerboard.pgm \
+            --card-width-mm 550 \
+            --card-height-mm 550 \
+            --projectile-diameter-mm 5.6 \
+            --minimum-long-side-px 8)"
+          echo "$RESULT" | jq -e '
+            .status == "unsupported" and
+            .provenance.backend == "geometryOnly" and
+            (.candidateImpacts | length) == 0 and
+            ([.warnings[].code] | index("openCvUnavailable") != null)
+          '

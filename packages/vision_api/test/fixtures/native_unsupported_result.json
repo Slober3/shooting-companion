@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "status": "unsupported",
+  "engineVersion": "vision-core-0.1.0",
+  "modelVersion": null,
+  "provenance": {
+    "backend": "geometryOnly",
+    "abiVersion": 1,
+    "engineVersion": "vision-core-0.1.0",
+    "capabilities": ["imageMetadata", "grayscaleQuality"],
+    "algorithmVersions": {
+      "imageProbe": "image-probe-v1",
+      "quality": "quality-v1"
+    },
+    "analyzedAtUtc": null
+  },
+  "registrationResult": {
+    "status": "unsupported",
+    "orderedNormalizedCorners": [],
+    "homographyMatrix": null,
+    "reprojectionErrorPx": null,
+    "estimatedPerspectiveAngleDegrees": null,
+    "algorithmVersion": null
+  },
+  "qualityAssessment": {
+    "status": "review",
+    "widthPx": 8,
+    "heightPx": 8,
+    "blurScore": 1040400,
+    "contrastScore": 127.5,
+    "darkClippedFraction": 0.5,
+    "brightClippedFraction": 0.5,
+    "issues": [
+      {
+        "code": "underexposed",
+        "severity": "warning",
+        "message": "Een groot deel van het beeld is volledig donker.",
+        "measuredValue": 0.5,
+        "threshold": 0.2
+      },
+      {
+        "code": "overexposed",
+        "severity": "warning",
+        "message": "Een groot deel van het beeld is volledig helder.",
+        "measuredValue": 0.5,
+        "threshold": 0.2
+      }
+    ]
+  },
+  "candidateImpacts": [],
+  "warnings": [
+    {
+      "code": "openCvUnavailable",
+      "message": "Deze build bevat geen OpenCV-backend; registratie en trefferdetectie zijn niet uitgevoerd."
+    },
+    {
+      "code": "candidateDetectionDisabled",
+      "message": "Trefferkandidaten zijn uitgeschakeld omdat geen gevalideerde beeldbackend beschikbaar is."
+    }
+  ],
+  "diagnosticMetrics": {
+    "image_height_px": 8,
+    "image_width_px": 8
+  }
+}
