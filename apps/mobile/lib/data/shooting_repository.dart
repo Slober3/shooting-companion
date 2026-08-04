@@ -19,6 +19,35 @@ class ActiveSessionExistsException implements Exception {
   String toString() => 'Er is al een actieve sessie: $sessionId';
 }
 
+enum LibraryItemKind { cartridge, firearm, ammoLot, range, targetProfile }
+
+class LibraryUsageSummary {
+  const LibraryUsageSummary({
+    this.sessionCount = 0,
+    this.seriesCount = 0,
+    this.goalCount = 0,
+    this.dependentAmmoLotCount = 0,
+  });
+
+  final int sessionCount;
+  final int seriesCount;
+  final int goalCount;
+  final int dependentAmmoLotCount;
+
+  bool get isInUse =>
+      sessionCount > 0 ||
+      seriesCount > 0 ||
+      goalCount > 0 ||
+      dependentAmmoLotCount > 0;
+}
+
+enum LibraryRemovalResult {
+  deleted,
+  archived,
+  blockedBuiltIn,
+  blockedDependency,
+}
+
 class QuickSessionResult {
   const QuickSessionResult({
     required this.sessionId,
@@ -472,14 +501,26 @@ class ShootingRepository {
 
   Stream<List<FirearmRecord>> watchFirearms() => database.watchFirearms();
 
+  Stream<List<FirearmRecord>> watchAllFirearms() => database.watchAllFirearms();
+
   Stream<List<CartridgeRecord>> watchCartridges() => database.watchCartridges();
+
+  Stream<List<CartridgeRecord>> watchAllCartridges() =>
+      database.watchAllCartridges();
 
   Stream<List<AmmoLotRecord>> watchAmmoLots() => database.watchAmmoLots();
 
+  Stream<List<AmmoLotRecord>> watchAllAmmoLots() => database.watchAllAmmoLots();
+
   Stream<List<RangeRecord>> watchRanges() => database.watchRanges();
+
+  Stream<List<RangeRecord>> watchAllRanges() => database.watchAllRanges();
 
   Stream<List<TargetProfileRecord>> watchTargetProfiles() =>
       database.watchTargetProfiles();
+
+  Stream<List<TargetProfileRecord>> watchAllTargetProfiles() =>
+      database.watchAllTargetProfiles();
 
   Future<void> seedDefaults() async {
     await database.batch((batch) {
@@ -492,6 +533,7 @@ class ShootingRepository {
                 name: cartridge.name,
                 projectileDiameterMm: cartridge.projectileDiameterMm,
                 notes: Value(cartridge.notes),
+                builtIn: const Value(true),
               ),
             )
             .toList(),
@@ -527,9 +569,33 @@ class ShootingRepository {
             displayName: profile.displayName,
             validationStatus: profile.validationStatus.name,
             profileJson: profile.toJsonString(),
+            builtIn: const Value(false),
             createdAtUtc: DateTime.now().toUtc(),
           ),
         );
+  }
+
+  Future<String> addCustomCartridge({
+    required String name,
+    required double projectileDiameterMm,
+    String? notes,
+  }) async {
+    if (name.trim().isEmpty || projectileDiameterMm <= 0) {
+      throw ArgumentError('Naam en projectieldiameter zijn verplicht.');
+    }
+    final id = _uuid.v7();
+    await database
+        .into(database.cartridges)
+        .insert(
+          CartridgesCompanion.insert(
+            id: id,
+            name: name.trim(),
+            projectileDiameterMm: projectileDiameterMm,
+            notes: Value(_nullIfBlank(notes)),
+            builtIn: const Value(false),
+          ),
+        );
+    return id;
   }
 
   Future<String> addFirearm({
@@ -608,6 +674,389 @@ class ShootingRepository {
         );
     return id;
   }
+
+  Future<LibraryUsageSummary> getLibraryUsage(
+    LibraryItemKind kind,
+    String id,
+  ) async {
+    Future<int> count(String sql, String value) async {
+      final row = await database
+          .customSelect(sql, variables: [Variable<String>(value)])
+          .getSingle();
+      return (row.data['amount']! as num).toInt();
+    }
+
+    switch (kind) {
+      case LibraryItemKind.cartridge:
+        return LibraryUsageSummary(
+          seriesCount: await count(
+            'SELECT COUNT(*) AS amount FROM shooting_series WHERE cartridge_id = ?',
+            id,
+          ),
+          dependentAmmoLotCount: await count(
+            'SELECT COUNT(*) AS amount FROM ammo_lots WHERE cartridge_id = ?',
+            id,
+          ),
+        );
+      case LibraryItemKind.firearm:
+        return LibraryUsageSummary(
+          seriesCount: await count(
+            'SELECT COUNT(*) AS amount FROM shooting_series WHERE firearm_id = ?',
+            id,
+          ),
+          goalCount: await count(
+            'SELECT COUNT(*) AS amount FROM goals WHERE firearm_id = ?',
+            id,
+          ),
+        );
+      case LibraryItemKind.ammoLot:
+        return LibraryUsageSummary(
+          seriesCount: await count(
+            'SELECT COUNT(*) AS amount FROM shooting_series WHERE ammo_lot_id = ?',
+            id,
+          ),
+          goalCount: await count(
+            'SELECT COUNT(*) AS amount FROM goals WHERE ammo_lot_id = ?',
+            id,
+          ),
+        );
+      case LibraryItemKind.range:
+        return LibraryUsageSummary(
+          sessionCount: await count(
+            'SELECT COUNT(*) AS amount FROM training_sessions WHERE range_id = ?',
+            id,
+          ),
+        );
+      case LibraryItemKind.targetProfile:
+        return LibraryUsageSummary(
+          seriesCount: await count(
+            'SELECT COUNT(*) AS amount FROM shooting_series WHERE target_profile_versioned_id = ?',
+            id,
+          ),
+          goalCount: await count(
+            'SELECT COUNT(*) AS amount FROM goals WHERE target_profile_versioned_id = ?',
+            id,
+          ),
+        );
+    }
+  }
+
+  Future<void> updateFirearm({
+    required String id,
+    required String name,
+    required domain.FirearmType type,
+    String? manufacturer,
+    String? model,
+    String? defaultCartridgeId,
+    String? sightNotes,
+  }) async {
+    if (name.trim().isEmpty) {
+      throw ArgumentError('Een naam is verplicht.');
+    }
+    final changed =
+        await (database.update(
+          database.firearms,
+        )..where((row) => row.id.equals(id))).write(
+          FirearmsCompanion(
+            name: Value(name.trim()),
+            type: Value(type.name),
+            manufacturer: Value(_nullIfBlank(manufacturer)),
+            model: Value(_nullIfBlank(model)),
+            defaultCartridgeId: Value(defaultCartridgeId),
+            sightNotes: Value(_nullIfBlank(sightNotes)),
+          ),
+        );
+    if (changed == 0) {
+      throw StateError('Het wapen kon niet worden bijgewerkt.');
+    }
+  }
+
+  Future<LibraryRemovalResult> removeFirearm(String id) =>
+      database.transaction(() async {
+        final record = await _firearm(id);
+        if (record == null) return LibraryRemovalResult.deleted;
+        final usage = await getLibraryUsage(LibraryItemKind.firearm, id);
+        if (usage.isInUse) {
+          await (database.update(database.firearms)
+                ..where((row) => row.id.equals(id)))
+              .write(const FirearmsCompanion(archived: Value(true)));
+          return LibraryRemovalResult.archived;
+        }
+        await (database.delete(
+          database.firearms,
+        )..where((row) => row.id.equals(id))).go();
+        return LibraryRemovalResult.deleted;
+      });
+
+  Future<void> restoreFirearm(String id) =>
+      (database.update(database.firearms)..where((row) => row.id.equals(id)))
+          .write(const FirearmsCompanion(archived: Value(false)));
+
+  Future<String> duplicateCartridge(String sourceId) async {
+    final source = await _cartridge(sourceId);
+    if (source == null) throw StateError('Het kaliber bestaat niet.');
+    return addCustomCartridge(
+      name: '${source.name} (kopie)',
+      projectileDiameterMm: source.projectileDiameterMm,
+      notes: source.notes,
+    );
+  }
+
+  Future<void> updateCustomCartridge({
+    required String id,
+    required String name,
+    required double projectileDiameterMm,
+    String? notes,
+  }) async {
+    final source = await _cartridge(id);
+    if (source == null) throw StateError('Het kaliber bestaat niet.');
+    if (source.builtIn) {
+      throw StateError('Een ingebouwd kaliber is alleen-lezen.');
+    }
+    if (name.trim().isEmpty || projectileDiameterMm <= 0) {
+      throw ArgumentError('Naam en projectieldiameter zijn verplicht.');
+    }
+    await (database.update(
+      database.cartridges,
+    )..where((row) => row.id.equals(id))).write(
+      CartridgesCompanion(
+        name: Value(name.trim()),
+        projectileDiameterMm: Value(projectileDiameterMm),
+        notes: Value(_nullIfBlank(notes)),
+      ),
+    );
+  }
+
+  Future<LibraryRemovalResult> removeCartridge(
+    String id, {
+    bool archiveDependents = false,
+  }) => database.transaction(() async {
+    final record = await _cartridge(id);
+    if (record == null) return LibraryRemovalResult.deleted;
+    if (record.builtIn) return LibraryRemovalResult.blockedBuiltIn;
+    final usage = await getLibraryUsage(LibraryItemKind.cartridge, id);
+    if (usage.dependentAmmoLotCount > 0 && !archiveDependents) {
+      return LibraryRemovalResult.blockedDependency;
+    }
+    if (usage.isInUse) {
+      await (database.update(database.cartridges)
+            ..where((row) => row.id.equals(id)))
+          .write(const CartridgesCompanion(archived: Value(true)));
+      if (archiveDependents) {
+        await (database.update(database.ammoLots)
+              ..where((row) => row.cartridgeId.equals(id)))
+            .write(const AmmoLotsCompanion(archived: Value(true)));
+      }
+      await (database.update(database.firearms)
+            ..where((row) => row.defaultCartridgeId.equals(id)))
+          .write(const FirearmsCompanion(defaultCartridgeId: Value(null)));
+      return LibraryRemovalResult.archived;
+    }
+    await (database.delete(
+      database.cartridges,
+    )..where((row) => row.id.equals(id))).go();
+    return LibraryRemovalResult.deleted;
+  });
+
+  Future<void> restoreCartridge(String id) async {
+    final record = await _cartridge(id);
+    if (record == null) throw StateError('Het kaliber bestaat niet.');
+    await (database.update(database.cartridges)
+          ..where((row) => row.id.equals(id)))
+        .write(const CartridgesCompanion(archived: Value(false)));
+  }
+
+  Future<void> updateAmmoLot({
+    required String id,
+    required String cartridgeId,
+    required String displayName,
+    String? manufacturer,
+    String? productName,
+    String? lotNumber,
+    double? bulletWeightGrains,
+    String? projectileType,
+    String? notes,
+  }) async {
+    if (displayName.trim().isEmpty) {
+      throw ArgumentError('Een weergavenaam is verplicht.');
+    }
+    await (database.update(
+      database.ammoLots,
+    )..where((row) => row.id.equals(id))).write(
+      AmmoLotsCompanion(
+        cartridgeId: Value(cartridgeId),
+        displayName: Value(displayName.trim()),
+        manufacturer: Value(_nullIfBlank(manufacturer)),
+        productName: Value(_nullIfBlank(productName)),
+        lotNumber: Value(_nullIfBlank(lotNumber)),
+        bulletWeightGrains: Value(bulletWeightGrains),
+        projectileType: Value(_nullIfBlank(projectileType)),
+        notes: Value(_nullIfBlank(notes)),
+      ),
+    );
+  }
+
+  Future<LibraryRemovalResult> removeAmmoLot(String id) =>
+      database.transaction(() async {
+        final record = await _ammoLot(id);
+        if (record == null) return LibraryRemovalResult.deleted;
+        final usage = await getLibraryUsage(LibraryItemKind.ammoLot, id);
+        if (usage.isInUse) {
+          await (database.update(database.ammoLots)
+                ..where((row) => row.id.equals(id)))
+              .write(const AmmoLotsCompanion(archived: Value(true)));
+          return LibraryRemovalResult.archived;
+        }
+        await (database.delete(
+          database.ammoLots,
+        )..where((row) => row.id.equals(id))).go();
+        return LibraryRemovalResult.deleted;
+      });
+
+  Future<void> restoreAmmoLot(String id) => database.transaction(() async {
+    final record = await _ammoLot(id);
+    if (record == null) throw StateError('Het munitieprofiel bestaat niet.');
+    final cartridge = await _cartridge(record.cartridgeId);
+    if (cartridge == null || cartridge.archived) {
+      throw StateError('Herstel eerst het gekoppelde kaliber.');
+    }
+    await (database.update(database.ammoLots)
+          ..where((row) => row.id.equals(id)))
+        .write(const AmmoLotsCompanion(archived: Value(false)));
+  });
+
+  Future<void> updateRange({
+    required String id,
+    required String name,
+    required bool isIndoor,
+    String? locationDescription,
+    List<double> availableDistances = const [],
+    String? notes,
+  }) async {
+    if (name.trim().isEmpty) throw ArgumentError('Een naam is verplicht.');
+    await (database.update(
+      database.ranges,
+    )..where((row) => row.id.equals(id))).write(
+      RangesCompanion(
+        name: Value(name.trim()),
+        isIndoor: Value(isIndoor),
+        locationDescription: Value(_nullIfBlank(locationDescription)),
+        availableDistancesJson: Value(jsonEncode(availableDistances)),
+        notes: Value(_nullIfBlank(notes)),
+      ),
+    );
+  }
+
+  Future<LibraryRemovalResult> removeRange(String id) =>
+      database.transaction(() async {
+        final record = await _range(id);
+        if (record == null) return LibraryRemovalResult.deleted;
+        final usage = await getLibraryUsage(LibraryItemKind.range, id);
+        if (usage.isInUse) {
+          await (database.update(database.ranges)
+                ..where((row) => row.id.equals(id)))
+              .write(const RangesCompanion(archived: Value(true)));
+          return LibraryRemovalResult.archived;
+        }
+        await (database.delete(
+          database.ranges,
+        )..where((row) => row.id.equals(id))).go();
+        return LibraryRemovalResult.deleted;
+      });
+
+  Future<void> restoreRange(String id) =>
+      (database.update(database.ranges)..where((row) => row.id.equals(id)))
+          .write(const RangesCompanion(archived: Value(false)));
+
+  Future<String> duplicateTargetProfile(String sourceVersionedId) async {
+    final source = await _targetProfile(sourceVersionedId);
+    if (source == null) throw StateError('De doelkaart bestaat niet.');
+    final profile = domain.TargetProfile.fromJsonString(source.profileJson);
+    final duplicate = _copyTargetProfile(
+      profile,
+      profileId: _uuid.v7(),
+      profileVersion: 1,
+      displayName: '${profile.displayName} (kopie)',
+    );
+    await addCustomTargetProfile(duplicate);
+    return duplicate.versionedId;
+  }
+
+  Future<String> saveCustomTargetEdit(
+    String sourceVersionedId,
+    domain.TargetProfile edited,
+  ) => database.transaction(() async {
+    final source = await _targetProfile(sourceVersionedId);
+    if (source == null) throw StateError('De doelkaart bestaat niet.');
+    if (source.builtIn) {
+      throw StateError('Een ingebouwde doelkaart is alleen-lezen.');
+    }
+    final usage = await getLibraryUsage(
+      LibraryItemKind.targetProfile,
+      sourceVersionedId,
+    );
+    if (!usage.isInUse) {
+      final preserved = _copyTargetProfile(
+        edited,
+        profileId: source.profileId,
+        profileVersion: source.profileVersion,
+      );
+      await (database.update(
+        database.targetProfiles,
+      )..where((row) => row.versionedId.equals(sourceVersionedId))).write(
+        TargetProfilesCompanion(
+          displayName: Value(preserved.displayName),
+          validationStatus: Value(preserved.validationStatus.name),
+          profileJson: Value(preserved.toJsonString()),
+        ),
+      );
+      return sourceVersionedId;
+    }
+    final maxVersion = await database
+        .customSelect(
+          'SELECT MAX(profile_version) AS version FROM target_profiles WHERE profile_id = ?',
+          variables: [Variable<String>(source.profileId)],
+        )
+        .getSingle();
+    final nextVersion =
+        ((maxVersion.data['version'] as num?)?.toInt() ?? 0) + 1;
+    final versioned = _copyTargetProfile(
+      edited,
+      profileId: source.profileId,
+      profileVersion: nextVersion,
+    );
+    await (database.update(database.targetProfiles)
+          ..where((row) => row.versionedId.equals(sourceVersionedId)))
+        .write(const TargetProfilesCompanion(archived: Value(true)));
+    await addCustomTargetProfile(versioned);
+    return versioned.versionedId;
+  });
+
+  Future<LibraryRemovalResult> removeTargetProfile(String versionedId) =>
+      database.transaction(() async {
+        final record = await _targetProfile(versionedId);
+        if (record == null) return LibraryRemovalResult.deleted;
+        if (record.builtIn) return LibraryRemovalResult.blockedBuiltIn;
+        final usage = await getLibraryUsage(
+          LibraryItemKind.targetProfile,
+          versionedId,
+        );
+        if (usage.isInUse) {
+          await (database.update(database.targetProfiles)
+                ..where((row) => row.versionedId.equals(versionedId)))
+              .write(const TargetProfilesCompanion(archived: Value(true)));
+          return LibraryRemovalResult.archived;
+        }
+        await (database.delete(
+          database.targetProfiles,
+        )..where((row) => row.versionedId.equals(versionedId))).go();
+        return LibraryRemovalResult.deleted;
+      });
+
+  Future<void> restoreTargetProfile(String versionedId) =>
+      (database.update(database.targetProfiles)
+            ..where((row) => row.versionedId.equals(versionedId)))
+          .write(const TargetProfilesCompanion(archived: Value(false)));
 
   Future<QuickSessionResult> startQuickSession({SeriesDefaults? defaults}) =>
       database.transaction(() async {
@@ -1609,6 +2058,36 @@ class ShootingRepository {
             ..limit(1))
           .getSingleOrNull();
 
+  Future<FirearmRecord?> _firearm(String id) =>
+      (database.select(database.firearms)
+            ..where((row) => row.id.equals(id))
+            ..limit(1))
+          .getSingleOrNull();
+
+  Future<CartridgeRecord?> _cartridge(String id) =>
+      (database.select(database.cartridges)
+            ..where((row) => row.id.equals(id))
+            ..limit(1))
+          .getSingleOrNull();
+
+  Future<AmmoLotRecord?> _ammoLot(String id) =>
+      (database.select(database.ammoLots)
+            ..where((row) => row.id.equals(id))
+            ..limit(1))
+          .getSingleOrNull();
+
+  Future<RangeRecord?> _range(String id) =>
+      (database.select(database.ranges)
+            ..where((row) => row.id.equals(id))
+            ..limit(1))
+          .getSingleOrNull();
+
+  Future<TargetProfileRecord?> _targetProfile(String versionedId) =>
+      (database.select(database.targetProfiles)
+            ..where((row) => row.versionedId.equals(versionedId))
+            ..limit(1))
+          .getSingleOrNull();
+
   Future<SeriesRecord?> _series(String id) =>
       (database.select(database.shootingSeries)
             ..where((row) => row.id.equals(id))
@@ -1682,6 +2161,28 @@ class ShootingRepository {
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 }
+
+domain.TargetProfile _copyTargetProfile(
+  domain.TargetProfile source, {
+  required String profileId,
+  required int profileVersion,
+  String? displayName,
+}) => domain.TargetProfile(
+  schemaVersion: source.schemaVersion,
+  profileId: profileId,
+  profileVersion: profileVersion,
+  displayName: displayName ?? source.displayName,
+  authority: source.authority,
+  rulesEdition: source.rulesEdition,
+  physicalCardWidthMm: source.physicalCardWidthMm,
+  physicalCardHeightMm: source.physicalCardHeightMm,
+  rings: source.rings,
+  innerTenDiameterMm: source.innerTenDiameterMm,
+  blackOuterDiameterMm: source.blackOuterDiameterMm,
+  lineThicknessMm: source.lineThicknessMm,
+  lineBreakingRule: source.lineBreakingRule,
+  validationStatus: source.validationStatus,
+);
 
 DateTime _nextSqliteSecond(DateTime value) {
   final seconds = value.toUtc().millisecondsSinceEpoch ~/ 1000;

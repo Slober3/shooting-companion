@@ -10,7 +10,7 @@ import 'package:shooting_companion/data/app_database.dart';
 import 'package:shooting_companion/services/backup_service.dart';
 
 void main() {
-  group('BackupPayloadAdapter v1 -> v2', () {
+  group('BackupPayloadAdapter v1/v2 -> v3', () {
     test('uses impact multiplicity for actual count and ignores scans', () {
       final data = _v1Data(
         expectedShots: 99,
@@ -74,7 +74,7 @@ void main() {
     test('rejects future versions and inconsistent record counts', () {
       expect(
         () => BackupPayloadAdapter.normalize(
-          manifest: _manifest(version: 3),
+          manifest: _manifest(version: 4),
           data: _v1Data(expectedShots: 1),
         ),
         throwsFormatException,
@@ -126,7 +126,7 @@ void main() {
   });
 
   test(
-    'SCB1 v2 roundtrip preserves draft, media, alignment and settings',
+    'SCB1 v3 roundtrip preserves library state, draft, media and settings',
     () async {
       final workspace = await Directory.systemTemp.createTemp(
         'shooting-companion-backup-test-',
@@ -156,6 +156,8 @@ void main() {
               id: Value('cartridge-1'),
               name: Value('.22 test'),
               projectileDiameterMm: Value(5.6),
+              builtIn: Value(false),
+              archived: Value(true),
             ),
           );
       await database
@@ -168,6 +170,7 @@ void main() {
               displayName: 'Synthetische zevenring',
               validationStatus: 'experimental',
               profileJson: targetJson,
+              archived: const Value(true),
               createdAtUtc: now,
             ),
           );
@@ -273,7 +276,7 @@ void main() {
         backup,
         'test-password-123',
       );
-      expect(inspected.formatVersion, 2);
+      expect(inspected.formatVersion, 3);
       expect(inspected.sessionCount, 1);
       expect(inspected.seriesCount, 1);
       expect(inspected.imageCount, 1);
@@ -286,7 +289,7 @@ void main() {
         backup,
         'test-password-123',
       );
-      expect(restored.summary.formatVersion, 2);
+      expect(restored.summary.formatVersion, 3);
       expect(
         await database.select(database.trainingSessions).get(),
         hasLength(1),
@@ -312,6 +315,14 @@ void main() {
       expect(
         (await database.select(database.preferences).get()).single.value,
         'dark',
+      );
+      final restoredCartridge =
+          (await database.select(database.cartridges).get()).single;
+      expect(restoredCartridge.builtIn, isFalse);
+      expect(restoredCartridge.archived, isTrue);
+      expect(
+        (await database.select(database.targetProfiles).get()).single.archived,
+        isTrue,
       );
     },
   );

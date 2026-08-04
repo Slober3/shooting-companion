@@ -155,7 +155,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
 
   Future<void> _editSession(SessionDetail detail) async {
     final ranges =
-        ref.read(rangesProvider).valueOrNull ?? const <RangeRecord>[];
+        ref.read(allRangesProvider).valueOrNull ?? const <RangeRecord>[];
     final values = await showSessionEditSheet(
       context: context,
       session: detail.session,
@@ -424,7 +424,7 @@ class _SessionBody extends ConsumerWidget {
     final session = detail.session;
     final formatter = DateFormat('EEEE d MMMM yyyy · HH:mm', 'nl_BE');
     final ranges =
-        ref.watch(rangesProvider).valueOrNull ?? const <RangeRecord>[];
+        ref.watch(allRangesProvider).valueOrNull ?? const <RangeRecord>[];
     final range = ranges
         .where((item) => item.id == session.rangeId)
         .firstOrNull;
@@ -446,11 +446,7 @@ class _SessionBody extends ConsumerWidget {
                     formatter.format(session.startedAtUtc.toLocal()),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  Text(
-                    session.status == domain.SessionStatus.active.name
-                        ? 'Actief${range == null ? '' : ' · ${range.name}'}'
-                        : 'Beëindigd${range == null ? '' : ' · ${range.name}'}',
-                  ),
+                  if (range != null) Text(range.name),
                 ],
               ),
             ),

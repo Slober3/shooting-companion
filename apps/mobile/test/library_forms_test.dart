@@ -51,7 +51,7 @@ void main() {
       expect(tester.takeException(), isNull, reason: 'wapenformulier');
 
       final saveButton = find.widgetWithText(FilledButton, 'Bewaren');
-      expect(find.text('Wapenprofiel'), findsOneWidget);
+      expect(find.text('Wapen toevoegen'), findsOneWidget);
       expect(saveButton, findsOneWidget);
       expect(tester.getBottomRight(saveButton).dy, lessThanOrEqualTo(640 - 48));
 
@@ -119,10 +119,31 @@ void main() {
       await tester.tap(find.byTooltip('$category toevoegen'));
       await tester.pumpAndSettle();
 
+      if (category == 'Munitie') {
+        final choice = find.widgetWithText(FilledButton, 'Munitieprofiel');
+        await tester.scrollUntilVisible(
+          choice,
+          100,
+          scrollable: find.byType(Scrollable).last,
+        );
+        await tester.ensureVisible(choice);
+        await tester.pump();
+        await tester.tap(choice);
+        await tester.pumpAndSettle();
+      }
+
       expect(tester.takeException(), isNull, reason: '$category-formulier');
-      await tester.tap(find.byTooltip('Sluiten'));
+      expect(
+        find.text(switch (category) {
+          'Munitie' => 'Munitieprofiel toevoegen',
+          'Schietstanden' => 'Schietstand toevoegen',
+          _ => 'Eigen ringkaart',
+        }),
+        findsOneWidget,
+      );
+      await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
-      await tester.pageBack();
+      await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
     }
 
@@ -224,7 +245,7 @@ void main() {
       find.bySemanticsLabel(RegExp('Voorbeeld van Clubkaart')),
       findsOneWidget,
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Profiel maken'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Profiel bewaren'));
     await tester.pumpAndSettle();
 
     final profiles = await database.select(database.targetProfiles).get();

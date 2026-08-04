@@ -36,6 +36,14 @@ void main() {
     expect(save, findsOneWidget);
     expect(tester.getBottomRight(save).dy, lessThanOrEqualTo(640 - 48));
     expect(tester.takeException(), isNull);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Notities'),
+      'Bewaarde wijziging',
+    );
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(find.text('Sessie wijzigen'), findsOneWidget);
+    expect(find.text('Wijzigingen niet bewaren?'), findsNothing);
     await _disposeTree(tester);
   });
 

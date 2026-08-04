@@ -28,6 +28,16 @@ Drift rows or Flutter widgets.
 6. Confirm and edit replace impacts and aggregates inside one transaction.
 7. Analytics read confirmed series only; drafts remain resumable.
 
+## Library lifecycle
+
+Active selection streams exclude archived records. Historical detail, filters,
+exports and reports use all-record streams so names remain resolvable. Removing
+an unused custom item hard-deletes it; removing a referenced item archives it in
+the same transaction as its usage check. Built-in cartridges and official ISSF
+targets are repository-protected and can only be duplicated. Editing a used
+custom target creates a new `profileVersion`; confirmed series retain their
+original target JSON snapshot and geometry.
+
 ## Precision viewport
 
 `TransformableScoringViewport` is the single coordinate boundary for drawn
@@ -55,4 +65,4 @@ bundled locally so report generation remains offline and Unicode-safe.
 - Database: Drift `schemaVersion` and explicit migrations.
 - Target: `profileId@profileVersion`; snapshots are stored per series.
 - Photo alignment: algorithm version stored with corners and matrix.
-- Backup: binary `SCB1` container with a versioned manifest; v1 stays importable.
+- Backup: binary `SCB1` container with manifest v3; v1 and v2 stay importable.

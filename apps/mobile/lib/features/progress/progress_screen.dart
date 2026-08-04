@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../data/app_database.dart';
 import '../../widgets/compact_page_scaffold.dart';
+import '../../widgets/app_select_field.dart';
 import '../../widgets/responsive_metric_grid.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
 
@@ -24,9 +25,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     // A session update invalidates the FutureBuilder below without introducing
     // an app-wide analytics cache.
     ref.watch(sessionsProvider);
-    final targets = ref.watch(targetProfilesProvider).valueOrNull ?? const [];
-    final firearms = ref.watch(firearmsProvider).valueOrNull ?? const [];
-    final ammoLots = ref.watch(ammoLotsProvider).valueOrNull ?? const [];
+    final targets =
+        ref.watch(allTargetProfilesProvider).valueOrNull ?? const [];
+    final firearms = ref.watch(allFirearmsProvider).valueOrNull ?? const [];
+    final ammoLots = ref.watch(allAmmoLotsProvider).valueOrNull ?? const [];
 
     return CompactPageScaffold(
       title: 'Analyse',
@@ -461,13 +463,13 @@ class _FilterSheetState extends State<_FilterSheet> {
     body: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DropdownButtonFormField<_AnalysisPeriod>(
+        AppSelectField<_AnalysisPeriod>(
+          key: ValueKey(filters.period),
+          label: 'Periode',
           initialValue: filters.period,
-          isExpanded: true,
-          decoration: const InputDecoration(labelText: 'Periode'),
-          items: [
+          options: [
             for (final period in _AnalysisPeriod.values)
-              DropdownMenuItem(value: period, child: Text(period.label)),
+              AppSelectOption(value: period, label: period.label),
           ],
           onChanged: (value) =>
               setState(() => filters = filters.copyWith(period: value)),
@@ -550,14 +552,14 @@ class _NullableDropdown<T> extends StatelessWidget {
   final ValueChanged<T?> onChanged;
 
   @override
-  Widget build(BuildContext context) => DropdownButtonFormField<T>(
+  Widget build(BuildContext context) => AppSelectField<T?>(
+    key: ValueKey(value),
+    label: label,
     initialValue: value,
-    isExpanded: true,
-    decoration: InputDecoration(labelText: label),
-    items: [
-      DropdownMenuItem<T>(value: null, child: const Text('Alle')),
+    options: [
+      AppSelectOption<T?>(value: null, label: 'Alle'),
       for (final entry in items.entries)
-        DropdownMenuItem<T>(value: entry.key, child: Text(entry.value)),
+        AppSelectOption<T?>(value: entry.key, label: entry.value),
     ],
     onChanged: onChanged,
   );

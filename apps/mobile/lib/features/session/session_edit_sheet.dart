@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../data/app_database.dart';
+import '../../widgets/app_form_scaffold.dart';
+import '../../widgets/app_multiline_field.dart';
+import '../../widgets/app_select_field.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
 
 class SessionEditValues {
@@ -23,9 +26,11 @@ Future<SessionEditValues?> showSessionEditSheet({
   required BuildContext context,
   required SessionRecord session,
   required List<RangeRecord> ranges,
-}) => showSafeModalSheet<SessionEditValues>(
-  context: context,
-  builder: (_) => _SessionEditSheet(session: session, ranges: ranges),
+}) => Navigator.of(context).push<SessionEditValues>(
+  MaterialPageRoute(
+    fullscreenDialog: true,
+    builder: (_) => _SessionEditSheet(session: session, ranges: ranges),
+  ),
 );
 
 class _SessionEditSheet extends StatefulWidget {
@@ -45,6 +50,7 @@ class _SessionEditSheetState extends State<_SessionEditSheet> {
   late final TextEditingController _goal;
   late final TextEditingController _conditions;
   late final TextEditingController _notes;
+  var _submitted = false;
 
   @override
   void initState() {
@@ -54,7 +60,19 @@ class _SessionEditSheetState extends State<_SessionEditSheet> {
     _goal = TextEditingController(text: widget.session.trainingGoal);
     _conditions = TextEditingController(text: widget.session.conditions);
     _notes = TextEditingController(text: widget.session.notes);
+    _goal.addListener(_changed);
+    _conditions.addListener(_changed);
+    _notes.addListener(_changed);
   }
+
+  void _changed() => setState(() {});
+
+  bool get _dirty =>
+      _startedAt != widget.session.startedAtUtc.toLocal() ||
+      _rangeId != widget.session.rangeId ||
+      _nullable(_goal.text) != widget.session.trainingGoal ||
+      _nullable(_conditions.text) != widget.session.conditions ||
+      _nullable(_notes.text) != widget.session.notes;
 
   @override
   void dispose() {
@@ -66,17 +84,18 @@ class _SessionEditSheetState extends State<_SessionEditSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: SafeSheetScaffold(
-        title: 'Sessie bewerken',
-        actions: [
-          FilledButton(
-            onPressed: _submit,
-            child: const Text('Wijzigingen bewaren'),
-          ),
-        ],
-        body: Column(
+    return AppFormScaffold(
+      title: 'Sessie bewerken',
+      dirty: _dirty && !_submitted,
+      actions: [
+        FilledButton(
+          onPressed: _submit,
+          child: const Text('Wijzigingen bewaren'),
+        ),
+      ],
+      body: Form(
+        key: _formKey,
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             AdaptiveFormRow(
@@ -102,46 +121,51 @@ class _SessionEditSheetState extends State<_SessionEditSheet> {
               ],
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String?>(
+            AppSelectField<String?>(
+              label: 'Schietstand',
               initialValue: _rangeId,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Schietstand'),
-              items: [
-                const DropdownMenuItem<String?>(
+              options: [
+                const AppSelectOption<String?>(
                   value: null,
-                  child: Text('Niet opgegeven'),
+                  label: 'Niet opgegeven',
                 ),
                 ...widget.ranges.map(
-                  (range) => DropdownMenuItem<String?>(
+                  (range) => AppSelectOption<String?>(
                     value: range.id,
-                    child: Text(range.name, overflow: TextOverflow.ellipsis),
+                    label: range.name,
                   ),
                 ),
               ],
               onChanged: (value) => setState(() => _rangeId = value),
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _goal,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Trainingsdoel'),
-              validator: (value) => _maximumLength(value, 160),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _conditions,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Omstandigheden'),
-              validator: (value) => _maximumLength(value, 240),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
+            AppMultilineField(
               controller: _notes,
-              minLines: 3,
-              maxLines: 6,
-              textInputAction: TextInputAction.newline,
-              decoration: const InputDecoration(labelText: 'Notities'),
+              label: 'Notities',
+              hint: 'Voeg later observaties of aandachtspunten toe',
               validator: (value) => _maximumLength(value, 2000),
+            ),
+            const SizedBox(height: 24),
+            ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              title: const Text('Meer details'),
+              children: [
+                AppMultilineField(
+                  controller: _goal,
+                  label: 'Trainingsdoel',
+                  minLines: 2,
+                  maxLines: 4,
+                  validator: (value) => _maximumLength(value, 160),
+                ),
+                const SizedBox(height: 12),
+                AppMultilineField(
+                  controller: _conditions,
+                  label: 'Omstandigheden',
+                  minLines: 2,
+                  maxLines: 4,
+                  validator: (value) => _maximumLength(value, 240),
+                ),
+              ],
             ),
           ],
         ),
@@ -185,8 +209,11 @@ class _SessionEditSheetState extends State<_SessionEditSheet> {
     });
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    setState(() => _submitted = true);
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
     Navigator.pop(
       context,
       SessionEditValues(

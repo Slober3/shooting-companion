@@ -116,7 +116,9 @@ class SafeSheetScaffold extends StatelessWidget {
               ),
             ),
             Flexible(
-              child: Center(
+              fit: FlexFit.loose,
+              child: Align(
+                alignment: Alignment.topCenter,
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: maxContentWidth),
                   child: SingleChildScrollView(
@@ -129,7 +131,7 @@ class SafeSheetScaffold extends StatelessWidget {
                 ),
               ),
             ),
-            SafeBottomActionBar(actions: actions),
+            if (actions.isNotEmpty) SafeBottomActionBar(actions: actions),
           ],
         ),
       ),

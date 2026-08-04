@@ -7,6 +7,7 @@ import 'package:shooting_companion_target_profiles/target_profiles.dart';
 
 import 'generated/schema/schema.dart';
 import 'generated/schema/schema_v1.dart' as v1;
+import 'generated/schema/schema_v2.dart' as v2;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -16,17 +17,17 @@ void main() {
     verifier = SchemaVerifier(GeneratedHelper());
   });
 
-  test('empty v1 schema migrates exactly to v2', () async {
+  test('empty v1 schema migrates exactly to v3', () async {
     final schema = await verifier.schemaAt(1);
     final database = AppDatabase.forTesting(schema.newConnection());
 
-    await verifier.migrateAndValidate(database, 2);
+    await verifier.migrateAndValidate(database, 3);
 
     await database.close();
     schema.close();
   });
 
-  test('v1 sessions, impacts and photos survive the v2 migration', () async {
+  test('v1 sessions, impacts and photos survive the v3 migration', () async {
     final schema = await verifier.schemaAt(1);
     final old = v1.DatabaseAtV1(schema.newConnection());
     final timestamp =
@@ -134,7 +135,7 @@ void main() {
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 2);
+    await verifier.migrateAndValidate(database, 3);
 
     final session = await database
         .select(database.trainingSessions)
@@ -227,7 +228,7 @@ void main() {
       await old.close();
 
       final database = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(database, 2);
+      await verifier.migrateAndValidate(database, 3);
 
       final migrated = await database
           .select(database.shootingSeries)
@@ -240,4 +241,52 @@ void main() {
       schema.close();
     },
   );
+
+  test('v2 library data migrates to active built-ins in v3', () async {
+    final schema = await verifier.schemaAt(2);
+    final old = v2.DatabaseAtV2(schema.newConnection());
+
+    await old
+        .into(old.cartridges)
+        .insert(
+          v2.CartridgesCompanion.insert(
+            id: 'legacy-cartridge',
+            name: 'Legacy kaliber',
+            projectileDiameterMm: 5.6,
+          ),
+        );
+    await old
+        .into(old.ammoLots)
+        .insert(
+          v2.AmmoLotsCompanion.insert(
+            id: 'legacy-ammo',
+            cartridgeId: 'legacy-cartridge',
+            displayName: 'Legacy munitie',
+          ),
+        );
+    await old
+        .into(old.ranges)
+        .insert(
+          v2.RangesCompanion.insert(id: 'legacy-range', name: 'Legacy stand'),
+        );
+    await old.close();
+
+    final database = AppDatabase.forTesting(schema.newConnection());
+    await verifier.migrateAndValidate(database, 3);
+
+    final cartridge = await database.select(database.cartridges).getSingle();
+    final ammo = await database.select(database.ammoLots).getSingle();
+    final range = await database.select(database.ranges).getSingle();
+    expect(cartridge.builtIn, isTrue);
+    expect(cartridge.archived, isFalse);
+    expect(ammo.archived, isFalse);
+    expect(range.archived, isFalse);
+    expect(
+      await database.customSelect('PRAGMA foreign_key_check').get(),
+      isEmpty,
+    );
+
+    await database.close();
+    schema.close();
+  });
 }

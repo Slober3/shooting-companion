@@ -26,6 +26,8 @@ class Cartridges extends Table {
   TextColumn get name => text()();
   RealColumn get projectileDiameterMm => real()();
   TextColumn get notes => text().nullable()();
+  BoolColumn get builtIn => boolean().withDefault(const Constant(false))();
+  BoolColumn get archived => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -42,6 +44,7 @@ class AmmoLots extends Table {
   RealColumn get bulletWeightGrains => real().nullable()();
   TextColumn get projectileType => text().nullable()();
   TextColumn get notes => text().nullable()();
+  BoolColumn get archived => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -56,6 +59,7 @@ class Ranges extends Table {
   TextColumn get availableDistancesJson =>
       text().withDefault(const Constant('[]'))();
   TextColumn get notes => text().nullable()();
+  BoolColumn get archived => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -206,6 +210,7 @@ class TargetProfiles extends Table {
   TextColumn get validationStatus => text()();
   TextColumn get profileJson => text()();
   BoolColumn get builtIn => boolean().withDefault(const Constant(false))();
+  BoolColumn get archived => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAtUtc => dateTime()();
 
   @override
@@ -234,7 +239,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -245,6 +250,9 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (migrator, from, to) async {
       if (from == 1 && to >= 2) {
         await _migrateFromV1(migrator);
+      }
+      if (from <= 2 && to >= 3) {
+        await _migrateToV3(migrator);
       }
     },
     beforeOpen: (details) async {
@@ -287,6 +295,39 @@ class AppDatabase extends _$AppDatabase {
       CREATE INDEX IF NOT EXISTS images_by_series
       ON image_assets(series_id)
     ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS active_firearms_by_name
+      ON firearms(archived, name)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS active_cartridges_by_name
+      ON cartridges(archived, name)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS active_ammo_by_name
+      ON ammo_lots(archived, display_name)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS active_ranges_by_name
+      ON ranges(archived, name)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS active_targets_by_name
+      ON target_profiles(archived, display_name)
+    ''');
+    await customStatement('''
+      CREATE UNIQUE INDEX IF NOT EXISTS target_profile_versions
+      ON target_profiles(profile_id, profile_version)
+    ''');
+  }
+
+  Future<void> _migrateToV3(Migrator migrator) async {
+    await migrator.addColumn(cartridges, cartridges.builtIn);
+    await migrator.addColumn(cartridges, cartridges.archived);
+    await migrator.addColumn(ammoLots, ammoLots.archived);
+    await migrator.addColumn(ranges, ranges.archived);
+    await migrator.addColumn(targetProfiles, targetProfiles.archived);
+    await customStatement('UPDATE cartridges SET built_in = 1');
   }
 
   Future<void> _migrateFromV1(Migrator migrator) async {
@@ -488,7 +529,6 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('DROP TABLE image_assets_v1');
     await customStatement('DROP TABLE shooting_series_v1');
     await customStatement('DROP TABLE training_sessions_v1');
-    await _createInvariantIndexes();
   }
 
   static DateTime _readRequiredDateTime(Object? value) => _readDateTime(value)!;
@@ -554,18 +594,46 @@ class AppDatabase extends _$AppDatabase {
             ..orderBy([(row) => OrderingTerm.asc(row.name)]))
           .watch();
 
-  Stream<List<CartridgeRecord>> watchCartridges() => (select(
+  Stream<List<FirearmRecord>> watchAllFirearms() => (select(
+    firearms,
+  )..orderBy([(row) => OrderingTerm.asc(row.name)])).watch();
+
+  Stream<List<CartridgeRecord>> watchCartridges() =>
+      (select(cartridges)
+            ..where((row) => row.archived.equals(false))
+            ..orderBy([(row) => OrderingTerm.asc(row.name)]))
+          .watch();
+
+  Stream<List<CartridgeRecord>> watchAllCartridges() => (select(
     cartridges,
   )..orderBy([(row) => OrderingTerm.asc(row.name)])).watch();
 
-  Stream<List<AmmoLotRecord>> watchAmmoLots() => (select(
+  Stream<List<AmmoLotRecord>> watchAmmoLots() =>
+      (select(ammoLots)
+            ..where((row) => row.archived.equals(false))
+            ..orderBy([(row) => OrderingTerm.asc(row.displayName)]))
+          .watch();
+
+  Stream<List<AmmoLotRecord>> watchAllAmmoLots() => (select(
     ammoLots,
   )..orderBy([(row) => OrderingTerm.asc(row.displayName)])).watch();
 
   Stream<List<RangeRecord>> watchRanges() =>
+      (select(ranges)
+            ..where((row) => row.archived.equals(false))
+            ..orderBy([(row) => OrderingTerm.asc(row.name)]))
+          .watch();
+
+  Stream<List<RangeRecord>> watchAllRanges() =>
       (select(ranges)..orderBy([(row) => OrderingTerm.asc(row.name)])).watch();
 
-  Stream<List<TargetProfileRecord>> watchTargetProfiles() => (select(
+  Stream<List<TargetProfileRecord>> watchTargetProfiles() =>
+      (select(targetProfiles)
+            ..where((row) => row.archived.equals(false))
+            ..orderBy([(row) => OrderingTerm.asc(row.displayName)]))
+          .watch();
+
+  Stream<List<TargetProfileRecord>> watchAllTargetProfiles() => (select(
     targetProfiles,
   )..orderBy([(row) => OrderingTerm.asc(row.displayName)])).watch();
 }

@@ -60,11 +60,11 @@ class NormalizedBackupPayload {
   );
 }
 
-/// Converts SCB1 manifest/database payloads to the schema-2 JSON shape.
+/// Converts every supported SCB1 payload to the schema-3 JSON shape.
 class BackupPayloadAdapter {
   const BackupPayloadAdapter._();
 
-  static const currentFormatVersion = 2;
+  static const currentFormatVersion = 3;
   static const _formatName = 'shooting-companion-backup';
 
   static NormalizedBackupPayload normalize({
@@ -83,9 +83,11 @@ class BackupPayloadAdapter {
       throw const FormatException('Ongeldige aanmaakdatum in manifest.');
     }
 
-    final normalized = version == currentFormatVersion
-        ? _normalizeV2(data)
-        : _upgradeV1(data);
+    final normalized = switch (version) {
+      1 => _upgradeV2(_upgradeV1(data)),
+      2 => _upgradeV2(data),
+      _ => _normalizeV3(data),
+    };
     final sessionCount = _integer(manifest['sessionCount'], 'sessionCount');
     final seriesCount = _integer(manifest['seriesCount'], 'seriesCount');
     final imageCount = _integer(manifest['imageCount'], 'imageCount');
@@ -110,6 +112,46 @@ class BackupPayloadAdapter {
       result[key] = _table(data, key);
     }
     return result;
+  }
+
+  static Map<String, dynamic> _normalizeV3(Map<String, dynamic> data) {
+    final result = _normalizeV2(data);
+    _validateLibraryRelations(result);
+    return result;
+  }
+
+  static Map<String, dynamic> _upgradeV2(Map<String, dynamic> data) {
+    final result = _normalizeV2(data);
+    result['cartridges'] = (result['cartridges']! as List).map((value) {
+      final row = Map<String, dynamic>.from(value as Map)
+        ..['builtIn'] = true
+        ..['archived'] = false;
+      return row;
+    }).toList();
+    for (final table in ['ammoLots', 'ranges', 'targetProfiles']) {
+      result[table] = (result[table]! as List).map((value) {
+        final row = Map<String, dynamic>.from(value as Map);
+        row['archived'] = false;
+        return row;
+      }).toList();
+    }
+    _validateLibraryRelations(result);
+    return result;
+  }
+
+  static void _validateLibraryRelations(Map<String, dynamic> data) {
+    final cartridgeIds = (data['cartridges']! as List)
+        .map((value) => (value as Map)['id'])
+        .whereType<String>()
+        .toSet();
+    for (final value in data['ammoLots']! as List) {
+      final row = value as Map;
+      if (row['id'] is! String || !cartridgeIds.contains(row['cartridgeId'])) {
+        throw const FormatException(
+          'Munitieprofiel verwijst naar een onbekend kaliber.',
+        );
+      }
+    }
   }
 
   static Map<String, dynamic> _upgradeV1(Map<String, dynamic> data) {
@@ -564,7 +606,7 @@ class BackupService {
           'format': 'shooting-companion-backup',
           'formatVersion': BackupPayloadAdapter.currentFormatVersion,
           'appVersion': '0.3.0',
-          'databaseSchemaVersion': 2,
+          'databaseSchemaVersion': 3,
           'minimumAppVersion': '0.2.0',
           'createdAtUtc': createdAt.toIso8601String(),
           'sessionCount': sessions.length,

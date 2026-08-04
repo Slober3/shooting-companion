@@ -575,8 +575,45 @@ class $CartridgesTable extends Cartridges
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _builtInMeta = const VerificationMeta(
+    'builtIn',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name, projectileDiameterMm, notes];
+  late final GeneratedColumn<bool> builtIn = GeneratedColumn<bool>(
+    'built_in',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("built_in" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _archivedMeta = const VerificationMeta(
+    'archived',
+  );
+  @override
+  late final GeneratedColumn<bool> archived = GeneratedColumn<bool>(
+    'archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    projectileDiameterMm,
+    notes,
+    builtIn,
+    archived,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -619,6 +656,18 @@ class $CartridgesTable extends Cartridges
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('built_in')) {
+      context.handle(
+        _builtInMeta,
+        builtIn.isAcceptableOrUnknown(data['built_in']!, _builtInMeta),
+      );
+    }
+    if (data.containsKey('archived')) {
+      context.handle(
+        _archivedMeta,
+        archived.isAcceptableOrUnknown(data['archived']!, _archivedMeta),
+      );
+    }
     return context;
   }
 
@@ -644,6 +693,14 @@ class $CartridgesTable extends Cartridges
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      builtIn: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}built_in'],
+      )!,
+      archived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}archived'],
+      )!,
     );
   }
 
@@ -658,11 +715,15 @@ class CartridgeRecord extends DataClass implements Insertable<CartridgeRecord> {
   final String name;
   final double projectileDiameterMm;
   final String? notes;
+  final bool builtIn;
+  final bool archived;
   const CartridgeRecord({
     required this.id,
     required this.name,
     required this.projectileDiameterMm,
     this.notes,
+    required this.builtIn,
+    required this.archived,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -673,6 +734,8 @@ class CartridgeRecord extends DataClass implements Insertable<CartridgeRecord> {
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
+    map['built_in'] = Variable<bool>(builtIn);
+    map['archived'] = Variable<bool>(archived);
     return map;
   }
 
@@ -684,6 +747,8 @@ class CartridgeRecord extends DataClass implements Insertable<CartridgeRecord> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      builtIn: Value(builtIn),
+      archived: Value(archived),
     );
   }
 
@@ -699,6 +764,8 @@ class CartridgeRecord extends DataClass implements Insertable<CartridgeRecord> {
         json['projectileDiameterMm'],
       ),
       notes: serializer.fromJson<String?>(json['notes']),
+      builtIn: serializer.fromJson<bool>(json['builtIn']),
+      archived: serializer.fromJson<bool>(json['archived']),
     );
   }
   @override
@@ -709,6 +776,8 @@ class CartridgeRecord extends DataClass implements Insertable<CartridgeRecord> {
       'name': serializer.toJson<String>(name),
       'projectileDiameterMm': serializer.toJson<double>(projectileDiameterMm),
       'notes': serializer.toJson<String?>(notes),
+      'builtIn': serializer.toJson<bool>(builtIn),
+      'archived': serializer.toJson<bool>(archived),
     };
   }
 
@@ -717,11 +786,15 @@ class CartridgeRecord extends DataClass implements Insertable<CartridgeRecord> {
     String? name,
     double? projectileDiameterMm,
     Value<String?> notes = const Value.absent(),
+    bool? builtIn,
+    bool? archived,
   }) => CartridgeRecord(
     id: id ?? this.id,
     name: name ?? this.name,
     projectileDiameterMm: projectileDiameterMm ?? this.projectileDiameterMm,
     notes: notes.present ? notes.value : this.notes,
+    builtIn: builtIn ?? this.builtIn,
+    archived: archived ?? this.archived,
   );
   CartridgeRecord copyWithCompanion(CartridgesCompanion data) {
     return CartridgeRecord(
@@ -731,6 +804,8 @@ class CartridgeRecord extends DataClass implements Insertable<CartridgeRecord> {
           ? data.projectileDiameterMm.value
           : this.projectileDiameterMm,
       notes: data.notes.present ? data.notes.value : this.notes,
+      builtIn: data.builtIn.present ? data.builtIn.value : this.builtIn,
+      archived: data.archived.present ? data.archived.value : this.archived,
     );
   }
 
@@ -740,13 +815,16 @@ class CartridgeRecord extends DataClass implements Insertable<CartridgeRecord> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('projectileDiameterMm: $projectileDiameterMm, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('builtIn: $builtIn, ')
+          ..write('archived: $archived')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, projectileDiameterMm, notes);
+  int get hashCode =>
+      Object.hash(id, name, projectileDiameterMm, notes, builtIn, archived);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -754,7 +832,9 @@ class CartridgeRecord extends DataClass implements Insertable<CartridgeRecord> {
           other.id == this.id &&
           other.name == this.name &&
           other.projectileDiameterMm == this.projectileDiameterMm &&
-          other.notes == this.notes);
+          other.notes == this.notes &&
+          other.builtIn == this.builtIn &&
+          other.archived == this.archived);
 }
 
 class CartridgesCompanion extends UpdateCompanion<CartridgeRecord> {
@@ -762,12 +842,16 @@ class CartridgesCompanion extends UpdateCompanion<CartridgeRecord> {
   final Value<String> name;
   final Value<double> projectileDiameterMm;
   final Value<String?> notes;
+  final Value<bool> builtIn;
+  final Value<bool> archived;
   final Value<int> rowid;
   const CartridgesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.projectileDiameterMm = const Value.absent(),
     this.notes = const Value.absent(),
+    this.builtIn = const Value.absent(),
+    this.archived = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CartridgesCompanion.insert({
@@ -775,6 +859,8 @@ class CartridgesCompanion extends UpdateCompanion<CartridgeRecord> {
     required String name,
     required double projectileDiameterMm,
     this.notes = const Value.absent(),
+    this.builtIn = const Value.absent(),
+    this.archived = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -784,6 +870,8 @@ class CartridgesCompanion extends UpdateCompanion<CartridgeRecord> {
     Expression<String>? name,
     Expression<double>? projectileDiameterMm,
     Expression<String>? notes,
+    Expression<bool>? builtIn,
+    Expression<bool>? archived,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -792,6 +880,8 @@ class CartridgesCompanion extends UpdateCompanion<CartridgeRecord> {
       if (projectileDiameterMm != null)
         'projectile_diameter_mm': projectileDiameterMm,
       if (notes != null) 'notes': notes,
+      if (builtIn != null) 'built_in': builtIn,
+      if (archived != null) 'archived': archived,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -801,6 +891,8 @@ class CartridgesCompanion extends UpdateCompanion<CartridgeRecord> {
     Value<String>? name,
     Value<double>? projectileDiameterMm,
     Value<String?>? notes,
+    Value<bool>? builtIn,
+    Value<bool>? archived,
     Value<int>? rowid,
   }) {
     return CartridgesCompanion(
@@ -808,6 +900,8 @@ class CartridgesCompanion extends UpdateCompanion<CartridgeRecord> {
       name: name ?? this.name,
       projectileDiameterMm: projectileDiameterMm ?? this.projectileDiameterMm,
       notes: notes ?? this.notes,
+      builtIn: builtIn ?? this.builtIn,
+      archived: archived ?? this.archived,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -829,6 +923,12 @@ class CartridgesCompanion extends UpdateCompanion<CartridgeRecord> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (builtIn.present) {
+      map['built_in'] = Variable<bool>(builtIn.value);
+    }
+    if (archived.present) {
+      map['archived'] = Variable<bool>(archived.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -842,6 +942,8 @@ class CartridgesCompanion extends UpdateCompanion<CartridgeRecord> {
           ..write('name: $name, ')
           ..write('projectileDiameterMm: $projectileDiameterMm, ')
           ..write('notes: $notes, ')
+          ..write('builtIn: $builtIn, ')
+          ..write('archived: $archived, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -952,6 +1054,21 @@ class $AmmoLotsTable extends AmmoLots
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _archivedMeta = const VerificationMeta(
+    'archived',
+  );
+  @override
+  late final GeneratedColumn<bool> archived = GeneratedColumn<bool>(
+    'archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -963,6 +1080,7 @@ class $AmmoLotsTable extends AmmoLots
     bulletWeightGrains,
     projectileType,
     notes,
+    archived,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1051,6 +1169,12 @@ class $AmmoLotsTable extends AmmoLots
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('archived')) {
+      context.handle(
+        _archivedMeta,
+        archived.isAcceptableOrUnknown(data['archived']!, _archivedMeta),
+      );
+    }
     return context;
   }
 
@@ -1096,6 +1220,10 @@ class $AmmoLotsTable extends AmmoLots
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      archived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}archived'],
+      )!,
     );
   }
 
@@ -1115,6 +1243,7 @@ class AmmoLotRecord extends DataClass implements Insertable<AmmoLotRecord> {
   final double? bulletWeightGrains;
   final String? projectileType;
   final String? notes;
+  final bool archived;
   const AmmoLotRecord({
     required this.id,
     required this.cartridgeId,
@@ -1125,6 +1254,7 @@ class AmmoLotRecord extends DataClass implements Insertable<AmmoLotRecord> {
     this.bulletWeightGrains,
     this.projectileType,
     this.notes,
+    required this.archived,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1150,6 +1280,7 @@ class AmmoLotRecord extends DataClass implements Insertable<AmmoLotRecord> {
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
+    map['archived'] = Variable<bool>(archived);
     return map;
   }
 
@@ -1176,6 +1307,7 @@ class AmmoLotRecord extends DataClass implements Insertable<AmmoLotRecord> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      archived: Value(archived),
     );
   }
 
@@ -1196,6 +1328,7 @@ class AmmoLotRecord extends DataClass implements Insertable<AmmoLotRecord> {
       ),
       projectileType: serializer.fromJson<String?>(json['projectileType']),
       notes: serializer.fromJson<String?>(json['notes']),
+      archived: serializer.fromJson<bool>(json['archived']),
     );
   }
   @override
@@ -1211,6 +1344,7 @@ class AmmoLotRecord extends DataClass implements Insertable<AmmoLotRecord> {
       'bulletWeightGrains': serializer.toJson<double?>(bulletWeightGrains),
       'projectileType': serializer.toJson<String?>(projectileType),
       'notes': serializer.toJson<String?>(notes),
+      'archived': serializer.toJson<bool>(archived),
     };
   }
 
@@ -1224,6 +1358,7 @@ class AmmoLotRecord extends DataClass implements Insertable<AmmoLotRecord> {
     Value<double?> bulletWeightGrains = const Value.absent(),
     Value<String?> projectileType = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    bool? archived,
   }) => AmmoLotRecord(
     id: id ?? this.id,
     cartridgeId: cartridgeId ?? this.cartridgeId,
@@ -1238,6 +1373,7 @@ class AmmoLotRecord extends DataClass implements Insertable<AmmoLotRecord> {
         ? projectileType.value
         : this.projectileType,
     notes: notes.present ? notes.value : this.notes,
+    archived: archived ?? this.archived,
   );
   AmmoLotRecord copyWithCompanion(AmmoLotsCompanion data) {
     return AmmoLotRecord(
@@ -1262,6 +1398,7 @@ class AmmoLotRecord extends DataClass implements Insertable<AmmoLotRecord> {
           ? data.projectileType.value
           : this.projectileType,
       notes: data.notes.present ? data.notes.value : this.notes,
+      archived: data.archived.present ? data.archived.value : this.archived,
     );
   }
 
@@ -1276,7 +1413,8 @@ class AmmoLotRecord extends DataClass implements Insertable<AmmoLotRecord> {
           ..write('lotNumber: $lotNumber, ')
           ..write('bulletWeightGrains: $bulletWeightGrains, ')
           ..write('projectileType: $projectileType, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('archived: $archived')
           ..write(')'))
         .toString();
   }
@@ -1292,6 +1430,7 @@ class AmmoLotRecord extends DataClass implements Insertable<AmmoLotRecord> {
     bulletWeightGrains,
     projectileType,
     notes,
+    archived,
   );
   @override
   bool operator ==(Object other) =>
@@ -1305,7 +1444,8 @@ class AmmoLotRecord extends DataClass implements Insertable<AmmoLotRecord> {
           other.lotNumber == this.lotNumber &&
           other.bulletWeightGrains == this.bulletWeightGrains &&
           other.projectileType == this.projectileType &&
-          other.notes == this.notes);
+          other.notes == this.notes &&
+          other.archived == this.archived);
 }
 
 class AmmoLotsCompanion extends UpdateCompanion<AmmoLotRecord> {
@@ -1318,6 +1458,7 @@ class AmmoLotsCompanion extends UpdateCompanion<AmmoLotRecord> {
   final Value<double?> bulletWeightGrains;
   final Value<String?> projectileType;
   final Value<String?> notes;
+  final Value<bool> archived;
   final Value<int> rowid;
   const AmmoLotsCompanion({
     this.id = const Value.absent(),
@@ -1329,6 +1470,7 @@ class AmmoLotsCompanion extends UpdateCompanion<AmmoLotRecord> {
     this.bulletWeightGrains = const Value.absent(),
     this.projectileType = const Value.absent(),
     this.notes = const Value.absent(),
+    this.archived = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AmmoLotsCompanion.insert({
@@ -1341,6 +1483,7 @@ class AmmoLotsCompanion extends UpdateCompanion<AmmoLotRecord> {
     this.bulletWeightGrains = const Value.absent(),
     this.projectileType = const Value.absent(),
     this.notes = const Value.absent(),
+    this.archived = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        cartridgeId = Value(cartridgeId),
@@ -1355,6 +1498,7 @@ class AmmoLotsCompanion extends UpdateCompanion<AmmoLotRecord> {
     Expression<double>? bulletWeightGrains,
     Expression<String>? projectileType,
     Expression<String>? notes,
+    Expression<bool>? archived,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1368,6 +1512,7 @@ class AmmoLotsCompanion extends UpdateCompanion<AmmoLotRecord> {
         'bullet_weight_grains': bulletWeightGrains,
       if (projectileType != null) 'projectile_type': projectileType,
       if (notes != null) 'notes': notes,
+      if (archived != null) 'archived': archived,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1382,6 +1527,7 @@ class AmmoLotsCompanion extends UpdateCompanion<AmmoLotRecord> {
     Value<double?>? bulletWeightGrains,
     Value<String?>? projectileType,
     Value<String?>? notes,
+    Value<bool>? archived,
     Value<int>? rowid,
   }) {
     return AmmoLotsCompanion(
@@ -1394,6 +1540,7 @@ class AmmoLotsCompanion extends UpdateCompanion<AmmoLotRecord> {
       bulletWeightGrains: bulletWeightGrains ?? this.bulletWeightGrains,
       projectileType: projectileType ?? this.projectileType,
       notes: notes ?? this.notes,
+      archived: archived ?? this.archived,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1428,6 +1575,9 @@ class AmmoLotsCompanion extends UpdateCompanion<AmmoLotRecord> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (archived.present) {
+      map['archived'] = Variable<bool>(archived.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1446,6 +1596,7 @@ class AmmoLotsCompanion extends UpdateCompanion<AmmoLotRecord> {
           ..write('bulletWeightGrains: $bulletWeightGrains, ')
           ..write('projectileType: $projectileType, ')
           ..write('notes: $notes, ')
+          ..write('archived: $archived, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1522,6 +1673,21 @@ class $RangesTable extends Ranges with TableInfo<$RangesTable, RangeRecord> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _archivedMeta = const VerificationMeta(
+    'archived',
+  );
+  @override
+  late final GeneratedColumn<bool> archived = GeneratedColumn<bool>(
+    'archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1530,6 +1696,7 @@ class $RangesTable extends Ranges with TableInfo<$RangesTable, RangeRecord> {
     isIndoor,
     availableDistancesJson,
     notes,
+    archived,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1586,6 +1753,12 @@ class $RangesTable extends Ranges with TableInfo<$RangesTable, RangeRecord> {
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('archived')) {
+      context.handle(
+        _archivedMeta,
+        archived.isAcceptableOrUnknown(data['archived']!, _archivedMeta),
+      );
+    }
     return context;
   }
 
@@ -1619,6 +1792,10 @@ class $RangesTable extends Ranges with TableInfo<$RangesTable, RangeRecord> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      archived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}archived'],
+      )!,
     );
   }
 
@@ -1635,6 +1812,7 @@ class RangeRecord extends DataClass implements Insertable<RangeRecord> {
   final bool isIndoor;
   final String availableDistancesJson;
   final String? notes;
+  final bool archived;
   const RangeRecord({
     required this.id,
     required this.name,
@@ -1642,6 +1820,7 @@ class RangeRecord extends DataClass implements Insertable<RangeRecord> {
     required this.isIndoor,
     required this.availableDistancesJson,
     this.notes,
+    required this.archived,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1656,6 +1835,7 @@ class RangeRecord extends DataClass implements Insertable<RangeRecord> {
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
+    map['archived'] = Variable<bool>(archived);
     return map;
   }
 
@@ -1671,6 +1851,7 @@ class RangeRecord extends DataClass implements Insertable<RangeRecord> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      archived: Value(archived),
     );
   }
 
@@ -1690,6 +1871,7 @@ class RangeRecord extends DataClass implements Insertable<RangeRecord> {
         json['availableDistancesJson'],
       ),
       notes: serializer.fromJson<String?>(json['notes']),
+      archived: serializer.fromJson<bool>(json['archived']),
     );
   }
   @override
@@ -1704,6 +1886,7 @@ class RangeRecord extends DataClass implements Insertable<RangeRecord> {
         availableDistancesJson,
       ),
       'notes': serializer.toJson<String?>(notes),
+      'archived': serializer.toJson<bool>(archived),
     };
   }
 
@@ -1714,6 +1897,7 @@ class RangeRecord extends DataClass implements Insertable<RangeRecord> {
     bool? isIndoor,
     String? availableDistancesJson,
     Value<String?> notes = const Value.absent(),
+    bool? archived,
   }) => RangeRecord(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -1724,6 +1908,7 @@ class RangeRecord extends DataClass implements Insertable<RangeRecord> {
     availableDistancesJson:
         availableDistancesJson ?? this.availableDistancesJson,
     notes: notes.present ? notes.value : this.notes,
+    archived: archived ?? this.archived,
   );
   RangeRecord copyWithCompanion(RangesCompanion data) {
     return RangeRecord(
@@ -1737,6 +1922,7 @@ class RangeRecord extends DataClass implements Insertable<RangeRecord> {
           ? data.availableDistancesJson.value
           : this.availableDistancesJson,
       notes: data.notes.present ? data.notes.value : this.notes,
+      archived: data.archived.present ? data.archived.value : this.archived,
     );
   }
 
@@ -1748,7 +1934,8 @@ class RangeRecord extends DataClass implements Insertable<RangeRecord> {
           ..write('locationDescription: $locationDescription, ')
           ..write('isIndoor: $isIndoor, ')
           ..write('availableDistancesJson: $availableDistancesJson, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('archived: $archived')
           ..write(')'))
         .toString();
   }
@@ -1761,6 +1948,7 @@ class RangeRecord extends DataClass implements Insertable<RangeRecord> {
     isIndoor,
     availableDistancesJson,
     notes,
+    archived,
   );
   @override
   bool operator ==(Object other) =>
@@ -1771,7 +1959,8 @@ class RangeRecord extends DataClass implements Insertable<RangeRecord> {
           other.locationDescription == this.locationDescription &&
           other.isIndoor == this.isIndoor &&
           other.availableDistancesJson == this.availableDistancesJson &&
-          other.notes == this.notes);
+          other.notes == this.notes &&
+          other.archived == this.archived);
 }
 
 class RangesCompanion extends UpdateCompanion<RangeRecord> {
@@ -1781,6 +1970,7 @@ class RangesCompanion extends UpdateCompanion<RangeRecord> {
   final Value<bool> isIndoor;
   final Value<String> availableDistancesJson;
   final Value<String?> notes;
+  final Value<bool> archived;
   final Value<int> rowid;
   const RangesCompanion({
     this.id = const Value.absent(),
@@ -1789,6 +1979,7 @@ class RangesCompanion extends UpdateCompanion<RangeRecord> {
     this.isIndoor = const Value.absent(),
     this.availableDistancesJson = const Value.absent(),
     this.notes = const Value.absent(),
+    this.archived = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   RangesCompanion.insert({
@@ -1798,6 +1989,7 @@ class RangesCompanion extends UpdateCompanion<RangeRecord> {
     this.isIndoor = const Value.absent(),
     this.availableDistancesJson = const Value.absent(),
     this.notes = const Value.absent(),
+    this.archived = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -1808,6 +2000,7 @@ class RangesCompanion extends UpdateCompanion<RangeRecord> {
     Expression<bool>? isIndoor,
     Expression<String>? availableDistancesJson,
     Expression<String>? notes,
+    Expression<bool>? archived,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1819,6 +2012,7 @@ class RangesCompanion extends UpdateCompanion<RangeRecord> {
       if (availableDistancesJson != null)
         'available_distances_json': availableDistancesJson,
       if (notes != null) 'notes': notes,
+      if (archived != null) 'archived': archived,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1830,6 +2024,7 @@ class RangesCompanion extends UpdateCompanion<RangeRecord> {
     Value<bool>? isIndoor,
     Value<String>? availableDistancesJson,
     Value<String?>? notes,
+    Value<bool>? archived,
     Value<int>? rowid,
   }) {
     return RangesCompanion(
@@ -1840,6 +2035,7 @@ class RangesCompanion extends UpdateCompanion<RangeRecord> {
       availableDistancesJson:
           availableDistancesJson ?? this.availableDistancesJson,
       notes: notes ?? this.notes,
+      archived: archived ?? this.archived,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1867,6 +2063,9 @@ class RangesCompanion extends UpdateCompanion<RangeRecord> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (archived.present) {
+      map['archived'] = Variable<bool>(archived.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1882,6 +2081,7 @@ class RangesCompanion extends UpdateCompanion<RangeRecord> {
           ..write('isIndoor: $isIndoor, ')
           ..write('availableDistancesJson: $availableDistancesJson, ')
           ..write('notes: $notes, ')
+          ..write('archived: $archived, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6533,6 +6733,21 @@ class $TargetProfilesTable extends TargetProfiles
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _archivedMeta = const VerificationMeta(
+    'archived',
+  );
+  @override
+  late final GeneratedColumn<bool> archived = GeneratedColumn<bool>(
+    'archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
     'createdAtUtc',
   );
@@ -6553,6 +6768,7 @@ class $TargetProfilesTable extends TargetProfiles
     validationStatus,
     profileJson,
     builtIn,
+    archived,
     createdAtUtc,
   ];
   @override
@@ -6636,6 +6852,12 @@ class $TargetProfilesTable extends TargetProfiles
         builtIn.isAcceptableOrUnknown(data['built_in']!, _builtInMeta),
       );
     }
+    if (data.containsKey('archived')) {
+      context.handle(
+        _archivedMeta,
+        archived.isAcceptableOrUnknown(data['archived']!, _archivedMeta),
+      );
+    }
     if (data.containsKey('created_at_utc')) {
       context.handle(
         _createdAtUtcMeta,
@@ -6684,6 +6906,10 @@ class $TargetProfilesTable extends TargetProfiles
         DriftSqlType.bool,
         data['${effectivePrefix}built_in'],
       )!,
+      archived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}archived'],
+      )!,
       createdAtUtc: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at_utc'],
@@ -6706,6 +6932,7 @@ class TargetProfileRecord extends DataClass
   final String validationStatus;
   final String profileJson;
   final bool builtIn;
+  final bool archived;
   final DateTime createdAtUtc;
   const TargetProfileRecord({
     required this.versionedId,
@@ -6715,6 +6942,7 @@ class TargetProfileRecord extends DataClass
     required this.validationStatus,
     required this.profileJson,
     required this.builtIn,
+    required this.archived,
     required this.createdAtUtc,
   });
   @override
@@ -6727,6 +6955,7 @@ class TargetProfileRecord extends DataClass
     map['validation_status'] = Variable<String>(validationStatus);
     map['profile_json'] = Variable<String>(profileJson);
     map['built_in'] = Variable<bool>(builtIn);
+    map['archived'] = Variable<bool>(archived);
     map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
     return map;
   }
@@ -6740,6 +6969,7 @@ class TargetProfileRecord extends DataClass
       validationStatus: Value(validationStatus),
       profileJson: Value(profileJson),
       builtIn: Value(builtIn),
+      archived: Value(archived),
       createdAtUtc: Value(createdAtUtc),
     );
   }
@@ -6757,6 +6987,7 @@ class TargetProfileRecord extends DataClass
       validationStatus: serializer.fromJson<String>(json['validationStatus']),
       profileJson: serializer.fromJson<String>(json['profileJson']),
       builtIn: serializer.fromJson<bool>(json['builtIn']),
+      archived: serializer.fromJson<bool>(json['archived']),
       createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
     );
   }
@@ -6771,6 +7002,7 @@ class TargetProfileRecord extends DataClass
       'validationStatus': serializer.toJson<String>(validationStatus),
       'profileJson': serializer.toJson<String>(profileJson),
       'builtIn': serializer.toJson<bool>(builtIn),
+      'archived': serializer.toJson<bool>(archived),
       'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
     };
   }
@@ -6783,6 +7015,7 @@ class TargetProfileRecord extends DataClass
     String? validationStatus,
     String? profileJson,
     bool? builtIn,
+    bool? archived,
     DateTime? createdAtUtc,
   }) => TargetProfileRecord(
     versionedId: versionedId ?? this.versionedId,
@@ -6792,6 +7025,7 @@ class TargetProfileRecord extends DataClass
     validationStatus: validationStatus ?? this.validationStatus,
     profileJson: profileJson ?? this.profileJson,
     builtIn: builtIn ?? this.builtIn,
+    archived: archived ?? this.archived,
     createdAtUtc: createdAtUtc ?? this.createdAtUtc,
   );
   TargetProfileRecord copyWithCompanion(TargetProfilesCompanion data) {
@@ -6813,6 +7047,7 @@ class TargetProfileRecord extends DataClass
           ? data.profileJson.value
           : this.profileJson,
       builtIn: data.builtIn.present ? data.builtIn.value : this.builtIn,
+      archived: data.archived.present ? data.archived.value : this.archived,
       createdAtUtc: data.createdAtUtc.present
           ? data.createdAtUtc.value
           : this.createdAtUtc,
@@ -6829,6 +7064,7 @@ class TargetProfileRecord extends DataClass
           ..write('validationStatus: $validationStatus, ')
           ..write('profileJson: $profileJson, ')
           ..write('builtIn: $builtIn, ')
+          ..write('archived: $archived, ')
           ..write('createdAtUtc: $createdAtUtc')
           ..write(')'))
         .toString();
@@ -6843,6 +7079,7 @@ class TargetProfileRecord extends DataClass
     validationStatus,
     profileJson,
     builtIn,
+    archived,
     createdAtUtc,
   );
   @override
@@ -6856,6 +7093,7 @@ class TargetProfileRecord extends DataClass
           other.validationStatus == this.validationStatus &&
           other.profileJson == this.profileJson &&
           other.builtIn == this.builtIn &&
+          other.archived == this.archived &&
           other.createdAtUtc == this.createdAtUtc);
 }
 
@@ -6867,6 +7105,7 @@ class TargetProfilesCompanion extends UpdateCompanion<TargetProfileRecord> {
   final Value<String> validationStatus;
   final Value<String> profileJson;
   final Value<bool> builtIn;
+  final Value<bool> archived;
   final Value<DateTime> createdAtUtc;
   final Value<int> rowid;
   const TargetProfilesCompanion({
@@ -6877,6 +7116,7 @@ class TargetProfilesCompanion extends UpdateCompanion<TargetProfileRecord> {
     this.validationStatus = const Value.absent(),
     this.profileJson = const Value.absent(),
     this.builtIn = const Value.absent(),
+    this.archived = const Value.absent(),
     this.createdAtUtc = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -6888,6 +7128,7 @@ class TargetProfilesCompanion extends UpdateCompanion<TargetProfileRecord> {
     required String validationStatus,
     required String profileJson,
     this.builtIn = const Value.absent(),
+    this.archived = const Value.absent(),
     required DateTime createdAtUtc,
     this.rowid = const Value.absent(),
   }) : versionedId = Value(versionedId),
@@ -6905,6 +7146,7 @@ class TargetProfilesCompanion extends UpdateCompanion<TargetProfileRecord> {
     Expression<String>? validationStatus,
     Expression<String>? profileJson,
     Expression<bool>? builtIn,
+    Expression<bool>? archived,
     Expression<DateTime>? createdAtUtc,
     Expression<int>? rowid,
   }) {
@@ -6916,6 +7158,7 @@ class TargetProfilesCompanion extends UpdateCompanion<TargetProfileRecord> {
       if (validationStatus != null) 'validation_status': validationStatus,
       if (profileJson != null) 'profile_json': profileJson,
       if (builtIn != null) 'built_in': builtIn,
+      if (archived != null) 'archived': archived,
       if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
       if (rowid != null) 'rowid': rowid,
     });
@@ -6929,6 +7172,7 @@ class TargetProfilesCompanion extends UpdateCompanion<TargetProfileRecord> {
     Value<String>? validationStatus,
     Value<String>? profileJson,
     Value<bool>? builtIn,
+    Value<bool>? archived,
     Value<DateTime>? createdAtUtc,
     Value<int>? rowid,
   }) {
@@ -6940,6 +7184,7 @@ class TargetProfilesCompanion extends UpdateCompanion<TargetProfileRecord> {
       validationStatus: validationStatus ?? this.validationStatus,
       profileJson: profileJson ?? this.profileJson,
       builtIn: builtIn ?? this.builtIn,
+      archived: archived ?? this.archived,
       createdAtUtc: createdAtUtc ?? this.createdAtUtc,
       rowid: rowid ?? this.rowid,
     );
@@ -6969,6 +7214,9 @@ class TargetProfilesCompanion extends UpdateCompanion<TargetProfileRecord> {
     if (builtIn.present) {
       map['built_in'] = Variable<bool>(builtIn.value);
     }
+    if (archived.present) {
+      map['archived'] = Variable<bool>(archived.value);
+    }
     if (createdAtUtc.present) {
       map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
     }
@@ -6988,6 +7236,7 @@ class TargetProfilesCompanion extends UpdateCompanion<TargetProfileRecord> {
           ..write('validationStatus: $validationStatus, ')
           ..write('profileJson: $profileJson, ')
           ..write('builtIn: $builtIn, ')
+          ..write('archived: $archived, ')
           ..write('createdAtUtc: $createdAtUtc, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -7545,6 +7794,8 @@ typedef $$CartridgesTableCreateCompanionBuilder =
       required String name,
       required double projectileDiameterMm,
       Value<String?> notes,
+      Value<bool> builtIn,
+      Value<bool> archived,
       Value<int> rowid,
     });
 typedef $$CartridgesTableUpdateCompanionBuilder =
@@ -7553,6 +7804,8 @@ typedef $$CartridgesTableUpdateCompanionBuilder =
       Value<String> name,
       Value<double> projectileDiameterMm,
       Value<String?> notes,
+      Value<bool> builtIn,
+      Value<bool> archived,
       Value<int> rowid,
     });
 
@@ -7623,6 +7876,16 @@ class $$CartridgesTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get builtIn => $composableBuilder(
+    column: $table.builtIn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get archived => $composableBuilder(
+    column: $table.archived,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7705,6 +7968,16 @@ class $$CartridgesTableOrderingComposer
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get builtIn => $composableBuilder(
+    column: $table.builtIn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get archived => $composableBuilder(
+    column: $table.archived,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CartridgesTableAnnotationComposer
@@ -7729,6 +8002,12 @@ class $$CartridgesTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<bool> get builtIn =>
+      $composableBuilder(column: $table.builtIn, builder: (column) => column);
+
+  GeneratedColumn<bool> get archived =>
+      $composableBuilder(column: $table.archived, builder: (column) => column);
 
   Expression<T> ammoLotsRefs<T extends Object>(
     Expression<T> Function($$AmmoLotsTableAnnotationComposer a) f,
@@ -7813,12 +8092,16 @@ class $$CartridgesTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<double> projectileDiameterMm = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> builtIn = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CartridgesCompanion(
                 id: id,
                 name: name,
                 projectileDiameterMm: projectileDiameterMm,
                 notes: notes,
+                builtIn: builtIn,
+                archived: archived,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7827,12 +8110,16 @@ class $$CartridgesTableTableManager
                 required String name,
                 required double projectileDiameterMm,
                 Value<String?> notes = const Value.absent(),
+                Value<bool> builtIn = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CartridgesCompanion.insert(
                 id: id,
                 name: name,
                 projectileDiameterMm: projectileDiameterMm,
                 notes: notes,
+                builtIn: builtIn,
+                archived: archived,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -7929,6 +8216,7 @@ typedef $$AmmoLotsTableCreateCompanionBuilder =
       Value<double?> bulletWeightGrains,
       Value<String?> projectileType,
       Value<String?> notes,
+      Value<bool> archived,
       Value<int> rowid,
     });
 typedef $$AmmoLotsTableUpdateCompanionBuilder =
@@ -7942,6 +8230,7 @@ typedef $$AmmoLotsTableUpdateCompanionBuilder =
       Value<double?> bulletWeightGrains,
       Value<String?> projectileType,
       Value<String?> notes,
+      Value<bool> archived,
       Value<int> rowid,
     });
 
@@ -8050,6 +8339,11 @@ class $$AmmoLotsTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get archived => $composableBuilder(
+    column: $table.archived,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8176,6 +8470,11 @@ class $$AmmoLotsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get archived => $composableBuilder(
+    column: $table.archived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$CartridgesTableOrderingComposer get cartridgeId {
     final $$CartridgesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -8242,6 +8541,9 @@ class $$AmmoLotsTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<bool> get archived =>
+      $composableBuilder(column: $table.archived, builder: (column) => column);
 
   $$CartridgesTableAnnotationComposer get cartridgeId {
     final $$CartridgesTableAnnotationComposer composer = $composerBuilder(
@@ -8358,6 +8660,7 @@ class $$AmmoLotsTableTableManager
                 Value<double?> bulletWeightGrains = const Value.absent(),
                 Value<String?> projectileType = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AmmoLotsCompanion(
                 id: id,
@@ -8369,6 +8672,7 @@ class $$AmmoLotsTableTableManager
                 bulletWeightGrains: bulletWeightGrains,
                 projectileType: projectileType,
                 notes: notes,
+                archived: archived,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8382,6 +8686,7 @@ class $$AmmoLotsTableTableManager
                 Value<double?> bulletWeightGrains = const Value.absent(),
                 Value<String?> projectileType = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AmmoLotsCompanion.insert(
                 id: id,
@@ -8393,6 +8698,7 @@ class $$AmmoLotsTableTableManager
                 bulletWeightGrains: bulletWeightGrains,
                 projectileType: projectileType,
                 notes: notes,
+                archived: archived,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -8525,6 +8831,7 @@ typedef $$RangesTableCreateCompanionBuilder =
       Value<bool> isIndoor,
       Value<String> availableDistancesJson,
       Value<String?> notes,
+      Value<bool> archived,
       Value<int> rowid,
     });
 typedef $$RangesTableUpdateCompanionBuilder =
@@ -8535,6 +8842,7 @@ typedef $$RangesTableUpdateCompanionBuilder =
       Value<bool> isIndoor,
       Value<String> availableDistancesJson,
       Value<String?> notes,
+      Value<bool> archived,
       Value<int> rowid,
     });
 
@@ -8602,6 +8910,11 @@ class $$RangesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<bool> get archived => $composableBuilder(
+    column: $table.archived,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> trainingSessionsRefs(
     Expression<bool> Function($$TrainingSessionsTableFilterComposer f) f,
   ) {
@@ -8666,6 +8979,11 @@ class $$RangesTableOrderingComposer
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get archived => $composableBuilder(
+    column: $table.archived,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$RangesTableAnnotationComposer
@@ -8698,6 +9016,9 @@ class $$RangesTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<bool> get archived =>
+      $composableBuilder(column: $table.archived, builder: (column) => column);
 
   Expression<T> trainingSessionsRefs<T extends Object>(
     Expression<T> Function($$TrainingSessionsTableAnnotationComposer a) f,
@@ -8759,6 +9080,7 @@ class $$RangesTableTableManager
                 Value<bool> isIndoor = const Value.absent(),
                 Value<String> availableDistancesJson = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RangesCompanion(
                 id: id,
@@ -8767,6 +9089,7 @@ class $$RangesTableTableManager
                 isIndoor: isIndoor,
                 availableDistancesJson: availableDistancesJson,
                 notes: notes,
+                archived: archived,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8777,6 +9100,7 @@ class $$RangesTableTableManager
                 Value<bool> isIndoor = const Value.absent(),
                 Value<String> availableDistancesJson = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => RangesCompanion.insert(
                 id: id,
@@ -8785,6 +9109,7 @@ class $$RangesTableTableManager
                 isIndoor: isIndoor,
                 availableDistancesJson: availableDistancesJson,
                 notes: notes,
+                archived: archived,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -12865,6 +13190,7 @@ typedef $$TargetProfilesTableCreateCompanionBuilder =
       required String validationStatus,
       required String profileJson,
       Value<bool> builtIn,
+      Value<bool> archived,
       required DateTime createdAtUtc,
       Value<int> rowid,
     });
@@ -12877,6 +13203,7 @@ typedef $$TargetProfilesTableUpdateCompanionBuilder =
       Value<String> validationStatus,
       Value<String> profileJson,
       Value<bool> builtIn,
+      Value<bool> archived,
       Value<DateTime> createdAtUtc,
       Value<int> rowid,
     });
@@ -12922,6 +13249,11 @@ class $$TargetProfilesTableFilterComposer
 
   ColumnFilters<bool> get builtIn => $composableBuilder(
     column: $table.builtIn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get archived => $composableBuilder(
+    column: $table.archived,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12975,6 +13307,11 @@ class $$TargetProfilesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get archived => $composableBuilder(
+    column: $table.archived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAtUtc => $composableBuilder(
     column: $table.createdAtUtc,
     builder: (column) => ColumnOrderings(column),
@@ -13020,6 +13357,9 @@ class $$TargetProfilesTableAnnotationComposer
 
   GeneratedColumn<bool> get builtIn =>
       $composableBuilder(column: $table.builtIn, builder: (column) => column);
+
+  GeneratedColumn<bool> get archived =>
+      $composableBuilder(column: $table.archived, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAtUtc => $composableBuilder(
     column: $table.createdAtUtc,
@@ -13071,6 +13411,7 @@ class $$TargetProfilesTableTableManager
                 Value<String> validationStatus = const Value.absent(),
                 Value<String> profileJson = const Value.absent(),
                 Value<bool> builtIn = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
                 Value<DateTime> createdAtUtc = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TargetProfilesCompanion(
@@ -13081,6 +13422,7 @@ class $$TargetProfilesTableTableManager
                 validationStatus: validationStatus,
                 profileJson: profileJson,
                 builtIn: builtIn,
+                archived: archived,
                 createdAtUtc: createdAtUtc,
                 rowid: rowid,
               ),
@@ -13093,6 +13435,7 @@ class $$TargetProfilesTableTableManager
                 required String validationStatus,
                 required String profileJson,
                 Value<bool> builtIn = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
                 required DateTime createdAtUtc,
                 Value<int> rowid = const Value.absent(),
               }) => TargetProfilesCompanion.insert(
@@ -13103,6 +13446,7 @@ class $$TargetProfilesTableTableManager
                 validationStatus: validationStatus,
                 profileJson: profileJson,
                 builtIn: builtIn,
+                archived: archived,
                 createdAtUtc: createdAtUtc,
                 rowid: rowid,
               ),

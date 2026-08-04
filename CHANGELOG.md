@@ -2,7 +2,7 @@
 
 All notable changes follow [Semantic Versioning](https://semver.org/).
 
-## 0.3.0 - 2026-08-03
+## 0.3.0 - 2026-08-04
 
 ### Added
 
@@ -14,6 +14,10 @@ All notable changes follow [Semantic Versioning](https://semver.org/).
   Blue, Forest Green and High Contrast palettes.
 - Added atomic save-confirm-complete and photo-realignment repository use cases.
 - Added embedded Noto Sans regular/bold fonts and Unicode PDF regression output.
+- Added complete create, detail, edit, duplicate, archive, restore and safe
+  delete flows for the firearm, ammunition, range and target libraries.
+- Added editable custom cartridges and immutable versioning for custom targets
+  after their first historical use.
 
 ### Changed
 
@@ -25,6 +29,10 @@ All notable changes follow [Semantic Versioning](https://semver.org/).
   wizard and preview.
 - Session completion is visible from Start, Logbook, session detail and the
   series editor without relying on long press.
+- Replaced long edit sheets with top-aligned full-screen forms, shared
+  high-contrast selectors and a detached inset-safe action dock.
+- Upgraded the database and encrypted backup manifest to schema/version 3 while
+  retaining v1 and v2 import compatibility.
 
 ### Fixed
 
@@ -34,6 +42,8 @@ All notable changes follow [Semantic Versioning](https://semver.org/).
 - Range distances entered with a Dutch decimal comma retain their exact value.
 - Bottom actions remain above gesture and three-button navigation bars.
 - PDF bullets, accents, smart apostrophes and en/em dashes render correctly.
+- Selected values remain readable in every palette and multiline labels stay
+  at the top-left instead of floating in the middle of their field.
 
 ## 0.2.0 - 2026-08-03
 

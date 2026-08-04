@@ -11,6 +11,9 @@ Versie `0.3.0` focust op precieze puntplaatsing en robuuste bediening op kleine
 Android-schermen:
 
 - lokale bibliotheken voor wapens, kalibers, munitielots, standen en kaarten;
+- bibliotheekitems bekijken, bewerken, dupliceren en veilig verwijderen;
+- gebruikte bibliotheekitems archiveren en herstellen zonder historische
+  sessies, filters of rapportnamen te verliezen;
 - een sessie en score-editor openen met één tik;
 - sessies en reeksen hervatten, aanpassen en zichtbaar verwijderen;
 - atomair opgeslagen conceptreeksen met autosave;
@@ -26,6 +29,7 @@ Android-schermen:
 - systeem/licht/donker met vier lokaal opgeslagen kleurpaletten;
 - CSV, Unicode-PDF met ingebedde fonts en AES-256-GCM/Argon2id-back-up;
 - migratie en back-upcompatibiliteit voor lokale gegevens uit versie 0.1.
+- databaseschema 3 en back-upmanifest 3, met import van v1- en v2-back-ups.
 
 Er is geen automatische trefferdetectie. De schutter duidt iedere treffer of
 misser expliciet aan; de deterministische score-engine berekent daarna ringwaarde,

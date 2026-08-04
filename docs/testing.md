@@ -15,7 +15,9 @@ flutter build apk --release
 Pure Dart packages are also tested independently. Acceptance covers:
 
 - scoring boundaries, non-ten target maxima, misses and multiplicity;
-- v1-to-v2 migration and both backup manifest versions;
+- v1/v2-to-v3 migration and all three backup manifest versions;
+- built-in library protection, unused deletion, referenced archiving, restore,
+  dependent-ammunition transactions and immutable target versioning;
 - one-active-session and one-draft-series invariants;
 - draft autosave, confirm/edit replacement and sequence renumbering;
 - image staging, missing-file deletion and primary-image replacement;

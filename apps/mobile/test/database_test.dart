@@ -277,4 +277,167 @@ void main() {
       expect(await database.select(database.imageAssets).get(), isEmpty);
     },
   );
+
+  test(
+    'library removal deletes unused records and archives used records',
+    () async {
+      final unusedRange = await repository.addRange(
+        name: 'Ongebruikte stand',
+        isIndoor: true,
+      );
+      expect(
+        await repository.removeRange(unusedRange),
+        LibraryRemovalResult.deleted,
+      );
+
+      final firearm = await repository.addFirearm(
+        name: 'Gebruikt pistool',
+        type: FirearmType.pistol,
+      );
+      final quick = await repository.startQuickSession();
+      await repository.saveSeriesDraft(
+        seriesId: quick.draftSeriesId,
+        target: IssfTargetProfiles.precision25m50m,
+        distanceMeters: 25,
+        projectileDiameterMm: 5.6,
+        impacts: const [ShotImpact(id: 'library-shot', xMm: 0, yMm: 0)],
+        firearmId: firearm,
+      );
+      await repository.confirmSeries(quick.draftSeriesId);
+
+      expect(
+        await repository.removeFirearm(firearm),
+        LibraryRemovalResult.archived,
+      );
+      expect(
+        (await database.select(database.firearms).getSingle()).archived,
+        isTrue,
+      );
+      await repository.restoreFirearm(firearm);
+      expect(
+        (await database.select(database.firearms).getSingle()).archived,
+        isFalse,
+      );
+    },
+  );
+
+  test('invalid firearm update leaves the stored record unchanged', () async {
+    final firearmId = await repository.addFirearm(
+      name: 'Bewaar mijn naam',
+      type: FirearmType.pistol,
+    );
+
+    await expectLater(
+      repository.updateFirearm(
+        id: firearmId,
+        name: '   ',
+        type: FirearmType.revolver,
+      ),
+      throwsArgumentError,
+    );
+
+    final firearm = await (database.select(
+      database.firearms,
+    )..where((row) => row.id.equals(firearmId))).getSingle();
+    expect(firearm.name, 'Bewaar mijn naam');
+    expect(firearm.type, FirearmType.pistol.name);
+  });
+
+  test(
+    'built-ins are protected and custom cartridge dependencies archive atomically',
+    () async {
+      expect(
+        await repository.removeCartridge(CartridgePresets.twentyTwoLr.id),
+        LibraryRemovalResult.blockedBuiltIn,
+      );
+      final custom = await repository.duplicateCartridge(
+        CartridgePresets.twentyTwoLr.id,
+      );
+      final ammo = await repository.addAmmoLot(
+        cartridgeId: custom,
+        displayName: 'Testlot',
+      );
+      expect(
+        await repository.removeCartridge(custom),
+        LibraryRemovalResult.blockedDependency,
+      );
+      expect(
+        await repository.removeCartridge(custom, archiveDependents: true),
+        LibraryRemovalResult.archived,
+      );
+      expect(
+        (await (database.select(
+          database.cartridges,
+        )..where((row) => row.id.equals(custom))).getSingle()).archived,
+        isTrue,
+      );
+      expect(
+        (await (database.select(
+          database.ammoLots,
+        )..where((row) => row.id.equals(ammo))).getSingle()).archived,
+        isTrue,
+      );
+    },
+  );
+
+  test(
+    'editing a used custom target creates a new immutable version',
+    () async {
+      final duplicateId = await repository.duplicateTargetProfile(
+        IssfTargetProfiles.precision25m50m.versionedId,
+      );
+      final duplicateRecord = await (database.select(
+        database.targetProfiles,
+      )..where((row) => row.versionedId.equals(duplicateId))).getSingle();
+      final duplicate = TargetProfile.fromJsonString(
+        duplicateRecord.profileJson,
+      );
+      final quick = await repository.startQuickSession(
+        defaults: SeriesDefaults(
+          target: duplicate,
+          distanceMeters: 25,
+          projectileDiameterMm: 5.6,
+        ),
+      );
+      await repository.saveSeriesDraft(
+        seriesId: quick.draftSeriesId,
+        target: duplicate,
+        distanceMeters: 25,
+        projectileDiameterMm: 5.6,
+        impacts: const [ShotImpact(id: 'target-shot', xMm: 0, yMm: 0)],
+      );
+      await repository.confirmSeries(quick.draftSeriesId);
+
+      final edited = TargetProfile(
+        schemaVersion: duplicate.schemaVersion,
+        profileId: duplicate.profileId,
+        profileVersion: duplicate.profileVersion,
+        displayName: 'Nieuwe kaartnaam',
+        authority: duplicate.authority,
+        rulesEdition: duplicate.rulesEdition,
+        physicalCardWidthMm: duplicate.physicalCardWidthMm,
+        physicalCardHeightMm: duplicate.physicalCardHeightMm,
+        rings: duplicate.rings,
+        lineThicknessMm: duplicate.lineThicknessMm,
+        lineBreakingRule: duplicate.lineBreakingRule,
+        validationStatus: duplicate.validationStatus,
+      );
+      final newId = await repository.saveCustomTargetEdit(duplicateId, edited);
+      expect(newId, '${duplicate.profileId}@2');
+      expect(
+        (await (database.select(
+              database.targetProfiles,
+            )..where((row) => row.versionedId.equals(duplicateId))).getSingle())
+            .archived,
+        isTrue,
+      );
+      expect(
+        (await (database.select(
+              database.shootingSeries,
+            )..where((row) => row.id.equals(quick.draftSeriesId))).getSingle())
+            .targetProfileVersionedId,
+        duplicateId,
+      );
+    },
+  );
 }

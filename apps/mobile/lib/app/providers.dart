@@ -68,18 +68,38 @@ final firearmsProvider = StreamProvider<List<FirearmRecord>>(
   (ref) => ref.watch(repositoryProvider).watchFirearms(),
 );
 
+final allFirearmsProvider = StreamProvider<List<FirearmRecord>>(
+  (ref) => ref.watch(repositoryProvider).watchAllFirearms(),
+);
+
 final cartridgesProvider = StreamProvider<List<CartridgeRecord>>(
   (ref) => ref.watch(repositoryProvider).watchCartridges(),
+);
+
+final allCartridgesProvider = StreamProvider<List<CartridgeRecord>>(
+  (ref) => ref.watch(repositoryProvider).watchAllCartridges(),
 );
 
 final ammoLotsProvider = StreamProvider<List<AmmoLotRecord>>(
   (ref) => ref.watch(repositoryProvider).watchAmmoLots(),
 );
 
+final allAmmoLotsProvider = StreamProvider<List<AmmoLotRecord>>(
+  (ref) => ref.watch(repositoryProvider).watchAllAmmoLots(),
+);
+
 final rangesProvider = StreamProvider<List<RangeRecord>>(
   (ref) => ref.watch(repositoryProvider).watchRanges(),
 );
 
+final allRangesProvider = StreamProvider<List<RangeRecord>>(
+  (ref) => ref.watch(repositoryProvider).watchAllRanges(),
+);
+
 final targetProfilesProvider = StreamProvider<List<TargetProfileRecord>>(
   (ref) => ref.watch(repositoryProvider).watchTargetProfiles(),
+);
+
+final allTargetProfilesProvider = StreamProvider<List<TargetProfileRecord>>(
+  (ref) => ref.watch(repositoryProvider).watchAllTargetProfiles(),
 );

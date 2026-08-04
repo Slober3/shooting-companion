@@ -233,10 +233,15 @@ class _DataTransferScreenState extends ConsumerState<_DataTransferScreen> {
       );
       ref.invalidate(sessionsProvider);
       ref.invalidate(firearmsProvider);
+      ref.invalidate(allFirearmsProvider);
       ref.invalidate(cartridgesProvider);
+      ref.invalidate(allCartridgesProvider);
       ref.invalidate(ammoLotsProvider);
+      ref.invalidate(allAmmoLotsProvider);
       ref.invalidate(rangesProvider);
+      ref.invalidate(allRangesProvider);
       ref.invalidate(targetProfilesProvider);
+      ref.invalidate(allTargetProfilesProvider);
       ref.invalidate(appearanceSettingsProvider);
       await SharePlus.instance.share(
         ShareParams(
