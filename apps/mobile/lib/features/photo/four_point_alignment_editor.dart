@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shooting_companion_photo_geometry/photo_geometry.dart';
 
+import '../scoring/transformable_scoring_viewport.dart';
+
 /// Manual target-card alignment. Points are always selected in target-relative
 /// TL, TR, BR, BL order; this also supports a rotated card photo.
 class FourPointAlignmentEditor extends StatefulWidget {
@@ -49,7 +51,10 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
   ];
 
   late List<NormalizedPoint> _points;
-  int? _draggedIndex;
+  final _viewportController = ScoringViewportController();
+  bool _precisionMode = false;
+  int? _selectedCornerIndex;
+  DateTime? _lastInvalidFeedbackAt;
 
   @override
   void initState() {
@@ -62,7 +67,14 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialCorners != widget.initialCorners) {
       _points = widget.initialCorners?.points.toList() ?? [];
+      _selectedCornerIndex = null;
     }
+  }
+
+  @override
+  void dispose() {
+    _viewportController.dispose();
+    super.dispose();
   }
 
   @override
@@ -85,16 +97,42 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
                     'Handmatige kaartuitlijning, ${_points.length} van 4 hoekpunten gekozen',
                 child: SizedBox.fromSize(
                   size: size,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTapUp: (details) =>
-                        _addPoint(details.localPosition, size),
-                    onPanStart: (details) =>
-                        _beginDrag(details.localPosition, size),
-                    onPanUpdate: (details) =>
-                        _updateDrag(details.localPosition, size),
-                    onPanEnd: (_) => _draggedIndex = null,
-                    child: Stack(
+                  child: TransformableScoringViewport(
+                    aspectRatio:
+                        widget.imagePixelSize.width /
+                        widget.imagePixelSize.height,
+                    controller: _viewportController,
+                    accessMode: CanvasAccessMode.editable,
+                    tool: ScoringTool.edit,
+                    precisionMode: _precisionMode,
+                    markers: [
+                      for (var index = 0; index < _points.length; index++)
+                        ScoringViewportMarker(
+                          id: '$index',
+                          normalizedPosition: Offset(
+                            _points[index].x,
+                            _points[index].y,
+                          ),
+                          semanticsLabel:
+                              'Hoek ${index + 1}, ${_cornerNames[index]}',
+                          selectionPriority: index,
+                          child: _CornerMarker(
+                            number: index + 1,
+                            isValid: buildResult?.isValid ?? false,
+                            selected: index == _selectedCornerIndex,
+                          ),
+                        ),
+                    ],
+                    onBackgroundTap: _addNormalizedPoint,
+                    onMarkerSelected: (id) {
+                      final index = int.tryParse(id);
+                      if (index != null && index < _points.length) {
+                        setState(() => _selectedCornerIndex = index);
+                      }
+                    },
+                    onMarkerMoved: _movePoint,
+                    onInvalidPosition: _showOutsideMessage,
+                    contentBuilder: (context, contentSize, zoom) => Stack(
                       fit: StackFit.expand,
                       children: [
                         Image(
@@ -135,10 +173,26 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
           _ValidationStatus(validation: buildResult.validation),
         const SizedBox(height: 8),
         Wrap(
-          alignment: WrapAlignment.end,
+          alignment: WrapAlignment.spaceBetween,
           spacing: 8,
           runSpacing: 8,
           children: [
+            FilterChip(
+              selected: _precisionMode,
+              avatar: const Icon(Icons.center_focus_strong, size: 18),
+              label: const Text('Precisie'),
+              onSelected: (value) => setState(() => _precisionMode = value),
+            ),
+            if (_precisionMode)
+              FilledButton.tonalIcon(
+                onPressed: _points.length < 4 || _selectedCornerIndex != null
+                    ? _placeAtCrosshair
+                    : null,
+                icon: const Icon(Icons.add_location_alt_outlined),
+                label: Text(
+                  _points.length < 4 ? 'Hoek vastleggen' : 'Hoek verplaatsen',
+                ),
+              ),
             if (widget.onUseAsAttachment != null)
               TextButton.icon(
                 onPressed: widget.onUseAsAttachment,
@@ -184,46 +238,67 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
     return 'Versleep de genummerde punten tot de volledige kaart correct is omlijnd.';
   }
 
-  void _addPoint(Offset local, Size size) {
+  void _addNormalizedPoint(Offset normalized) {
     if (_points.length >= 4) return;
-    final point = _normalized(local, size);
+    final point = NormalizedPoint(normalized.dx, normalized.dy);
     setState(() => _points = [..._points, point]);
     widget.onCornersChanged?.call(List.unmodifiable(_points));
   }
 
-  void _beginDrag(Offset local, Size size) {
-    var nearestDistance = 34.0;
-    int? nearest;
-    for (var index = 0; index < _points.length; index++) {
-      final rendered = Offset(
-        _points[index].x * size.width,
-        _points[index].y * size.height,
-      );
-      final distance = (rendered - local).distance;
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearest = index;
-      }
-    }
-    _draggedIndex = nearest;
-  }
-
-  void _updateDrag(Offset local, Size size) {
-    final index = _draggedIndex;
-    if (index == null) return;
+  void _movePoint(String id, Offset normalized) {
+    final index = int.tryParse(id);
+    if (index == null || index < 0 || index >= _points.length) return;
     final updated = [..._points];
-    updated[index] = _normalized(local, size);
-    setState(() => _points = updated);
+    updated[index] = NormalizedPoint(normalized.dx, normalized.dy);
+    setState(() {
+      _points = updated;
+      _selectedCornerIndex = index;
+    });
     widget.onCornersChanged?.call(List.unmodifiable(_points));
   }
 
-  NormalizedPoint _normalized(Offset local, Size size) => NormalizedPoint(
-    (local.dx / size.width).clamp(0, 1).toDouble(),
-    (local.dy / size.height).clamp(0, 1).toDouble(),
-  );
+  void _placeAtCrosshair() {
+    final normalized = _viewportController.viewportCenterNormalized;
+    if (normalized == null) {
+      _showOutsideMessage();
+      return;
+    }
+    if (_points.length < 4) {
+      _addNormalizedPoint(normalized);
+      return;
+    }
+    final selected = _selectedCornerIndex;
+    if (selected == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecteer eerst een genummerde hoek.')),
+      );
+      return;
+    }
+    _movePoint('$selected', normalized);
+  }
+
+  void _showOutsideMessage() {
+    final now = DateTime.now();
+    if (_lastInvalidFeedbackAt != null &&
+        now.difference(_lastInvalidFeedbackAt!) <
+            const Duration(milliseconds: 800)) {
+      return;
+    }
+    _lastInvalidFeedbackAt = now;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('De gekozen positie ligt buiten de foto.'),
+        ),
+      );
+  }
 
   void _reset() {
-    setState(() => _points = []);
+    setState(() {
+      _points = [];
+      _selectedCornerIndex = null;
+    });
     widget.onCornersChanged?.call(const []);
   }
 
@@ -327,28 +402,6 @@ class _AlignmentPainter extends CustomPainter {
     }
     if (rendered.length == 4) path.close();
     canvas.drawPath(path, line);
-
-    for (var index = 0; index < rendered.length; index++) {
-      final centre = rendered[index];
-      canvas.drawCircle(
-        centre,
-        16,
-        Paint()..color = colorScheme.surface.withValues(alpha: 0.92),
-      );
-      canvas.drawCircle(centre, 16, line);
-      final label = TextPainter(
-        text: TextSpan(
-          text: '${index + 1}',
-          style: TextStyle(
-            color: isValid ? colorScheme.primary : colorScheme.error,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      label.paint(canvas, centre - Offset(label.width / 2, label.height / 2));
-    }
   }
 
   @override
@@ -356,4 +409,37 @@ class _AlignmentPainter extends CustomPainter {
       oldDelegate.points != points ||
       oldDelegate.colorScheme != colorScheme ||
       oldDelegate.isValid != isValid;
+}
+
+class _CornerMarker extends StatelessWidget {
+  const _CornerMarker({
+    required this.number,
+    required this.isValid,
+    required this.selected,
+  });
+
+  final int number;
+  final bool isValid;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final color = isValid ? colors.primary : colors.error;
+    return Container(
+      width: 34,
+      height: 34,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: colors.surface.withValues(alpha: 0.94),
+        border: Border.all(color: color, width: selected ? 5 : 3),
+        boxShadow: selected ? [BoxShadow(color: color, blurRadius: 8)] : null,
+      ),
+      child: Text(
+        '$number',
+        style: TextStyle(color: color, fontWeight: FontWeight.w800),
+      ),
+    );
+  }
 }

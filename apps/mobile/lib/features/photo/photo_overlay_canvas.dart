@@ -3,208 +3,122 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shooting_companion_photo_geometry/photo_geometry.dart';
 
+import '../../app/theme.dart';
+import '../scoring/transformable_scoring_viewport.dart';
 import 'photo_canvas_models.dart';
 
-/// Shows an immutable photo with manually positioned impacts as a live overlay.
-///
-/// In [PhotoCanvasInteractionMode.editImpacts], taps and marker drags are
-/// reported through callbacks. In [PhotoCanvasInteractionMode.panAndZoom], the
-/// photo is read-only and can be explored with pinch-to-zoom and pan gestures.
-class PhotoOverlayCanvas extends StatefulWidget {
-  PhotoOverlayCanvas({
+class PhotoOverlayCanvas extends StatelessWidget {
+  const PhotoOverlayCanvas({
     required this.imageProvider,
     required this.imagePixelSize,
     required this.alignment,
     required this.impacts,
-    this.interactionMode = PhotoCanvasInteractionMode.editImpacts,
+    this.projectileDiameterMm = 0,
+    this.accessMode = CanvasAccessMode.editable,
+    this.tool = ScoringTool.place,
     this.showOverlay = true,
+    this.precisionMode = false,
     this.selectedImpactId,
     this.onCanvasTap,
     this.onImpactMoved,
     this.onImpactSelected,
-    this.transformationController,
-    this.minimumZoom = 1,
-    this.maximumZoom = 6,
+    this.onImpactMoveStart,
+    this.onImpactMoveEnd,
+    this.onImpactMoveCancel,
+    this.onInvalidPosition,
+    this.viewportController,
+    this.showControls = true,
     super.key,
-  }) : assert(imagePixelSize.width > 0),
-       assert(imagePixelSize.height > 0),
-       assert(minimumZoom > 0),
-       assert(maximumZoom >= minimumZoom);
+  });
 
   final ImageProvider<Object> imageProvider;
   final Size imagePixelSize;
   final ManualPhotoAlignment alignment;
   final List<PhotoCanvasImpact> impacts;
-  final PhotoCanvasInteractionMode interactionMode;
+  final double projectileDiameterMm;
+  final CanvasAccessMode accessMode;
+  final ScoringTool tool;
   final bool showOverlay;
+  final bool precisionMode;
   final String? selectedImpactId;
   final ValueChanged<PhotoCanvasPosition>? onCanvasTap;
   final PhotoImpactMoved? onImpactMoved;
-  final ValueChanged<String>? onImpactSelected;
-  final TransformationController? transformationController;
-  final double minimumZoom;
-  final double maximumZoom;
-
-  @override
-  State<PhotoOverlayCanvas> createState() => _PhotoOverlayCanvasState();
-}
-
-class _PhotoOverlayCanvasState extends State<PhotoOverlayCanvas> {
-  String? _draggedImpactId;
+  final ValueChanged<String?>? onImpactSelected;
+  final ValueChanged<String>? onImpactMoveStart;
+  final ValueChanged<String>? onImpactMoveEnd;
+  final ValueChanged<String>? onImpactMoveCancel;
+  final VoidCallback? onInvalidPosition;
+  final ScoringViewportController? viewportController;
+  final bool showControls;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final viewportSize = _containedSize(widget.imagePixelSize, constraints);
-        final surface = _PhotoSurface(
-          size: viewportSize,
-          imageProvider: widget.imageProvider,
-          alignment: widget.alignment,
-          impacts: widget.impacts,
-          showOverlay: widget.showOverlay,
-          selectedImpactId: widget.selectedImpactId,
-          editable:
-              widget.interactionMode == PhotoCanvasInteractionMode.editImpacts,
-          onTap: _handleTap,
-          onPanStart: _handlePanStart,
-          onPanUpdate: _handlePanUpdate,
-          onPanEnd: () => _draggedImpactId = null,
-        );
+    final ordered = [...impacts]
+      ..sort((first, second) {
+        if (first.id == selectedImpactId) return 1;
+        if (second.id == selectedImpactId) return -1;
+        return first.sequenceNumber.compareTo(second.sequenceNumber);
+      });
 
-        final content =
-            widget.interactionMode == PhotoCanvasInteractionMode.panAndZoom
-            ? InteractiveViewer(
-                transformationController: widget.transformationController,
-                minScale: widget.minimumZoom,
-                maxScale: widget.maximumZoom,
-                boundaryMargin: const EdgeInsets.all(24),
-                child: surface,
-              )
-            : surface;
-
-        return Center(
-          child: Semantics(
-            label:
-                'Doelkaartfoto met ${widget.impacts.length} handmatig geplaatste treffers',
-            image: true,
-            child: SizedBox.fromSize(size: viewportSize, child: content),
-          ),
-        );
-      },
-    );
-  }
-
-  void _handleTap(Offset localPosition, Size size) {
-    final nearby = _nearestImpact(localPosition, size);
-    if (nearby != null) {
-      widget.onImpactSelected?.call(nearby.id);
-      return;
-    }
-    final position = _positionFromLocal(localPosition, size);
-    if (position != null) widget.onCanvasTap?.call(position);
-  }
-
-  void _handlePanStart(Offset localPosition, Size size) {
-    _draggedImpactId = _nearestImpact(localPosition, size)?.id;
-    final id = _draggedImpactId;
-    if (id != null) widget.onImpactSelected?.call(id);
-  }
-
-  void _handlePanUpdate(Offset localPosition, Size size) {
-    final id = _draggedImpactId;
-    if (id == null) return;
-    final position = _positionFromLocal(localPosition, size);
-    if (position != null) widget.onImpactMoved?.call(id, position);
-  }
-
-  PhotoCanvasPosition? _positionFromLocal(Offset local, Size size) {
-    final normalized = NormalizedPoint(
-      local.dx / size.width,
-      local.dy / size.height,
-    );
-    if (!normalized.isInsideImage) return null;
-    final physical = widget.alignment.normalizedToPhysical(normalized);
-    if (physical.x < -widget.alignment.cardWidthMm / 2 ||
-        physical.x > widget.alignment.cardWidthMm / 2 ||
-        physical.y < -widget.alignment.cardHeightMm / 2 ||
-        physical.y > widget.alignment.cardHeightMm / 2) {
-      return null;
-    }
-    return PhotoCanvasPosition(normalized: normalized, physicalMm: physical);
-  }
-
-  PhotoCanvasImpact? _nearestImpact(Offset local, Size size) {
-    PhotoCanvasImpact? nearest;
-    var nearestDistance = 30.0;
-    for (final impact in widget.impacts) {
-      final normalized = widget.alignment.physicalToNormalized(
-        impact.positionMm,
-      );
-      final rendered = Offset(
-        normalized.x * size.width,
-        normalized.y * size.height,
-      );
-      final distance = (rendered - local).distance;
-      if (distance < nearestDistance) {
-        nearest = impact;
-        nearestDistance = distance;
-      }
-    }
-    return nearest;
-  }
-
-  Size _containedSize(Size image, BoxConstraints constraints) {
-    final width = constraints.maxWidth.isFinite
-        ? constraints.maxWidth
-        : image.width;
-    final height = constraints.maxHeight.isFinite
-        ? constraints.maxHeight
-        : width * image.height / image.width;
-    final scale = math.min(width / image.width, height / image.height);
-    return Size(image.width * scale, image.height * scale);
-  }
-}
-
-class _PhotoSurface extends StatelessWidget {
-  const _PhotoSurface({
-    required this.size,
-    required this.imageProvider,
-    required this.alignment,
-    required this.impacts,
-    required this.showOverlay,
-    required this.selectedImpactId,
-    required this.editable,
-    required this.onTap,
-    required this.onPanStart,
-    required this.onPanUpdate,
-    required this.onPanEnd,
-  });
-
-  final Size size;
-  final ImageProvider<Object> imageProvider;
-  final ManualPhotoAlignment alignment;
-  final List<PhotoCanvasImpact> impacts;
-  final bool showOverlay;
-  final String? selectedImpactId;
-  final bool editable;
-  final void Function(Offset position, Size size) onTap;
-  final void Function(Offset position, Size size) onPanStart;
-  final void Function(Offset position, Size size) onPanUpdate;
-  final VoidCallback onPanEnd;
-
-  @override
-  Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: SizedBox.fromSize(
-        size: size,
-        child: Stack(
+    return Semantics(
+      label:
+          'Doelkaartfoto met ${impacts.length} handmatig geplaatste treffers',
+      image: true,
+      child: TransformableScoringViewport(
+        aspectRatio: imagePixelSize.width / imagePixelSize.height,
+        controller: viewportController,
+        accessMode: accessMode,
+        tool: tool,
+        precisionMode: precisionMode,
+        showControls: showControls,
+        onInvalidPosition: onInvalidPosition,
+        onBackgroundTap: (normalized) {
+          if (tool == ScoringTool.edit) {
+            onImpactSelected?.call(null);
+            return;
+          }
+          final position = _positionFromNormalized(normalized);
+          if (position == null) {
+            onInvalidPosition?.call();
+            return;
+          }
+          onCanvasTap?.call(position);
+        },
+        onMarkerSelected: (id) => onImpactSelected?.call(id),
+        onMarkerDragStart: onImpactMoveStart,
+        onMarkerDragEnd: onImpactMoveEnd,
+        onMarkerDragCancel: onImpactMoveCancel,
+        onMarkerMoved: (id, normalized) {
+          final position = _positionFromNormalized(normalized);
+          if (position == null) {
+            onInvalidPosition?.call();
+            return;
+          }
+          onImpactMoved?.call(id, position);
+        },
+        markers: showOverlay
+            ? [
+                for (final impact in ordered)
+                  ScoringViewportMarker(
+                    id: impact.id,
+                    normalizedPosition: _normalizedForImpact(impact),
+                    semanticsLabel:
+                        'Treffer ${impact.sequenceNumber}, ${impact.scoreLabel ?? 'onbekende score'}, multipliciteit ${impact.multiplicity}',
+                    selectionPriority: impact.sequenceNumber,
+                    child: _PhotoMarker(
+                      impact: impact,
+                      selected: impact.id == selectedImpactId,
+                    ),
+                  ),
+              ]
+            : const [],
+        contentBuilder: (context, size, zoom) => Stack(
           fit: StackFit.expand,
           children: [
             Image(
               image: imageProvider,
               fit: BoxFit.fill,
-              filterQuality: FilterQuality.medium,
+              filterQuality: FilterQuality.high,
               errorBuilder: (context, error, stackTrace) => ColoredBox(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 child: const Center(
@@ -212,24 +126,15 @@ class _PhotoSurface extends StatelessWidget {
                 ),
               ),
             ),
-            if (editable)
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTapUp: (details) => onTap(details.localPosition, size),
-                onPanStart: (details) =>
-                    onPanStart(details.localPosition, size),
-                onPanUpdate: (details) =>
-                    onPanUpdate(details.localPosition, size),
-                onPanEnd: (_) => onPanEnd(),
-              ),
             if (showOverlay)
               IgnorePointer(
                 child: CustomPaint(
-                  painter: _PhotoImpactPainter(
+                  painter: _AlignmentOutlinePainter(
                     alignment: alignment,
                     impacts: impacts,
-                    selectedImpactId: selectedImpactId,
-                    colorScheme: Theme.of(context).colorScheme,
+                    projectileDiameterMm: projectileDiameterMm,
+                    color: Theme.of(context).colorScheme.primary,
+                    impactColor: AppContrastTokens.of(context).positive,
                   ),
                 ),
               ),
@@ -238,114 +143,195 @@ class _PhotoSurface extends StatelessWidget {
       ),
     );
   }
+
+  Offset _normalizedForImpact(PhotoCanvasImpact impact) {
+    final normalized = alignment.physicalToNormalized(impact.positionMm);
+    return Offset(normalized.x, normalized.y);
+  }
+
+  PhotoCanvasPosition? _positionFromNormalized(Offset normalized) {
+    final imagePoint = NormalizedPoint(normalized.dx, normalized.dy);
+    if (!imagePoint.isInsideImage) return null;
+    late final PhysicalPointMm physical;
+    try {
+      physical = alignment.normalizedToPhysical(imagePoint);
+    } on StateError {
+      return null;
+    }
+    if (!physical.x.isFinite || !physical.y.isFinite) return null;
+    final halfWidth = alignment.cardWidthMm / 2;
+    final halfHeight = alignment.cardHeightMm / 2;
+    const edgeToleranceMm = 1e-6;
+    if (physical.x < -halfWidth - edgeToleranceMm ||
+        physical.x > halfWidth + edgeToleranceMm ||
+        physical.y < -halfHeight - edgeToleranceMm ||
+        physical.y > halfHeight + edgeToleranceMm) {
+      return null;
+    }
+    return PhotoCanvasPosition(
+      normalized: imagePoint,
+      physicalMm: PhysicalPointMm(
+        physical.x.clamp(-halfWidth, halfWidth).toDouble(),
+        physical.y.clamp(-halfHeight, halfHeight).toDouble(),
+      ),
+    );
+  }
 }
 
-class _PhotoImpactPainter extends CustomPainter {
-  _PhotoImpactPainter({
+class _PhotoMarker extends StatelessWidget {
+  const _PhotoMarker({required this.impact, required this.selected});
+
+  final PhotoCanvasImpact impact;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final tokens = AppContrastTokens.of(context);
+    final fill = impact.isPositionUncertain ? tokens.critical : tokens.positive;
+    final multiplicity = impact.multiplicity > 1
+        ? '×${impact.multiplicity}'
+        : '';
+    return SizedBox.square(
+      dimension: 48,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: selected ? 34 : 30,
+            height: selected ? 34 : 30,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: fill.withValues(alpha: 0.94),
+              border: Border.all(
+                color: selected ? tokens.markerOutline : colors.surface,
+                width: selected ? 4 : 2,
+              ),
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Padding(
+                padding: const EdgeInsets.all(3),
+                child: Text(
+                  '${impact.sequenceNumber}$multiplicity',
+                  style: TextStyle(
+                    color: impact.isPositionUncertain
+                        ? tokens.onCritical
+                        : tokens.onPositive,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (impact.scoreLabel case final score?)
+            Positioned(
+              left: 32,
+              top: 0,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.primaryContainer,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 2,
+                  ),
+                  child: Text(
+                    score,
+                    style: TextStyle(
+                      color: colors.onPrimaryContainer,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AlignmentOutlinePainter extends CustomPainter {
+  const _AlignmentOutlinePainter({
     required this.alignment,
     required this.impacts,
-    required this.selectedImpactId,
-    required this.colorScheme,
+    required this.projectileDiameterMm,
+    required this.color,
+    required this.impactColor,
   });
 
   final ManualPhotoAlignment alignment;
   final List<PhotoCanvasImpact> impacts;
-  final String? selectedImpactId;
-  final ColorScheme colorScheme;
+  final double projectileDiameterMm;
+  final Color color;
+  final Color impactColor;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final cardPath = Path();
+    final path = Path();
     for (var index = 0; index < alignment.corners.points.length; index++) {
       final point = alignment.corners.points[index];
       final rendered = Offset(point.x * size.width, point.y * size.height);
       if (index == 0) {
-        cardPath.moveTo(rendered.dx, rendered.dy);
+        path.moveTo(rendered.dx, rendered.dy);
       } else {
-        cardPath.lineTo(rendered.dx, rendered.dy);
+        path.lineTo(rendered.dx, rendered.dy);
       }
     }
-    cardPath.close();
+    path.close();
     canvas.drawPath(
-      cardPath,
+      path,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2
-        ..color = colorScheme.primary,
+        ..color = color,
     );
-
+    if (projectileDiameterMm <= 0) return;
+    final radius = projectileDiameterMm / 2;
     for (final impact in impacts) {
-      final normalized = alignment.physicalToNormalized(impact.positionMm);
-      final centre = Offset(
-        normalized.x * size.width,
-        normalized.y * size.height,
-      );
-      if (centre.dx < 0 ||
-          centre.dy < 0 ||
-          centre.dx > size.width ||
-          centre.dy > size.height) {
-        continue;
+      const segments = 40;
+      final projectilePath = Path();
+      for (var index = 0; index <= segments; index++) {
+        final angle = index * math.pi * 2 / segments;
+        final normalized = alignment.physicalToNormalized(
+          PhysicalPointMm(
+            impact.positionMm.x + math.cos(angle) * radius,
+            impact.positionMm.y + math.sin(angle) * radius,
+          ),
+        );
+        final rendered = Offset(
+          normalized.x * size.width,
+          normalized.y * size.height,
+        );
+        if (index == 0) {
+          projectilePath.moveTo(rendered.dx, rendered.dy);
+        } else {
+          projectilePath.lineTo(rendered.dx, rendered.dy);
+        }
       }
-      final selected = impact.id == selectedImpactId;
-      final fillColor = impact.isPositionUncertain
-          ? colorScheme.error
-          : colorScheme.tertiary;
-      canvas.drawCircle(
-        centre,
-        selected ? 16 : 13,
-        Paint()..color = fillColor.withValues(alpha: 0.92),
-      );
-      canvas.drawCircle(
-        centre,
-        selected ? 17 : 14,
+      projectilePath.close();
+      canvas.drawPath(
+        projectilePath,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = selected ? 3 : 2
-          ..color = selected ? colorScheme.primary : colorScheme.surface,
+          ..strokeWidth = 1.2
+          ..color = impactColor.withValues(alpha: 0.65),
       );
-
-      final multiplicity = impact.multiplicity > 1
-          ? ' ×${impact.multiplicity}'
-          : '';
-      final markerText = TextPainter(
-        text: TextSpan(
-          text: '${impact.sequenceNumber}$multiplicity',
-          style: TextStyle(
-            color: colorScheme.onTertiary,
-            fontSize: impact.multiplicity > 1 ? 9 : 11,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout(maxWidth: 48);
-      markerText.paint(
-        canvas,
-        centre - Offset(markerText.width / 2, markerText.height / 2),
-      );
-
-      final scoreLabel = impact.scoreLabel;
-      if (scoreLabel != null && scoreLabel.isNotEmpty) {
-        final scoreText = TextPainter(
-          text: TextSpan(
-            text: scoreLabel,
-            style: TextStyle(
-              color: colorScheme.onPrimaryContainer,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              backgroundColor: colorScheme.primaryContainer,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
-        scoreText.paint(canvas, centre + const Offset(16, -18));
-      }
     }
   }
 
   @override
-  bool shouldRepaint(covariant _PhotoImpactPainter oldDelegate) =>
+  bool shouldRepaint(covariant _AlignmentOutlinePainter oldDelegate) =>
       oldDelegate.alignment != alignment ||
       oldDelegate.impacts != impacts ||
-      oldDelegate.selectedImpactId != selectedImpactId ||
-      oldDelegate.colorScheme != colorScheme;
+      oldDelegate.projectileDiameterMm != projectileDiameterMm ||
+      oldDelegate.color != color ||
+      oldDelegate.impactColor != impactColor;
 }

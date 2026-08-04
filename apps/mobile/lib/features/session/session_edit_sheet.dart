@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/app_database.dart';
+import '../../widgets/safe_sheet_scaffold.dart';
 
 class SessionEditValues {
   const SessionEditValues({
@@ -22,10 +23,8 @@ Future<SessionEditValues?> showSessionEditSheet({
   required BuildContext context,
   required SessionRecord session,
   required List<RangeRecord> ranges,
-}) => showModalBottomSheet<SessionEditValues>(
+}) => showSafeModalSheet<SessionEditValues>(
   context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
   builder: (_) => _SessionEditSheet(session: session, ranges: ranges),
 );
 
@@ -40,6 +39,7 @@ class _SessionEditSheet extends StatefulWidget {
 }
 
 class _SessionEditSheetState extends State<_SessionEditSheet> {
+  final _formKey = GlobalKey<FormState>();
   late DateTime _startedAt;
   late String? _rangeId;
   late final TextEditingController _goal;
@@ -66,52 +66,37 @@ class _SessionEditSheetState extends State<_SessionEditSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, keyboard + 16),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    return Form(
+      key: _formKey,
+      child: SafeSheetScaffold(
+        title: 'Sessie bewerken',
+        actions: [
+          FilledButton(
+            onPressed: _submit,
+            child: const Text('Wijzigingen bewaren'),
+          ),
+        ],
+        body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
+            AdaptiveFormRow(
+              minimumChildWidth: 150,
               children: [
-                Expanded(
-                  child: Text(
-                    'Sessie bewerken',
-                    style: Theme.of(context).textTheme.titleLarge,
+                OutlinedButton.icon(
+                  onPressed: _pickDate,
+                  icon: const Icon(Icons.calendar_today_outlined),
+                  label: Text(
+                    '${_startedAt.day.toString().padLeft(2, '0')}/'
+                    '${_startedAt.month.toString().padLeft(2, '0')}/'
+                    '${_startedAt.year}',
                   ),
                 ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  tooltip: 'Sluiten',
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _pickDate,
-                    icon: const Icon(Icons.calendar_today_outlined),
-                    label: Text(
-                      '${_startedAt.day.toString().padLeft(2, '0')}/'
-                      '${_startedAt.month.toString().padLeft(2, '0')}/'
-                      '${_startedAt.year}',
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _pickTime,
-                    icon: const Icon(Icons.schedule),
-                    label: Text(
-                      '${_startedAt.hour.toString().padLeft(2, '0')}:'
-                      '${_startedAt.minute.toString().padLeft(2, '0')}',
-                    ),
+                OutlinedButton.icon(
+                  onPressed: _pickTime,
+                  icon: const Icon(Icons.schedule),
+                  label: Text(
+                    '${_startedAt.hour.toString().padLeft(2, '0')}:'
+                    '${_startedAt.minute.toString().padLeft(2, '0')}',
                   ),
                 ),
               ],
@@ -136,28 +121,27 @@ class _SessionEditSheetState extends State<_SessionEditSheet> {
               onChanged: (value) => setState(() => _rangeId = value),
             ),
             const SizedBox(height: 12),
-            TextField(
+            TextFormField(
               controller: _goal,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Trainingsdoel'),
+              validator: (value) => _maximumLength(value, 160),
             ),
             const SizedBox(height: 12),
-            TextField(
+            TextFormField(
               controller: _conditions,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Omstandigheden'),
+              validator: (value) => _maximumLength(value, 240),
             ),
             const SizedBox(height: 12),
-            TextField(
+            TextFormField(
               controller: _notes,
               minLines: 3,
               maxLines: 6,
+              textInputAction: TextInputAction.newline,
               decoration: const InputDecoration(labelText: 'Notities'),
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _submit,
-              child: const Text('Wijzigingen bewaren'),
+              validator: (value) => _maximumLength(value, 2000),
             ),
           ],
         ),
@@ -172,7 +156,7 @@ class _SessionEditSheetState extends State<_SessionEditSheet> {
       lastDate: DateTime.now().add(const Duration(days: 1)),
       initialDate: _startedAt,
     );
-    if (selected == null) return;
+    if (selected == null || !mounted) return;
     setState(() {
       _startedAt = DateTime(
         selected.year,
@@ -189,7 +173,7 @@ class _SessionEditSheetState extends State<_SessionEditSheet> {
       context: context,
       initialTime: TimeOfDay.fromDateTime(_startedAt),
     );
-    if (selected == null) return;
+    if (selected == null || !mounted) return;
     setState(() {
       _startedAt = DateTime(
         _startedAt.year,
@@ -201,16 +185,26 @@ class _SessionEditSheetState extends State<_SessionEditSheet> {
     });
   }
 
-  void _submit() => Navigator.pop(
-    context,
-    SessionEditValues(
-      startedAtLocal: _startedAt,
-      rangeId: _rangeId,
-      trainingGoal: _nullable(_goal.text),
-      conditions: _nullable(_conditions.text),
-      notes: _nullable(_notes.text),
-    ),
-  );
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    Navigator.pop(
+      context,
+      SessionEditValues(
+        startedAtLocal: _startedAt,
+        rangeId: _rangeId,
+        trainingGoal: _nullable(_goal.text),
+        conditions: _nullable(_conditions.text),
+        notes: _nullable(_notes.text),
+      ),
+    );
+  }
+
+  String? _maximumLength(String? value, int maximum) {
+    if ((value?.trim().length ?? 0) > maximum) {
+      return 'Gebruik maximaal $maximum tekens';
+    }
+    return null;
+  }
 
   String? _nullable(String value) {
     final trimmed = value.trim();

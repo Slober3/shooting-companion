@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shooting_companion_photo_geometry/photo_geometry.dart';
 
+import '../scoring/transformable_scoring_viewport.dart';
 import 'photo_canvas_models.dart';
 import 'photo_overlay_canvas.dart';
 
@@ -11,6 +12,7 @@ class PhotoOverlayViewer extends StatefulWidget {
     required this.imagePixelSize,
     required this.alignment,
     required this.impacts,
+    this.projectileDiameterMm = 0,
     this.title = 'Kaartfoto',
     this.initiallyShowOverlay = true,
     super.key,
@@ -20,6 +22,7 @@ class PhotoOverlayViewer extends StatefulWidget {
   final Size imagePixelSize;
   final ManualPhotoAlignment alignment;
   final List<PhotoCanvasImpact> impacts;
+  final double projectileDiameterMm;
   final String title;
   final bool initiallyShowOverlay;
 
@@ -28,7 +31,7 @@ class PhotoOverlayViewer extends StatefulWidget {
 }
 
 class _PhotoOverlayViewerState extends State<PhotoOverlayViewer> {
-  final _transformationController = TransformationController();
+  final _viewportController = ScoringViewportController();
   late bool _showOverlay;
 
   @override
@@ -39,7 +42,7 @@ class _PhotoOverlayViewerState extends State<PhotoOverlayViewer> {
 
   @override
   void dispose() {
-    _transformationController.dispose();
+    _viewportController.dispose();
     super.dispose();
   }
 
@@ -58,8 +61,7 @@ class _PhotoOverlayViewerState extends State<PhotoOverlayViewer> {
           ),
           IconButton(
             tooltip: 'Weergave herstellen',
-            onPressed: () =>
-                _transformationController.value = Matrix4.identity(),
+            onPressed: _viewportController.fitToView,
             icon: const Icon(Icons.center_focus_strong),
           ),
         ],
@@ -73,9 +75,10 @@ class _PhotoOverlayViewerState extends State<PhotoOverlayViewer> {
             imagePixelSize: widget.imagePixelSize,
             alignment: widget.alignment,
             impacts: widget.impacts,
+            projectileDiameterMm: widget.projectileDiameterMm,
             showOverlay: _showOverlay,
-            interactionMode: PhotoCanvasInteractionMode.panAndZoom,
-            transformationController: _transformationController,
+            accessMode: CanvasAccessMode.readOnly,
+            viewportController: _viewportController,
           ),
         ),
       ),

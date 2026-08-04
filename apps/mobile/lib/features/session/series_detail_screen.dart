@@ -14,6 +14,7 @@ import '../../widgets/responsive_metric_grid.dart';
 import '../../widgets/safe_bottom_action_bar.dart';
 import '../photo/photo.dart';
 import '../scoring/target_canvas.dart';
+import '../scoring/transformable_scoring_viewport.dart';
 import 'manual_series_screen.dart';
 
 class SeriesDetailScreen extends ConsumerWidget {
@@ -251,6 +252,7 @@ class _SeriesDetailBody extends StatelessWidget {
                 image.height.toDouble(),
               ),
               alignment: alignment,
+              projectileDiameterMm: detail.series.projectileDiameterMm,
               impacts: [
                 for (var index = 0; index < detail.impacts.length; index++)
                   if (!detail.impacts[index].isMiss)
@@ -294,7 +296,8 @@ class _TargetPreview extends StatelessWidget {
         imageProvider: FileImage(File(image.path)),
         imagePixelSize: Size(image.width.toDouble(), image.height.toDouble()),
         alignment: alignment,
-        interactionMode: PhotoCanvasInteractionMode.panAndZoom,
+        projectileDiameterMm: detail.series.projectileDiameterMm,
+        accessMode: CanvasAccessMode.readOnly,
         impacts: [
           for (var index = 0; index < detail.impacts.length; index++)
             if (!detail.impacts[index].isMiss)

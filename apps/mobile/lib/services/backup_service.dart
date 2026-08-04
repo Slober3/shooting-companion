@@ -563,7 +563,7 @@ class BackupService {
         jsonEncode({
           'format': 'shooting-companion-backup',
           'formatVersion': BackupPayloadAdapter.currentFormatVersion,
-          'appVersion': '0.2.0',
+          'appVersion': '0.3.0',
           'databaseSchemaVersion': 2,
           'minimumAppVersion': '0.2.0',
           'createdAtUtc': createdAt.toIso8601String(),

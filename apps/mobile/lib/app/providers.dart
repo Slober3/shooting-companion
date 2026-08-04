@@ -21,6 +21,12 @@ final sessionsProvider = StreamProvider<List<SessionRecord>>(
   (ref) => ref.watch(repositoryProvider).watchSessions(),
 );
 
+final sessionListItemsProvider =
+    StreamProvider.family<List<SessionListItem>, SessionListFilters>(
+      (ref, filters) =>
+          ref.watch(repositoryProvider).watchSessionListItems(filters),
+    );
+
 final activeSessionProvider = StreamProvider<SessionRecord?>(
   (ref) => ref.watch(repositoryProvider).watchActiveSession(),
 );

@@ -23,41 +23,14 @@ class SafeBottomActionBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         minimum: padding,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final textScale = MediaQuery.textScalerOf(context).scale(1);
-            final stackActions = constraints.maxWidth < 380 || textScale >= 1.5;
-            if (stackActions) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (leading case final leading?) ...[
-                    leading,
-                    const SizedBox(height: 10),
-                  ],
-                  for (var index = 0; index < actions.length; index++) ...[
-                    actions[index],
-                    if (index != actions.length - 1) const SizedBox(height: 8),
-                  ],
-                ],
-              );
-            }
-
-            return Row(
-              children: [
-                if (leading case final leading?) ...[
-                  Expanded(child: leading),
-                  const SizedBox(width: 12),
-                ] else
-                  const Spacer(),
-                for (var index = 0; index < actions.length; index++) ...[
-                  Flexible(child: actions[index]),
-                  if (index != actions.length - 1) const SizedBox(width: 8),
-                ],
-              ],
-            );
-          },
+        child: OverflowBar(
+          alignment: leading == null
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.spaceBetween,
+          spacing: 8,
+          overflowSpacing: 8,
+          overflowAlignment: OverflowBarAlignment.end,
+          children: [?leading, ...actions],
         ),
       ),
     );

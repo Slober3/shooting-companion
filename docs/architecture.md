@@ -28,6 +28,27 @@ Drift rows or Flutter widgets.
 6. Confirm and edit replace impacts and aggregates inside one transaction.
 7. Analytics read confirmed series only; drafts remain resumable.
 
+## Precision viewport
+
+`TransformableScoringViewport` is the single coordinate boundary for drawn
+targets, aligned photos, read-only series previews and four-point alignment.
+Viewport gestures are temporary UI state. Every placement is converted through
+the inverse transform to normalized scene coordinates and then to physical
+millimetres; zoom and pan therefore never mutate persisted impacts.
+
+Place mode deliberately ignores marker hit areas. Edit mode ranks candidates by
+screen distance and then newest-first, with a fixed 24 dp radius independent of
+zoom. Photo-dependent impacts retain both normalized image coordinates and
+physical millimetres so a new alignment can recompute only the affected points
+inside one transaction.
+
+## Presentation and exports
+
+Appearance choices are key/value preferences and require no database migration.
+Semantic marker/status colours live in a `ThemeExtension`. PDF report data,
+font loading and document composition are separate contracts; Noto Sans is
+bundled locally so report generation remains offline and Unicode-safe.
+
 ## Versioning
 
 - App: SemVer.

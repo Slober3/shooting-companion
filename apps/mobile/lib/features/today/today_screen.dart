@@ -3,18 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/providers.dart';
-import '../../data/app_database.dart';
 import '../../data/shooting_repository.dart';
 import '../../widgets/compact_page_scaffold.dart';
 import '../session/active_session_screen.dart';
 import '../session/manual_series_screen.dart';
+import '../session/session_completion_flow.dart';
 
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
 
+  static const _allSessions = SessionListFilters();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sessions = ref.watch(sessionsProvider);
+    final sessions = ref.watch(sessionListItemsProvider(_allSessions));
     return CompactPageScaffold(
       title: 'Start',
       actions: [
@@ -28,14 +30,14 @@ class TodayScreen extends ConsumerWidget {
       ],
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.invalidate(sessionsProvider);
-          await ref.read(sessionsProvider.future);
+          ref.invalidate(sessionListItemsProvider(_allSessions));
+          await ref.read(sessionListItemsProvider(_allSessions).future);
         },
         child: sessions.when(
           data: (items) {
             final active = _activeSession(items);
             final recent = items
-                .where((item) => item.status == 'completed')
+                .where((item) => item.session.status == 'completed')
                 .take(3)
                 .toList();
             return ListView(
@@ -50,12 +52,12 @@ class TodayScreen extends ConsumerWidget {
                   _StartPrompt(onStart: () => _startQuick(context, ref))
                 else
                   _ActiveSessionPanel(
-                    session: active,
-                    onContinue: (series) =>
-                        _continue(context, ref, active, series),
-                    onNewSession: (series) =>
-                        _replaceActive(context, ref, active, series),
-                    onOpenDetails: () => _openDetails(context, active.id),
+                    item: active,
+                    onContinue: () => _continue(context, ref, active),
+                    onEndSession: () => _endActive(context, ref, active),
+                    onNewSession: () => _replaceActive(context, ref, active),
+                    onOpenDetails: () =>
+                        _openDetails(context, active.session.id),
                   ),
                 const SizedBox(height: 24),
                 Row(
@@ -87,7 +89,7 @@ class TodayScreen extends ConsumerWidget {
                     child: Column(
                       children: [
                         for (var index = 0; index < recent.length; index++) ...[
-                          _RecentSessionRow(session: recent[index]),
+                          _RecentSessionRow(item: recent[index]),
                           if (index != recent.length - 1)
                             const Divider(height: 1),
                         ],
@@ -112,7 +114,8 @@ class TodayScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton(
-                    onPressed: () => ref.invalidate(sessionsProvider),
+                    onPressed: () =>
+                        ref.invalidate(sessionListItemsProvider(_allSessions)),
                     child: const Text('Opnieuw proberen'),
                   ),
                 ],
@@ -147,20 +150,18 @@ class TodayScreen extends ConsumerWidget {
   Future<void> _continue(
     BuildContext context,
     WidgetRef ref,
-    SessionRecord session,
-    List<SeriesRecord> series,
+    SessionListItem item,
   ) async {
-    final drafts = series.where((item) => item.status == 'draft');
-    final draftId = drafts.isNotEmpty
-        ? drafts.first.id
-        : await ref
-              .read(repositoryProvider)
-              .createOrResumeDraftSeries(session.id);
+    final draftId =
+        item.draftSeriesId ??
+        await ref
+            .read(repositoryProvider)
+            .createOrResumeDraftSeries(item.session.id);
     if (!context.mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) =>
-            ManualSeriesScreen(sessionId: session.id, seriesId: draftId),
+            ManualSeriesScreen(sessionId: item.session.id, seriesId: draftId),
       ),
     );
   }
@@ -168,20 +169,16 @@ class TodayScreen extends ConsumerWidget {
   Future<void> _replaceActive(
     BuildContext context,
     WidgetRef ref,
-    SessionRecord session,
-    List<SeriesRecord> series,
+    SessionListItem item,
   ) async {
-    final nonEmptyDrafts = series.where(
-      (item) => item.status == 'draft' && item.shotCount > 0,
-    );
-    if (nonEmptyDrafts.isNotEmpty) {
-      final draft = nonEmptyDrafts.first;
+    if (item.hasMeaningfulDraft) {
       final decision = await showDialog<_DraftReplacementDecision>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Conceptreeks nog niet bewaard'),
           content: Text(
-            'Deze reeks bevat ${draft.shotCount} ${draft.shotCount == 1 ? 'schot' : 'schoten'}. Open de reeks om ze te bewaren, of verwijder het concept voordat je een nieuwe sessie start.',
+            'Deze reeks bevat ${_draftContentDescription(item)}. '
+            'Open de reeks om ze te bewaren, of verwijder het concept voordat je een nieuwe sessie start.',
           ),
           actions: [
             TextButton(
@@ -203,25 +200,27 @@ class TodayScreen extends ConsumerWidget {
       );
       if (!context.mounted || decision == null) return;
       if (decision == _DraftReplacementDecision.openDraft) {
+        final draftId = item.draftSeriesId;
+        if (draftId == null) return;
         await Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) =>
-                ManualSeriesScreen(sessionId: session.id, seriesId: draft.id),
+            builder: (_) => ManualSeriesScreen(
+              sessionId: item.session.id,
+              seriesId: draftId,
+            ),
           ),
         );
         return;
       }
-      await ref.read(repositoryProvider).deleteSeries(draft.id);
-      if (!context.mounted) return;
-      await ref.read(repositoryProvider).completeSession(session.id);
+      await ref
+          .read(repositoryProvider)
+          .discardDraftAndCompleteSession(item.session.id);
       if (!context.mounted) return;
       await _startQuick(context, ref);
       return;
     }
 
-    final confirmedCount = series
-        .where((item) => item.status == 'confirmed')
-        .length;
+    final confirmedCount = item.confirmedSeriesCount;
     final accepted = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -244,9 +243,32 @@ class TodayScreen extends ConsumerWidget {
       ),
     );
     if (accepted != true) return;
-    await ref.read(repositoryProvider).completeSession(session.id);
+    await ref.read(repositoryProvider).completeSession(item.session.id);
     if (!context.mounted) return;
     await _startQuick(context, ref);
+  }
+
+  Future<void> _endActive(
+    BuildContext context,
+    WidgetRef ref,
+    SessionListItem item,
+  ) async {
+    await SessionCompletionCoordinator.run(
+      context: context,
+      repository: ref.read(repositoryProvider),
+      sessionId: item.session.id,
+      promptData: SessionEndPromptData(
+        confirmedSeriesCount: item.confirmedSeriesCount,
+        draftSeriesId: item.draftSeriesId,
+        draftShotCount: item.draftShotCount,
+        draftPhotoCount: item.draftPhotoCount,
+        draftHasNotes: item.draftHasNotes,
+        draftWasEdited: item.draftWasEdited,
+        sessionPhotoCount: item.sessionPhotoCount,
+        hasSessionDetails: item.session.hasUserDetails,
+      ),
+      openDraft: (_) => _continue(context, ref, item),
+    );
   }
 
   void _openDetails(BuildContext context, String sessionId) {
@@ -256,6 +278,25 @@ class TodayScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _draftContentDescription(SessionListItem item) {
+  final parts = <String>[];
+  if (item.draftShotCount > 0) {
+    parts.add(
+      '${item.draftShotCount} ${item.draftShotCount == 1 ? 'schot' : 'schoten'}',
+    );
+  }
+  if (item.draftPhotoCount > 0) {
+    parts.add(
+      '${item.draftPhotoCount} ${item.draftPhotoCount == 1 ? 'foto' : 'foto’s'}',
+    );
+  }
+  if (item.draftHasNotes) parts.add('een notitie');
+  if (parts.isEmpty && item.draftWasEdited) {
+    parts.add('gewijzigde instellingen');
+  }
+  return parts.join(' en ');
 }
 
 class _StartPrompt extends StatelessWidget {
@@ -297,32 +338,24 @@ class _StartPrompt extends StatelessWidget {
   );
 }
 
-class _ActiveSessionPanel extends ConsumerWidget {
+class _ActiveSessionPanel extends StatelessWidget {
   const _ActiveSessionPanel({
-    required this.session,
+    required this.item,
     required this.onContinue,
+    required this.onEndSession,
     required this.onNewSession,
     required this.onOpenDetails,
   });
 
-  final SessionRecord session;
-  final ValueChanged<List<SeriesRecord>> onContinue;
-  final ValueChanged<List<SeriesRecord>> onNewSession;
+  final SessionListItem item;
+  final VoidCallback onContinue;
+  final VoidCallback onEndSession;
+  final VoidCallback onNewSession;
   final VoidCallback onOpenDetails;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final asyncSeries = ref.watch(seriesProvider(session.id));
-    final series = asyncSeries.valueOrNull ?? const <SeriesRecord>[];
-    final confirmed = series
-        .where((item) => item.status == 'confirmed')
-        .toList();
-    final score = confirmed.fold(0, (sum, item) => sum + item.totalScore);
-    final maximum = confirmed.fold(
-      0,
-      (sum, item) => sum + item.maximumPossibleScore,
-    );
-    final shots = confirmed.fold(0, (sum, item) => sum + item.shotCount);
+  Widget build(BuildContext context) {
+    final session = item.session;
     final note = session.notes?.trim();
 
     return Column(
@@ -369,11 +402,20 @@ class _ActiveSessionPanel extends ConsumerWidget {
                     runSpacing: 8,
                     children: [
                       _CompactMetric(
-                        label: confirmed.length == 1 ? 'reeks' : 'reeksen',
-                        value: '${confirmed.length}',
+                        label: item.confirmedSeriesCount == 1
+                            ? 'reeks'
+                            : 'reeksen',
+                        value: '${item.confirmedSeriesCount}',
                       ),
-                      _CompactMetric(label: 'score', value: '$score/$maximum'),
-                      _CompactMetric(label: 'schoten', value: '$shots'),
+                      _CompactMetric(
+                        label: 'score',
+                        value:
+                            '${item.totalScore}/${item.maximumPossibleScore}',
+                      ),
+                      _CompactMetric(
+                        label: 'schoten',
+                        value: '${item.shotCount}',
+                      ),
                     ],
                   ),
                   if (note != null && note.isNotEmpty) ...[
@@ -394,14 +436,20 @@ class _ActiveSessionPanel extends ConsumerWidget {
         SizedBox(
           height: 52,
           child: FilledButton.icon(
-            onPressed: asyncSeries.isLoading ? null : () => onContinue(series),
+            onPressed: onContinue,
             icon: const Icon(Icons.play_arrow),
             label: const Text('Verdergaan'),
           ),
         ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: onEndSession,
+          icon: const Icon(Icons.flag_outlined),
+          label: const Text('Sessie beëindigen'),
+        ),
         const SizedBox(height: 4),
         TextButton.icon(
-          onPressed: asyncSeries.isLoading ? null : () => onNewSession(series),
+          onPressed: onNewSession,
           icon: const Icon(Icons.add),
           label: const Text('Nieuwe sessie'),
         ),
@@ -434,22 +482,14 @@ class _CompactMetric extends StatelessWidget {
   );
 }
 
-class _RecentSessionRow extends ConsumerWidget {
-  const _RecentSessionRow({required this.session});
+class _RecentSessionRow extends StatelessWidget {
+  const _RecentSessionRow({required this.item});
 
-  final SessionRecord session;
+  final SessionListItem item;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final series =
-        ref.watch(seriesProvider(session.id)).valueOrNull ??
-        const <SeriesRecord>[];
-    final confirmed = series.where((item) => item.status == 'confirmed');
-    final score = confirmed.fold(0, (sum, item) => sum + item.totalScore);
-    final maximum = confirmed.fold(
-      0,
-      (sum, item) => sum + item.maximumPossibleScore,
-    );
+  Widget build(BuildContext context) {
+    final session = item.session;
     return ListTile(
       minTileHeight: 64,
       title: Text(
@@ -462,7 +502,10 @@ class _RecentSessionRow extends ConsumerWidget {
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: Text('$score/$maximum · ${confirmed.length} reeksen'),
+      subtitle: Text(
+        '${item.totalScore}/${item.maximumPossibleScore} · '
+        '${item.confirmedSeriesCount} reeksen',
+      ),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
@@ -489,9 +532,9 @@ class _EmptyRecent extends StatelessWidget {
   );
 }
 
-SessionRecord? _activeSession(List<SessionRecord> sessions) {
-  for (final session in sessions) {
-    if (session.status == 'active') return session;
+SessionListItem? _activeSession(List<SessionListItem> sessions) {
+  for (final item in sessions) {
+    if (item.session.status == 'active') return item;
   }
   return null;
 }
