@@ -30,6 +30,8 @@ void main() {
         missCount: 1,
         projectileDiameterMm: 5.6,
         photoCount: 2,
+        firearmName: 'Walther GSP',
+        ammoLotName: 'Eley Club',
         notes: 'Rustig, "vaste" houding',
       ),
     ]);
@@ -40,7 +42,7 @@ void main() {
       csv,
       contains(
         '"3","14","21","66.67","0","1","5.6",'
-        '"Rustig, ""vaste"" houding","2"',
+        '"Walther GSP","Eley Club","Rustig, ""vaste"" houding","2"',
       ),
     );
   });

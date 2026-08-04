@@ -15,6 +15,7 @@ import '../../data/app_database.dart';
 import '../../data/shooting_repository.dart';
 import '../../services/image_storage_service.dart';
 import '../../widgets/app_action_dock.dart';
+import '../../widgets/app_notice.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
 import '../photo/photo.dart';
 import '../scoring/target_canvas.dart';
@@ -124,6 +125,12 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
     final scoreById = {
       for (final shot in score.shots) shot.impact.id: shot.value,
     };
+    final scoreText = target.targetKind == domain.TargetKind.multiBullConcentric
+        ? '${score.total}/${score.maximumPossible} · ${score.innerTenCount} X · '
+              '${score.scoredBullCount ?? 0}/${target.multiBullScoringPolicy!.recordBullCount} roosjes'
+              '${score.penalty > 0 ? ' · −${score.penalty} straf' : ''}'
+        : '${score.total}/${score.maximumPossible} · '
+              '${score.innerTenCount} X · ${score.actualShotCount} schoten';
     final cartridges =
         ref.watch(cartridgesProvider).valueOrNull ?? const <CartridgeRecord>[];
     final cartridge = cartridges
@@ -172,7 +179,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
       canActuallyUndo: _undoStack.isNotEmpty,
       onMiss: _addMiss,
       onUndo: _undo,
-      onPoints: () => _showPoints(scoreById),
+      onPoints: () => _showPoints(score),
       onPhoto: _choosePhoto,
       vertical: vertical,
     );
@@ -355,9 +362,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
         bottomNavigationBar: AbsorbPointer(
           absorbing: _saving,
           child: _SeriesBottomActionBar(
-            scoreText:
-                '${score.total}/${score.maximumPossible} · '
-                '${score.innerTenCount} X · ${score.actualShotCount} schoten',
+            scoreText: scoreText,
             saving: _saving,
             canSave: score.actualShotCount > 0 && !_saving,
             showNext: _sessionActive,
@@ -398,6 +403,15 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
               ),
         ],
         onCanvasTap: (position) {
+          final bull = _recordBullAt(
+            position.physicalMm.x,
+            position.physicalMm.y,
+          );
+          if (_target!.targetKind == domain.TargetKind.multiBullConcentric &&
+              bull == null) {
+            _handleInvalidPosition();
+            return;
+          }
           final impact = domain.ShotImpact(
             id: 'impact-${DateTime.now().microsecondsSinceEpoch}',
             xMm: position.physicalMm.x,
@@ -405,10 +419,20 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
             sourceImageId: image.id,
             imageXNormalized: position.normalized.x,
             imageYNormalized: position.normalized.y,
+            targetBullId: bull?.id,
           );
           _changeImpacts([..._impacts, impact], selectedId: impact.id);
         },
         onImpactMoved: (id, position) {
+          final bull = _recordBullAt(
+            position.physicalMm.x,
+            position.physicalMm.y,
+          );
+          if (_target!.targetKind == domain.TargetKind.multiBullConcentric &&
+              bull == null) {
+            _handleInvalidPosition();
+            return;
+          }
           _changeImpacts(
             _impacts
                 .map(
@@ -419,6 +443,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
                           sourceImageId: image.id,
                           imageXNormalized: position.normalized.x,
                           imageYNormalized: position.normalized.y,
+                          targetBullId: bull?.id,
                         )
                       : impact,
                 )
@@ -493,13 +518,12 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
     }
     _lastInvalidFeedbackAt = now;
     unawaited(HapticFeedback.selectionClick());
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('Buiten de uitgelijnde kaart — gebruik Misser / 0.'),
-        ),
-      );
+    AppMessenger.warning(
+      context,
+      _target?.targetKind == domain.TargetKind.multiBullConcentric
+          ? 'Kies een genummerd wedstrijdroosje; proefroosjes tellen niet mee.'
+          : 'Buiten de uitgelijnde kaart — gebruik Misser / 0.',
+    );
   }
 
   void _selectImpactFromLongPress(String id) {
@@ -519,7 +543,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
     }
     final image = _primaryImage;
     final alignment = _alignment;
-    late final domain.ShotImpact impact;
+    late domain.ShotImpact impact;
     if (image != null && alignment != null && File(image.path).existsSync()) {
       final imagePoint = geo.NormalizedPoint(normalized.dx, normalized.dy);
       late final geo.PhysicalPointMm physical;
@@ -559,15 +583,45 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
         yMm: (normalized.dy - 0.5) * target.physicalCardHeightMm,
       );
     }
+    final bull = _recordBullAt(impact.xMm, impact.yMm);
+    if (_target!.targetKind == domain.TargetKind.multiBullConcentric &&
+        bull == null) {
+      _handleInvalidPosition();
+      return;
+    }
+    impact = impact.copyWith(targetBullId: bull?.id);
     _changeImpacts([..._impacts, impact], selectedId: impact.id);
   }
 
-  Future<void> _showPoints(Map<String, int> scoreById) async {
+  domain.TargetBull? _recordBullAt(double xMm, double yMm) =>
+      _target?.bullAt(xMm, yMm, recordOnly: true);
+
+  Future<void> _showPoints(ScoreResult score) async {
+    final scoreById = {
+      for (final shot in score.shots) shot.impact.id: shot.value,
+    };
+    final multiBull =
+        _target!.targetKind == domain.TargetKind.multiBullConcentric;
     final selectedId = await showSafeModalSheet<String>(
       context: context,
       builder: (sheetContext) => SafeSheetScaffold(
-        title: 'Punten en missers',
-        body: _impacts.isEmpty
+        title: multiBull ? 'Wedstrijdroosjes' : 'Punten en missers',
+        body: multiBull
+            ? Column(
+                children: [
+                  for (final bull in _target!.recordBulls)
+                    _Br50BullTile(
+                      bull: bull,
+                      shots: score.shots
+                          .where((shot) => shot.targetBullId == bull.id)
+                          .toList(growable: false),
+                      onSelect: (id) => Navigator.pop(sheetContext, id),
+                      onAddMiss: () =>
+                          Navigator.pop(sheetContext, 'miss:${bull.id}'),
+                    ),
+                ],
+              )
+            : _impacts.isEmpty
             ? const Padding(
                 padding: EdgeInsets.symmetric(vertical: 32),
                 child: Center(child: Text('Nog geen punten geregistreerd.')),
@@ -601,6 +655,20 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
       ),
     );
     if (selectedId == null || !mounted) return;
+    if (selectedId.startsWith('miss:')) {
+      final bull = _target!.bullById(selectedId.substring(5));
+      if (bull == null) return;
+      final impact = domain.ShotImpact(
+        id: 'impact-${DateTime.now().microsecondsSinceEpoch}',
+        xMm: bull.centerXMm,
+        yMm: bull.centerYMm,
+        targetBullId: bull.id,
+        isMiss: true,
+        scoreDisposition: domain.ScoreDisposition.miss,
+      );
+      _changeImpacts([..._impacts, impact], selectedId: impact.id);
+      return;
+    }
     final impact = _impacts.where((item) => item.id == selectedId).firstOrNull;
     if (impact == null) return;
     setState(() {
@@ -707,6 +775,11 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
     multiplicity: record.multiplicity,
     isMiss: record.isMiss,
     isPositionUncertain: record.isPositionUncertain,
+    targetBullId: record.targetBullId,
+    rawScoreValue: record.rawScoreValue,
+    scoreDisposition: domain.ScoreDisposition.values.byName(
+      record.scoreDisposition,
+    ),
   );
 
   geo.ManualPhotoAlignment? _decodeAlignment(
@@ -823,19 +896,57 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
           a.imageYNormalized != b.imageYNormalized ||
           a.multiplicity != b.multiplicity ||
           a.isMiss != b.isMiss ||
-          a.isPositionUncertain != b.isPositionUncertain) {
+          a.isPositionUncertain != b.isPositionUncertain ||
+          a.targetBullId != b.targetBullId) {
         return false;
       }
     }
     return true;
   }
 
-  void _addMiss() {
+  Future<void> _addMiss() async {
+    final target = _target!;
+    domain.TargetBull? bull;
+    if (target.targetKind == domain.TargetKind.multiBullConcentric) {
+      final occupied = _impacts.map((impact) => impact.targetBullId).toSet();
+      final suggested = target.recordBulls
+          .where((candidate) => !occupied.contains(candidate.id))
+          .firstOrNull;
+      final selectedId = await showSafeModalSheet<String>(
+        context: context,
+        builder: (sheetContext) => SafeSheetScaffold(
+          title: 'Misser aan roosje koppelen',
+          body: Column(
+            children: [
+              for (final candidate in target.recordBulls)
+                ListTile(
+                  leading: CircleAvatar(child: Text(candidate.label)),
+                  title: Text('Wedstrijdroosje ${candidate.label}'),
+                  subtitle: occupied.contains(candidate.id)
+                      ? const Text('Bevat al een registratie')
+                      : candidate.id == suggested?.id
+                      ? const Text('Eerstvolgende lege roosje')
+                      : null,
+                  trailing: candidate.id == suggested?.id
+                      ? const Icon(Icons.arrow_forward)
+                      : null,
+                  onTap: () => Navigator.pop(sheetContext, candidate.id),
+                ),
+            ],
+          ),
+          actions: const [],
+        ),
+      );
+      if (selectedId == null || !mounted) return;
+      bull = target.bullById(selectedId);
+    }
     final impact = domain.ShotImpact(
       id: 'impact-${DateTime.now().microsecondsSinceEpoch}',
-      xMm: 0,
-      yMm: 0,
+      xMm: bull?.centerXMm ?? 0,
+      yMm: bull?.centerYMm ?? 0,
       isMiss: true,
+      targetBullId: bull?.id,
+      scoreDisposition: domain.ScoreDisposition.miss,
     );
     _changeImpacts([..._impacts, impact], selectedId: impact.id);
   }
@@ -961,6 +1072,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
               (impact) => impact.copyWith(
                 clearSourceImage: true,
                 clearImageCoordinates: true,
+                clearTargetBull: true,
               ),
             )
             .toList();
@@ -1063,6 +1175,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
 
   Future<void> _finish({required bool saveNext}) async {
     if (_saving) return;
+    if (!await _confirmIncompleteMultiBullIfNeeded()) return;
     setState(() => _saving = true);
     try {
       await _flushSave();
@@ -1088,9 +1201,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Bewaren mislukt: $error')));
+        AppMessenger.error(context, 'Bewaren mislukt: $error');
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -1099,6 +1210,8 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
 
   Future<void> _saveAndCompleteSession() async {
     if (_saving || _series?.status != domain.SeriesStatus.draft.name) return;
+    if (!await _confirmIncompleteMultiBullIfNeeded()) return;
+    if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -1143,19 +1256,55 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
         _sessionActive = false;
         _autosaveStatus = _AutosaveStatus.saved;
       });
-      final messenger = ScaffoldMessenger.of(context);
+      AppMessenger.success(context, 'Sessie beëindigd');
       Navigator.of(context).pop(true);
-      messenger.showSnackBar(const SnackBar(content: Text('Sessie beëindigd')));
     } catch (error) {
       if (mounted) {
         setState(() => _autosaveStatus = _AutosaveStatus.failed);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sessie beëindigen mislukt: $error')),
-        );
+        AppMessenger.error(context, 'Sessie beëindigen mislukt: $error');
       }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Future<bool> _confirmIncompleteMultiBullIfNeeded() async {
+    final target = _target;
+    if (target == null ||
+        target.targetKind != domain.TargetKind.multiBullConcentric) {
+      return true;
+    }
+    final score = ScoreEngine.score(
+      target: target,
+      impacts: _impacts,
+      projectileDiameterMm: _projectileDiameterMm,
+    );
+    final missing =
+        target.multiBullScoringPolicy!.recordBullCount -
+        (score.scoredBullCount ?? 0);
+    if (missing <= 0) return true;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Onvolledige BR50-reeks'),
+        content: Text(
+          'Er ${missing == 1 ? 'is' : 'zijn'} nog $missing leeg${missing == 1 ? '' : 'e'} '
+          'wedstrijdroosje${missing == 1 ? '' : 's'}. Deze tellen als 0. '
+          'Reeks toch bewaren?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Verder scoren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Toch bewaren'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
   }
 
   Future<void> _saveBeforePop(Object? result) async {
@@ -1202,9 +1351,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
       Navigator.of(context).pop(true);
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Concept verwijderen mislukt: $error')),
-        );
+        AppMessenger.error(context, 'Concept verwijderen mislukt: $error');
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -1260,9 +1407,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
         await _storage.deleteStoredImage(stored.path);
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Foto toevoegen mislukt: $error')),
-        );
+        AppMessenger.error(context, 'Foto toevoegen mislukt: $error');
       }
     }
   }
@@ -1298,9 +1443,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
   Future<void> _alignAsPrimary(ImageAssetRecord image) async {
     if (_saving) return;
     if (!File(image.path).existsSync()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Het originele fotobestand ontbreekt.')),
-      );
+      AppMessenger.warning(context, 'Het originele fotobestand ontbreekt.');
       return;
     }
     setState(() => _saving = true);
@@ -1381,9 +1524,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
     } catch (error) {
       if (mounted) {
         setState(() => _autosaveStatus = _AutosaveStatus.failed);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Uitlijning bewaren mislukt: $error')),
-        );
+        AppMessenger.error(context, 'Uitlijning bewaren mislukt: $error');
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -1399,9 +1540,15 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
     );
     final halfWidth = alignment.cardWidthMm / 2;
     final halfHeight = alignment.cardHeightMm / 2;
+    final xMm = physical.x.clamp(-halfWidth, halfWidth).toDouble();
+    final yMm = physical.y.clamp(-halfHeight, halfHeight).toDouble();
     return impact.copyWith(
-      xMm: physical.x.clamp(-halfWidth, halfWidth).toDouble(),
-      yMm: physical.y.clamp(-halfHeight, halfHeight).toDouble(),
+      xMm: xMm,
+      yMm: yMm,
+      targetBullId: _recordBullAt(xMm, yMm)?.id,
+      clearTargetBull:
+          _target?.targetKind == domain.TargetKind.multiBullConcentric &&
+          _recordBullAt(xMm, yMm) == null,
     );
   }
 
@@ -1528,6 +1675,74 @@ class _SettingsSummary extends StatelessWidget {
     return compact
         ? MediaQuery.withClampedTextScaling(maxScaleFactor: 1.3, child: content)
         : content;
+  }
+}
+
+class _Br50BullTile extends StatelessWidget {
+  const _Br50BullTile({
+    required this.bull,
+    required this.shots,
+    required this.onSelect,
+    required this.onAddMiss,
+  });
+
+  final domain.TargetBull bull;
+  final List<ScoredImpact> shots;
+  final ValueChanged<String> onSelect;
+  final VoidCallback onAddMiss;
+
+  @override
+  Widget build(BuildContext context) {
+    if (shots.isEmpty) {
+      return ListTile(
+        leading: CircleAvatar(child: Text(bull.label)),
+        title: const Text('Leeg · telt als 0'),
+        trailing: IconButton(
+          onPressed: onAddMiss,
+          tooltip: 'Als misser registreren',
+          icon: const Icon(Icons.add_circle_outline),
+        ),
+      );
+    }
+    final counted = shots
+        .where(
+          (shot) =>
+              shot.disposition != domain.ScoreDisposition.duplicateNotCounted,
+        )
+        .firstOrNull;
+    final selected = counted ?? shots.first;
+    final totalShots = shots.fold<int>(
+      0,
+      (sum, shot) => sum + shot.impact.multiplicity,
+    );
+    return ExpansionTile(
+      leading: CircleAvatar(child: Text(bull.label)),
+      title: Text(
+        selected.value == 0
+            ? '0 · misser'
+            : '${selected.value}${selected.isInnerTen ? ' X' : ''}',
+      ),
+      subtitle: totalShots > 1
+          ? Text('$totalShots schoten · laagste telt')
+          : null,
+      children: [
+        for (final shot in shots)
+          ListTile(
+            contentPadding: const EdgeInsets.only(left: 72, right: 16),
+            title: Text(
+              shot.impact.isMiss
+                  ? 'Misser · 0'
+                  : '${shot.value} punten${shot.isInnerTen ? ' · X' : ''}',
+            ),
+            subtitle:
+                shot.disposition == domain.ScoreDisposition.duplicateNotCounted
+                ? const Text('Telt niet · meerdere schoten')
+                : const Text('Telt voor dit roosje'),
+            trailing: const Icon(Icons.edit_location_alt_outlined),
+            onTap: () => onSelect(shot.impact.id),
+          ),
+      ],
+    );
   }
 }
 

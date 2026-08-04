@@ -157,7 +157,7 @@ class SafeSheetScaffold extends StatelessWidget {
 class AdaptiveFormRow extends StatelessWidget {
   const AdaptiveFormRow({
     required this.children,
-    this.spacing = 12,
+    this.spacing = 16,
     this.minimumChildWidth = 180,
     super.key,
   });

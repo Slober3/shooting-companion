@@ -6,6 +6,13 @@ All notable changes follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Added a built-in WRABF 50 m Rimfire Benchrest profile with a neutral A3
+  training renderer, 25 record bulls, sighters, per-bull scoring and X-count.
+- Added multi-bull scoring with lowest-shot duplicate handling, fixed 250
+  maximum, incomplete-card confirmation and excess-shot penalties.
+- Added compact, dismissible and themed application notices with live-region
+  semantics and explicit close controls.
+- Added firearm and ammunition names to session/series detail, CSV and PDF.
 - Added an 8x transformable scoring viewport with pinch zoom, pan, visible zoom
   controls and a crosshair-based precision mode.
 - Added explicit Place and Edit tools, a complete points/misses list and a
@@ -21,6 +28,10 @@ All notable changes follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Shortened visible action labels to `Foto` and `Beëindigen`, while preserving
+  complete accessibility descriptions and responsive action stacking.
+- Standardized independent form-field spacing and migrated session and series
+  detail actions to the detached action dock.
 - Moved Logbook filters into one safe filter surface and calculate list
   aggregates and filters in one parameterized SQLite query.
 - Hardened sheets, forms, keyboard handling, system insets and landscape editor
@@ -31,11 +42,15 @@ All notable changes follow [Semantic Versioning](https://semver.org/).
   series editor without relying on long press.
 - Replaced long edit sheets with top-aligned full-screen forms, shared
   high-contrast selectors and a detached inset-safe action dock.
-- Upgraded the database and encrypted backup manifest to schema/version 3 while
-  retaining v1 and v2 import compatibility.
+- Upgraded the database and encrypted backup manifest to schema/version 4 while
+  retaining v1, v2 and v3 import compatibility.
 
 ### Fixed
 
+- Replaced all direct default SnackBars with floating notices that no longer
+  attach visually to the bottom navigation.
+- Historical series material is resolved in joined detail queries, including
+  archived firearms and ammunition profiles.
 - Nearby or overlapping markers no longer steal taps while placing a shot.
 - Dragging a marker no longer pans the zoomed scoring viewport underneath it.
 - Drafts containing only notes or changed settings are never silently discarded.

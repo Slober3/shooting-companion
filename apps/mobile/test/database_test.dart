@@ -39,6 +39,45 @@ void main() {
   });
 
   test(
+    'series detail and session overview retain firearm and ammo names',
+    () async {
+      final firearmId = await repository.addFirearm(
+        name: 'Walther GSP',
+        type: FirearmType.pistol,
+        defaultCartridgeId: CartridgePresets.twentyTwoLr.id,
+      );
+      final ammoLotId = await repository.addAmmoLot(
+        cartridgeId: CartridgePresets.twentyTwoLr.id,
+        displayName: 'Eley Club',
+      );
+      final quick = await repository.startQuickSession();
+      await repository.saveSeriesDraft(
+        seriesId: quick.draftSeriesId,
+        target: IssfTargetProfiles.precision25m50m,
+        distanceMeters: 25,
+        projectileDiameterMm: 5.6,
+        impacts: const [ShotImpact(id: 'material-shot', xMm: 0, yMm: 0)],
+        cartridgeId: CartridgePresets.twentyTwoLr.id,
+        firearmId: firearmId,
+        ammoLotId: ammoLotId,
+      );
+      await repository.confirmSeries(quick.draftSeriesId);
+
+      final series = await repository.getSeriesDetail(quick.draftSeriesId);
+      final session = await repository.getSessionDetail(quick.sessionId);
+
+      expect(series!.firearm?.name, 'Walther GSP');
+      expect(series.ammoLot?.displayName, 'Eley Club');
+      expect(series.cartridge?.name, '.22 LR');
+      expect(session!.confirmedSeriesItems.single.firearm?.name, 'Walther GSP');
+      expect(
+        session.confirmedSeriesItems.single.ammoLot?.displayName,
+        'Eley Club',
+      );
+    },
+  );
+
+  test(
     'draft scoring uses actual impacts and can be edited after confirm',
     () async {
       final quick = await repository.startQuickSession();

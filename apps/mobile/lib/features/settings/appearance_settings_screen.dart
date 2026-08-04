@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/appearance_repository.dart';
 import '../../widgets/compact_page_scaffold.dart';
+import '../../widgets/app_notice.dart';
 import 'appearance_providers.dart';
 
 class AppearanceSettingsScreen extends ConsumerStatefulWidget {
@@ -81,10 +82,10 @@ class _AppearanceSettingsScreenState
       await ref.read(appearanceRepositoryProvider).save(settings);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('De weergavevoorkeur kon niet worden bewaard.'),
-          ),
+        AppMessenger.show(
+          context,
+          kind: AppNoticeKind.error,
+          message: 'De weergavevoorkeur kon niet worden bewaard.',
         );
       }
     } finally {

@@ -22,6 +22,8 @@ Android-schermen:
 - pinch-zoom, pan, zoomknoppen, precisiekruis, puntenlijst en echte undo;
 - visueel plaatsen, verslepen en vermenigvuldigen van treffers en missers;
 - versioned ISSF 2026-profielen voor 25 m Precision / 50 m Pistol en 25 m Rapid Fire;
+- een ingebouwd WRABF BR50-profiel met 25 handmatig scorebare wedstrijdroosjes,
+  proefroosjes, laagste-scorebeleid, X-count en straf voor extra schoten;
 - scores en maximum op basis van het werkelijk geregistreerde schotaantal;
 - handmatig scoren op een getekende kaart of een zelf uitgelijnde kaartfoto;
 - meerdere sessie- en reeksfoto's met een onveranderlijk origineel;
@@ -29,7 +31,7 @@ Android-schermen:
 - systeem/licht/donker met vier lokaal opgeslagen kleurpaletten;
 - CSV, Unicode-PDF met ingebedde fonts en AES-256-GCM/Argon2id-back-up;
 - migratie en back-upcompatibiliteit voor lokale gegevens uit versie 0.1.
-- databaseschema 3 en back-upmanifest 3, met import van v1- en v2-back-ups.
+- databaseschema 4 en back-upmanifest 4, met import van v1-, v2- en v3-back-ups.
 
 Er is geen automatische trefferdetectie. De schutter duidt iedere treffer of
 misser expliciet aan; de deterministische score-engine berekent daarna ringwaarde,
@@ -84,4 +86,8 @@ De broncode is MIT. Ingebedde Noto Sans-fonts vallen onder de SIL Open Font
 License 1.1; zie `THIRD_PARTY_NOTICES.md`. Doelkaartafmetingen zijn vastgelegd
 als feitelijke geometrie uit het
 [ISSF Rule Book 2026](https://backoffice.issf-sports.org/getfile.aspx?file=ISSF-Rule-Book-2026-Edition-2025-First-Print-12-2025-Effective-1-January-2026.pdf&inst=455&mod=docf&pane=1).
-ISSF-beeldmateriaal of logo's worden niet meegeleverd.
+ISSF-beeldmateriaal of logo's worden niet meegeleverd. De BR50-weergave gebruikt
+uitsluitend een neutrale geometrische trainingsrenderer op basis van de
+[WRABF-regels](https://www.wrabf.com/WRABF%20Rules.htm) en
+[doelkaartreferentie](https://www.wrabf.com/WRABF%20Targets.htm); er wordt geen
+officiële printkaart, federatiestijl of verkopersafbeelding gebundeld.

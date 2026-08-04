@@ -98,4 +98,88 @@ void main() {
       previous = result.total;
     }
   });
+
+  group('WRABF BR50', () {
+    final target = WrabfTargetProfiles.rimfire50mBr50;
+
+    ShotImpact br50Impact(
+      int bullNumber,
+      double radialDistanceMm, {
+      int multiplicity = 1,
+      bool miss = false,
+    }) {
+      final bull = target.recordBulls[bullNumber - 1];
+      return ShotImpact(
+        id: 'br50-$bullNumber-$radialDistanceMm-$multiplicity-$miss',
+        xMm: bull.centerXMm + radialDistanceMm,
+        yMm: bull.centerYMm,
+        targetBullId: bull.id,
+        multiplicity: multiplicity,
+        isMiss: miss,
+      );
+    }
+
+    test('25 tens score 250 with a fixed maximum', () {
+      final result = ScoreEngine.score(
+        target: target,
+        impacts: [for (var bull = 1; bull <= 25; bull++) br50Impact(bull, 0)],
+        projectileDiameterMm: 5.6,
+        positionUncertaintyMm: 0,
+      );
+      expect(result.total, 250);
+      expect(result.maximumPossible, 250);
+      expect(result.scoredBullCount, 25);
+      expect(result.innerTenCount, 25);
+    });
+
+    test('lowest score counts when one bull has multiple shots', () {
+      final result = ScoreEngine.score(
+        target: target,
+        impacts: [br50Impact(1, 0), br50Impact(1, 10)],
+        projectileDiameterMm: 5.6,
+        positionUncertaintyMm: 0,
+      );
+      expect(result.totalBeforePenalty, 8);
+      expect(
+        result.shots
+            .where((shot) => shot.disposition == ScoreDisposition.counted)
+            .single
+            .value,
+        8,
+      );
+      expect(
+        result.shots.where(
+          (shot) => shot.disposition == ScoreDisposition.duplicateNotCounted,
+        ),
+        hasLength(1),
+      );
+    });
+
+    test('extra record shots receive one penalty point each', () {
+      final result = ScoreEngine.score(
+        target: target,
+        impacts: [
+          for (var bull = 1; bull <= 25; bull++) br50Impact(bull, 0),
+          br50Impact(1, 0, multiplicity: 2),
+        ],
+        projectileDiameterMm: 5.6,
+        positionUncertaintyMm: 0,
+      );
+      expect(result.actualShotCount, 27);
+      expect(result.penalty, 2);
+      expect(result.total, 248);
+    });
+
+    test('empty record bulls remain zero in the fixed 250 maximum', () {
+      final result = ScoreEngine.score(
+        target: target,
+        impacts: [br50Impact(1, 0)],
+        projectileDiameterMm: 5.6,
+        positionUncertaintyMm: 0,
+      );
+      expect(result.total, 10);
+      expect(result.maximumPossible, 250);
+      expect(result.missCount, 24);
+    });
+  });
 }

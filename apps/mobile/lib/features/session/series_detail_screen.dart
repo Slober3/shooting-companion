@@ -10,8 +10,8 @@ import 'package:shooting_companion_photo_geometry/photo_geometry.dart' as geo;
 import '../../app/providers.dart';
 import '../../data/app_database.dart';
 import '../../data/shooting_repository.dart';
+import '../../widgets/app_action_dock.dart';
 import '../../widgets/responsive_metric_grid.dart';
-import '../../widgets/safe_bottom_action_bar.dart';
 import '../photo/photo.dart';
 import '../scoring/target_canvas.dart';
 import '../scoring/transformable_scoring_viewport.dart';
@@ -56,7 +56,7 @@ class SeriesDetailScreen extends ConsumerWidget {
       ),
       bottomNavigationBar: detail.valueOrNull == null
           ? null
-          : SafeBottomActionBar(
+          : AppActionDock(
               actions: [
                 FilledButton.icon(
                   onPressed: () =>
@@ -64,14 +64,20 @@ class SeriesDetailScreen extends ConsumerWidget {
                   icon: const Icon(Icons.edit_outlined),
                   label: const Text('Bewerken'),
                 ),
-                OutlinedButton.icon(
-                  onPressed: () => _edit(
-                    context,
-                    detail.valueOrNull!.series.sessionId,
-                    addPhoto: true,
+                Semantics(
+                  button: true,
+                  label: 'Foto toevoegen aan deze reeks',
+                  child: ExcludeSemantics(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _edit(
+                        context,
+                        detail.valueOrNull!.series.sessionId,
+                        addPhoto: true,
+                      ),
+                      icon: const Icon(Icons.add_a_photo_outlined),
+                      label: const Text('Foto', maxLines: 1),
+                    ),
                   ),
-                  icon: const Icon(Icons.add_a_photo_outlined),
-                  label: const Text('Foto toevoegen'),
                 ),
               ],
             ),
@@ -131,7 +137,7 @@ class _SeriesDetailBody extends StatelessWidget {
     final series = detail.series;
     final target = detail.target;
     final scoreValues = {
-      for (final impact in detail.impacts) impact.id: impact.scoreValue,
+      for (final impact in detail.impacts) impact.id: impact.rawScoreValue,
     };
     return ListView(
       padding: EdgeInsets.fromLTRB(
@@ -142,7 +148,7 @@ class _SeriesDetailBody extends StatelessWidget {
       ),
       children: [
         AspectRatio(
-          aspectRatio: 1,
+          aspectRatio: target.physicalCardWidthMm / target.physicalCardHeightMm,
           child: DecoratedBox(
             decoration: BoxDecoration(
               border: Border.all(
@@ -182,9 +188,23 @@ class _SeriesDetailBody extends StatelessWidget {
           title: Text(target.displayName),
           subtitle: Text(
             '${series.distanceMeters.toStringAsFixed(0)} m · '
-            'projectiel ${series.projectileDiameterMm.toStringAsFixed(2)} mm',
+            '${detail.cartridge?.name ?? 'projectiel ${series.projectileDiameterMm.toStringAsFixed(2)} mm'}',
           ),
         ),
+        if (detail.firearm != null)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.sports_martial_arts_outlined),
+            title: const Text('Wapen'),
+            subtitle: Text(detail.firearm!.name),
+          ),
+        if (detail.ammoLot != null)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.inventory_2_outlined),
+            title: const Text('Munitieprofiel'),
+            subtitle: Text(detail.ammoLot!.displayName),
+          ),
         if (series.notes != null)
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -201,11 +221,14 @@ class _SeriesDetailBody extends StatelessWidget {
             title: Text(
               entry.$2.isMiss
                   ? 'Misser · 0 punten'
-                  : '${entry.$2.scoreValue} punten'
+                  : '${entry.$2.rawScoreValue} punten'
                         '${entry.$2.isInnerTen ? ' · X' : ''}',
             ),
             subtitle: Text(
-              entry.$2.multiplicity > 1
+              entry.$2.scoreDisposition ==
+                      domain.ScoreDisposition.duplicateNotCounted.name
+                  ? 'Telt niet · meerdere schoten op hetzelfde roosje'
+                  : entry.$2.multiplicity > 1
                   ? 'Telt als ${entry.$2.multiplicity} schoten · positie onzeker'
                   : entry.$2.isBoundaryUncertain
                   ? 'Dicht bij een scoringslijn'
@@ -326,6 +349,11 @@ class _TargetPreview extends StatelessWidget {
               multiplicity: impact.multiplicity,
               isMiss: impact.isMiss,
               isPositionUncertain: impact.isPositionUncertain,
+              targetBullId: impact.targetBullId,
+              rawScoreValue: impact.rawScoreValue,
+              scoreDisposition: domain.ScoreDisposition.values.byName(
+                impact.scoreDisposition,
+              ),
             ),
           )
           .toList(),

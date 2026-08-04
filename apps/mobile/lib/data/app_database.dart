@@ -104,6 +104,8 @@ class ShootingSeries extends Table {
   IntColumn get totalScore => integer().withDefault(const Constant(0))();
   IntColumn get innerTenCount => integer().withDefault(const Constant(0))();
   IntColumn get missCount => integer().withDefault(const Constant(0))();
+  IntColumn get scorePenalty => integer().withDefault(const Constant(0))();
+  IntColumn get scoredBullCount => integer().nullable()();
   BoolColumn get hasBoundaryWarnings =>
       boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAtUtc => dateTime()();
@@ -156,7 +158,11 @@ class ShotImpacts extends Table {
   BoolColumn get isMiss => boolean().withDefault(const Constant(false))();
   BoolColumn get isPositionUncertain =>
       boolean().withDefault(const Constant(false))();
+  TextColumn get targetBullId => text().nullable()();
   IntColumn get scoreValue => integer()();
+  IntColumn get rawScoreValue => integer().withDefault(const Constant(0))();
+  TextColumn get scoreDisposition =>
+      text().withDefault(const Constant('counted'))();
   BoolColumn get isInnerTen => boolean().withDefault(const Constant(false))();
   BoolColumn get isBoundaryUncertain =>
       boolean().withDefault(const Constant(false))();
@@ -239,7 +245,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -253,6 +259,11 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from <= 2 && to >= 3) {
         await _migrateToV3(migrator);
+      }
+      // The v1 rebuild creates the current series and impact tables directly,
+      // so their v4 columns already exist after _migrateFromV1.
+      if (from >= 2 && from <= 3 && to >= 4) {
+        await _migrateToV4(migrator);
       }
     },
     beforeOpen: (details) async {
@@ -328,6 +339,17 @@ class AppDatabase extends _$AppDatabase {
     await migrator.addColumn(ranges, ranges.archived);
     await migrator.addColumn(targetProfiles, targetProfiles.archived);
     await customStatement('UPDATE cartridges SET built_in = 1');
+  }
+
+  Future<void> _migrateToV4(Migrator migrator) async {
+    await migrator.addColumn(shootingSeries, shootingSeries.scorePenalty);
+    await migrator.addColumn(shootingSeries, shootingSeries.scoredBullCount);
+    await migrator.addColumn(shotImpacts, shotImpacts.targetBullId);
+    await migrator.addColumn(shotImpacts, shotImpacts.rawScoreValue);
+    await migrator.addColumn(shotImpacts, shotImpacts.scoreDisposition);
+    await customStatement(
+      'UPDATE shot_impacts SET raw_score_value = score_value',
+    );
   }
 
   Future<void> _migrateFromV1(Migrator migrator) async {
@@ -515,6 +537,7 @@ class AppDatabase extends _$AppDatabase {
             (data['is_position_uncertain']! as int) != 0,
           ),
           scoreValue: data['score_value']! as int,
+          rawScoreValue: Value(data['score_value']! as int),
           isInnerTen: Value((data['is_inner_ten']! as int) != 0),
           isBoundaryUncertain: Value(
             (data['is_boundary_uncertain']! as int) != 0,

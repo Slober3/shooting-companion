@@ -3008,6 +3008,29 @@ class $ShootingSeriesTable extends ShootingSeries
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _scorePenaltyMeta = const VerificationMeta(
+    'scorePenalty',
+  );
+  @override
+  late final GeneratedColumn<int> scorePenalty = GeneratedColumn<int>(
+    'score_penalty',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _scoredBullCountMeta = const VerificationMeta(
+    'scoredBullCount',
+  );
+  @override
+  late final GeneratedColumn<int> scoredBullCount = GeneratedColumn<int>(
+    'scored_bull_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _hasBoundaryWarningsMeta =
       const VerificationMeta('hasBoundaryWarnings');
   @override
@@ -3075,6 +3098,8 @@ class $ShootingSeriesTable extends ShootingSeries
     totalScore,
     innerTenCount,
     missCount,
+    scorePenalty,
+    scoredBullCount,
     hasBoundaryWarnings,
     createdAtUtc,
     updatedAtUtc,
@@ -3231,6 +3256,24 @@ class $ShootingSeriesTable extends ShootingSeries
         missCount.isAcceptableOrUnknown(data['miss_count']!, _missCountMeta),
       );
     }
+    if (data.containsKey('score_penalty')) {
+      context.handle(
+        _scorePenaltyMeta,
+        scorePenalty.isAcceptableOrUnknown(
+          data['score_penalty']!,
+          _scorePenaltyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('scored_bull_count')) {
+      context.handle(
+        _scoredBullCountMeta,
+        scoredBullCount.isAcceptableOrUnknown(
+          data['scored_bull_count']!,
+          _scoredBullCountMeta,
+        ),
+      );
+    }
     if (data.containsKey('has_boundary_warnings')) {
       context.handle(
         _hasBoundaryWarningsMeta,
@@ -3348,6 +3391,14 @@ class $ShootingSeriesTable extends ShootingSeries
         DriftSqlType.int,
         data['${effectivePrefix}miss_count'],
       )!,
+      scorePenalty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}score_penalty'],
+      )!,
+      scoredBullCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}scored_bull_count'],
+      ),
       hasBoundaryWarnings: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}has_boundary_warnings'],
@@ -3391,6 +3442,8 @@ class SeriesRecord extends DataClass implements Insertable<SeriesRecord> {
   final int totalScore;
   final int innerTenCount;
   final int missCount;
+  final int scorePenalty;
+  final int? scoredBullCount;
   final bool hasBoundaryWarnings;
   final DateTime createdAtUtc;
   final DateTime updatedAtUtc;
@@ -3413,6 +3466,8 @@ class SeriesRecord extends DataClass implements Insertable<SeriesRecord> {
     required this.totalScore,
     required this.innerTenCount,
     required this.missCount,
+    required this.scorePenalty,
+    this.scoredBullCount,
     required this.hasBoundaryWarnings,
     required this.createdAtUtc,
     required this.updatedAtUtc,
@@ -3448,6 +3503,10 @@ class SeriesRecord extends DataClass implements Insertable<SeriesRecord> {
     map['total_score'] = Variable<int>(totalScore);
     map['inner_ten_count'] = Variable<int>(innerTenCount);
     map['miss_count'] = Variable<int>(missCount);
+    map['score_penalty'] = Variable<int>(scorePenalty);
+    if (!nullToAbsent || scoredBullCount != null) {
+      map['scored_bull_count'] = Variable<int>(scoredBullCount);
+    }
     map['has_boundary_warnings'] = Variable<bool>(hasBoundaryWarnings);
     map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
     map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
@@ -3484,6 +3543,10 @@ class SeriesRecord extends DataClass implements Insertable<SeriesRecord> {
       totalScore: Value(totalScore),
       innerTenCount: Value(innerTenCount),
       missCount: Value(missCount),
+      scorePenalty: Value(scorePenalty),
+      scoredBullCount: scoredBullCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scoredBullCount),
       hasBoundaryWarnings: Value(hasBoundaryWarnings),
       createdAtUtc: Value(createdAtUtc),
       updatedAtUtc: Value(updatedAtUtc),
@@ -3522,6 +3585,8 @@ class SeriesRecord extends DataClass implements Insertable<SeriesRecord> {
       totalScore: serializer.fromJson<int>(json['totalScore']),
       innerTenCount: serializer.fromJson<int>(json['innerTenCount']),
       missCount: serializer.fromJson<int>(json['missCount']),
+      scorePenalty: serializer.fromJson<int>(json['scorePenalty']),
+      scoredBullCount: serializer.fromJson<int?>(json['scoredBullCount']),
       hasBoundaryWarnings: serializer.fromJson<bool>(
         json['hasBoundaryWarnings'],
       ),
@@ -3553,6 +3618,8 @@ class SeriesRecord extends DataClass implements Insertable<SeriesRecord> {
       'totalScore': serializer.toJson<int>(totalScore),
       'innerTenCount': serializer.toJson<int>(innerTenCount),
       'missCount': serializer.toJson<int>(missCount),
+      'scorePenalty': serializer.toJson<int>(scorePenalty),
+      'scoredBullCount': serializer.toJson<int?>(scoredBullCount),
       'hasBoundaryWarnings': serializer.toJson<bool>(hasBoundaryWarnings),
       'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
       'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
@@ -3578,6 +3645,8 @@ class SeriesRecord extends DataClass implements Insertable<SeriesRecord> {
     int? totalScore,
     int? innerTenCount,
     int? missCount,
+    int? scorePenalty,
+    Value<int?> scoredBullCount = const Value.absent(),
     bool? hasBoundaryWarnings,
     DateTime? createdAtUtc,
     DateTime? updatedAtUtc,
@@ -3601,6 +3670,10 @@ class SeriesRecord extends DataClass implements Insertable<SeriesRecord> {
     totalScore: totalScore ?? this.totalScore,
     innerTenCount: innerTenCount ?? this.innerTenCount,
     missCount: missCount ?? this.missCount,
+    scorePenalty: scorePenalty ?? this.scorePenalty,
+    scoredBullCount: scoredBullCount.present
+        ? scoredBullCount.value
+        : this.scoredBullCount,
     hasBoundaryWarnings: hasBoundaryWarnings ?? this.hasBoundaryWarnings,
     createdAtUtc: createdAtUtc ?? this.createdAtUtc,
     updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
@@ -3645,6 +3718,12 @@ class SeriesRecord extends DataClass implements Insertable<SeriesRecord> {
           ? data.innerTenCount.value
           : this.innerTenCount,
       missCount: data.missCount.present ? data.missCount.value : this.missCount,
+      scorePenalty: data.scorePenalty.present
+          ? data.scorePenalty.value
+          : this.scorePenalty,
+      scoredBullCount: data.scoredBullCount.present
+          ? data.scoredBullCount.value
+          : this.scoredBullCount,
       hasBoundaryWarnings: data.hasBoundaryWarnings.present
           ? data.hasBoundaryWarnings.value
           : this.hasBoundaryWarnings,
@@ -3680,6 +3759,8 @@ class SeriesRecord extends DataClass implements Insertable<SeriesRecord> {
           ..write('totalScore: $totalScore, ')
           ..write('innerTenCount: $innerTenCount, ')
           ..write('missCount: $missCount, ')
+          ..write('scorePenalty: $scorePenalty, ')
+          ..write('scoredBullCount: $scoredBullCount, ')
           ..write('hasBoundaryWarnings: $hasBoundaryWarnings, ')
           ..write('createdAtUtc: $createdAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc, ')
@@ -3707,6 +3788,8 @@ class SeriesRecord extends DataClass implements Insertable<SeriesRecord> {
     totalScore,
     innerTenCount,
     missCount,
+    scorePenalty,
+    scoredBullCount,
     hasBoundaryWarnings,
     createdAtUtc,
     updatedAtUtc,
@@ -3733,6 +3816,8 @@ class SeriesRecord extends DataClass implements Insertable<SeriesRecord> {
           other.totalScore == this.totalScore &&
           other.innerTenCount == this.innerTenCount &&
           other.missCount == this.missCount &&
+          other.scorePenalty == this.scorePenalty &&
+          other.scoredBullCount == this.scoredBullCount &&
           other.hasBoundaryWarnings == this.hasBoundaryWarnings &&
           other.createdAtUtc == this.createdAtUtc &&
           other.updatedAtUtc == this.updatedAtUtc &&
@@ -3757,6 +3842,8 @@ class ShootingSeriesCompanion extends UpdateCompanion<SeriesRecord> {
   final Value<int> totalScore;
   final Value<int> innerTenCount;
   final Value<int> missCount;
+  final Value<int> scorePenalty;
+  final Value<int?> scoredBullCount;
   final Value<bool> hasBoundaryWarnings;
   final Value<DateTime> createdAtUtc;
   final Value<DateTime> updatedAtUtc;
@@ -3780,6 +3867,8 @@ class ShootingSeriesCompanion extends UpdateCompanion<SeriesRecord> {
     this.totalScore = const Value.absent(),
     this.innerTenCount = const Value.absent(),
     this.missCount = const Value.absent(),
+    this.scorePenalty = const Value.absent(),
+    this.scoredBullCount = const Value.absent(),
     this.hasBoundaryWarnings = const Value.absent(),
     this.createdAtUtc = const Value.absent(),
     this.updatedAtUtc = const Value.absent(),
@@ -3804,6 +3893,8 @@ class ShootingSeriesCompanion extends UpdateCompanion<SeriesRecord> {
     this.totalScore = const Value.absent(),
     this.innerTenCount = const Value.absent(),
     this.missCount = const Value.absent(),
+    this.scorePenalty = const Value.absent(),
+    this.scoredBullCount = const Value.absent(),
     this.hasBoundaryWarnings = const Value.absent(),
     required DateTime createdAtUtc,
     required DateTime updatedAtUtc,
@@ -3837,6 +3928,8 @@ class ShootingSeriesCompanion extends UpdateCompanion<SeriesRecord> {
     Expression<int>? totalScore,
     Expression<int>? innerTenCount,
     Expression<int>? missCount,
+    Expression<int>? scorePenalty,
+    Expression<int>? scoredBullCount,
     Expression<bool>? hasBoundaryWarnings,
     Expression<DateTime>? createdAtUtc,
     Expression<DateTime>? updatedAtUtc,
@@ -3864,6 +3957,8 @@ class ShootingSeriesCompanion extends UpdateCompanion<SeriesRecord> {
       if (totalScore != null) 'total_score': totalScore,
       if (innerTenCount != null) 'inner_ten_count': innerTenCount,
       if (missCount != null) 'miss_count': missCount,
+      if (scorePenalty != null) 'score_penalty': scorePenalty,
+      if (scoredBullCount != null) 'scored_bull_count': scoredBullCount,
       if (hasBoundaryWarnings != null)
         'has_boundary_warnings': hasBoundaryWarnings,
       if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
@@ -3891,6 +3986,8 @@ class ShootingSeriesCompanion extends UpdateCompanion<SeriesRecord> {
     Value<int>? totalScore,
     Value<int>? innerTenCount,
     Value<int>? missCount,
+    Value<int>? scorePenalty,
+    Value<int?>? scoredBullCount,
     Value<bool>? hasBoundaryWarnings,
     Value<DateTime>? createdAtUtc,
     Value<DateTime>? updatedAtUtc,
@@ -3916,6 +4013,8 @@ class ShootingSeriesCompanion extends UpdateCompanion<SeriesRecord> {
       totalScore: totalScore ?? this.totalScore,
       innerTenCount: innerTenCount ?? this.innerTenCount,
       missCount: missCount ?? this.missCount,
+      scorePenalty: scorePenalty ?? this.scorePenalty,
+      scoredBullCount: scoredBullCount ?? this.scoredBullCount,
       hasBoundaryWarnings: hasBoundaryWarnings ?? this.hasBoundaryWarnings,
       createdAtUtc: createdAtUtc ?? this.createdAtUtc,
       updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
@@ -3982,6 +4081,12 @@ class ShootingSeriesCompanion extends UpdateCompanion<SeriesRecord> {
     if (missCount.present) {
       map['miss_count'] = Variable<int>(missCount.value);
     }
+    if (scorePenalty.present) {
+      map['score_penalty'] = Variable<int>(scorePenalty.value);
+    }
+    if (scoredBullCount.present) {
+      map['scored_bull_count'] = Variable<int>(scoredBullCount.value);
+    }
     if (hasBoundaryWarnings.present) {
       map['has_boundary_warnings'] = Variable<bool>(hasBoundaryWarnings.value);
     }
@@ -4020,6 +4125,8 @@ class ShootingSeriesCompanion extends UpdateCompanion<SeriesRecord> {
           ..write('totalScore: $totalScore, ')
           ..write('innerTenCount: $innerTenCount, ')
           ..write('missCount: $missCount, ')
+          ..write('scorePenalty: $scorePenalty, ')
+          ..write('scoredBullCount: $scoredBullCount, ')
           ..write('hasBoundaryWarnings: $hasBoundaryWarnings, ')
           ..write('createdAtUtc: $createdAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc, ')
@@ -4865,6 +4972,17 @@ class $ShotImpactsTable extends ShotImpacts
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _targetBullIdMeta = const VerificationMeta(
+    'targetBullId',
+  );
+  @override
+  late final GeneratedColumn<String> targetBullId = GeneratedColumn<String>(
+    'target_bull_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _scoreValueMeta = const VerificationMeta(
     'scoreValue',
   );
@@ -4875,6 +4993,30 @@ class $ShotImpactsTable extends ShotImpacts
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rawScoreValueMeta = const VerificationMeta(
+    'rawScoreValue',
+  );
+  @override
+  late final GeneratedColumn<int> rawScoreValue = GeneratedColumn<int>(
+    'raw_score_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _scoreDispositionMeta = const VerificationMeta(
+    'scoreDisposition',
+  );
+  @override
+  late final GeneratedColumn<String> scoreDisposition = GeneratedColumn<String>(
+    'score_disposition',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('counted'),
   );
   static const VerificationMeta _isInnerTenMeta = const VerificationMeta(
     'isInnerTen',
@@ -4917,7 +5059,10 @@ class $ShotImpactsTable extends ShotImpacts
     multiplicity,
     isMiss,
     isPositionUncertain,
+    targetBullId,
     scoreValue,
+    rawScoreValue,
+    scoreDisposition,
     isInnerTen,
     isBoundaryUncertain,
   ];
@@ -5013,6 +5158,15 @@ class $ShotImpactsTable extends ShotImpacts
         ),
       );
     }
+    if (data.containsKey('target_bull_id')) {
+      context.handle(
+        _targetBullIdMeta,
+        targetBullId.isAcceptableOrUnknown(
+          data['target_bull_id']!,
+          _targetBullIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('score_value')) {
       context.handle(
         _scoreValueMeta,
@@ -5020,6 +5174,24 @@ class $ShotImpactsTable extends ShotImpacts
       );
     } else if (isInserting) {
       context.missing(_scoreValueMeta);
+    }
+    if (data.containsKey('raw_score_value')) {
+      context.handle(
+        _rawScoreValueMeta,
+        rawScoreValue.isAcceptableOrUnknown(
+          data['raw_score_value']!,
+          _rawScoreValueMeta,
+        ),
+      );
+    }
+    if (data.containsKey('score_disposition')) {
+      context.handle(
+        _scoreDispositionMeta,
+        scoreDisposition.isAcceptableOrUnknown(
+          data['score_disposition']!,
+          _scoreDispositionMeta,
+        ),
+      );
     }
     if (data.containsKey('is_inner_ten')) {
       context.handle(
@@ -5088,9 +5260,21 @@ class $ShotImpactsTable extends ShotImpacts
         DriftSqlType.bool,
         data['${effectivePrefix}is_position_uncertain'],
       )!,
+      targetBullId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_bull_id'],
+      ),
       scoreValue: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}score_value'],
+      )!,
+      rawScoreValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}raw_score_value'],
+      )!,
+      scoreDisposition: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}score_disposition'],
       )!,
       isInnerTen: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
@@ -5120,7 +5304,10 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
   final int multiplicity;
   final bool isMiss;
   final bool isPositionUncertain;
+  final String? targetBullId;
   final int scoreValue;
+  final int rawScoreValue;
+  final String scoreDisposition;
   final bool isInnerTen;
   final bool isBoundaryUncertain;
   const ImpactRecord({
@@ -5134,7 +5321,10 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
     required this.multiplicity,
     required this.isMiss,
     required this.isPositionUncertain,
+    this.targetBullId,
     required this.scoreValue,
+    required this.rawScoreValue,
+    required this.scoreDisposition,
     required this.isInnerTen,
     required this.isBoundaryUncertain,
   });
@@ -5157,7 +5347,12 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
     map['multiplicity'] = Variable<int>(multiplicity);
     map['is_miss'] = Variable<bool>(isMiss);
     map['is_position_uncertain'] = Variable<bool>(isPositionUncertain);
+    if (!nullToAbsent || targetBullId != null) {
+      map['target_bull_id'] = Variable<String>(targetBullId);
+    }
     map['score_value'] = Variable<int>(scoreValue);
+    map['raw_score_value'] = Variable<int>(rawScoreValue);
+    map['score_disposition'] = Variable<String>(scoreDisposition);
     map['is_inner_ten'] = Variable<bool>(isInnerTen);
     map['is_boundary_uncertain'] = Variable<bool>(isBoundaryUncertain);
     return map;
@@ -5181,7 +5376,12 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
       multiplicity: Value(multiplicity),
       isMiss: Value(isMiss),
       isPositionUncertain: Value(isPositionUncertain),
+      targetBullId: targetBullId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetBullId),
       scoreValue: Value(scoreValue),
+      rawScoreValue: Value(rawScoreValue),
+      scoreDisposition: Value(scoreDisposition),
       isInnerTen: Value(isInnerTen),
       isBoundaryUncertain: Value(isBoundaryUncertain),
     );
@@ -5205,7 +5405,10 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
       isPositionUncertain: serializer.fromJson<bool>(
         json['isPositionUncertain'],
       ),
+      targetBullId: serializer.fromJson<String?>(json['targetBullId']),
       scoreValue: serializer.fromJson<int>(json['scoreValue']),
+      rawScoreValue: serializer.fromJson<int>(json['rawScoreValue']),
+      scoreDisposition: serializer.fromJson<String>(json['scoreDisposition']),
       isInnerTen: serializer.fromJson<bool>(json['isInnerTen']),
       isBoundaryUncertain: serializer.fromJson<bool>(
         json['isBoundaryUncertain'],
@@ -5226,7 +5429,10 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
       'multiplicity': serializer.toJson<int>(multiplicity),
       'isMiss': serializer.toJson<bool>(isMiss),
       'isPositionUncertain': serializer.toJson<bool>(isPositionUncertain),
+      'targetBullId': serializer.toJson<String?>(targetBullId),
       'scoreValue': serializer.toJson<int>(scoreValue),
+      'rawScoreValue': serializer.toJson<int>(rawScoreValue),
+      'scoreDisposition': serializer.toJson<String>(scoreDisposition),
       'isInnerTen': serializer.toJson<bool>(isInnerTen),
       'isBoundaryUncertain': serializer.toJson<bool>(isBoundaryUncertain),
     };
@@ -5243,7 +5449,10 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
     int? multiplicity,
     bool? isMiss,
     bool? isPositionUncertain,
+    Value<String?> targetBullId = const Value.absent(),
     int? scoreValue,
+    int? rawScoreValue,
+    String? scoreDisposition,
     bool? isInnerTen,
     bool? isBoundaryUncertain,
   }) => ImpactRecord(
@@ -5263,7 +5472,10 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
     multiplicity: multiplicity ?? this.multiplicity,
     isMiss: isMiss ?? this.isMiss,
     isPositionUncertain: isPositionUncertain ?? this.isPositionUncertain,
+    targetBullId: targetBullId.present ? targetBullId.value : this.targetBullId,
     scoreValue: scoreValue ?? this.scoreValue,
+    rawScoreValue: rawScoreValue ?? this.rawScoreValue,
+    scoreDisposition: scoreDisposition ?? this.scoreDisposition,
     isInnerTen: isInnerTen ?? this.isInnerTen,
     isBoundaryUncertain: isBoundaryUncertain ?? this.isBoundaryUncertain,
   );
@@ -5289,9 +5501,18 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
       isPositionUncertain: data.isPositionUncertain.present
           ? data.isPositionUncertain.value
           : this.isPositionUncertain,
+      targetBullId: data.targetBullId.present
+          ? data.targetBullId.value
+          : this.targetBullId,
       scoreValue: data.scoreValue.present
           ? data.scoreValue.value
           : this.scoreValue,
+      rawScoreValue: data.rawScoreValue.present
+          ? data.rawScoreValue.value
+          : this.rawScoreValue,
+      scoreDisposition: data.scoreDisposition.present
+          ? data.scoreDisposition.value
+          : this.scoreDisposition,
       isInnerTen: data.isInnerTen.present
           ? data.isInnerTen.value
           : this.isInnerTen,
@@ -5314,7 +5535,10 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
           ..write('multiplicity: $multiplicity, ')
           ..write('isMiss: $isMiss, ')
           ..write('isPositionUncertain: $isPositionUncertain, ')
+          ..write('targetBullId: $targetBullId, ')
           ..write('scoreValue: $scoreValue, ')
+          ..write('rawScoreValue: $rawScoreValue, ')
+          ..write('scoreDisposition: $scoreDisposition, ')
           ..write('isInnerTen: $isInnerTen, ')
           ..write('isBoundaryUncertain: $isBoundaryUncertain')
           ..write(')'))
@@ -5333,7 +5557,10 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
     multiplicity,
     isMiss,
     isPositionUncertain,
+    targetBullId,
     scoreValue,
+    rawScoreValue,
+    scoreDisposition,
     isInnerTen,
     isBoundaryUncertain,
   );
@@ -5351,7 +5578,10 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
           other.multiplicity == this.multiplicity &&
           other.isMiss == this.isMiss &&
           other.isPositionUncertain == this.isPositionUncertain &&
+          other.targetBullId == this.targetBullId &&
           other.scoreValue == this.scoreValue &&
+          other.rawScoreValue == this.rawScoreValue &&
+          other.scoreDisposition == this.scoreDisposition &&
           other.isInnerTen == this.isInnerTen &&
           other.isBoundaryUncertain == this.isBoundaryUncertain);
 }
@@ -5367,7 +5597,10 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
   final Value<int> multiplicity;
   final Value<bool> isMiss;
   final Value<bool> isPositionUncertain;
+  final Value<String?> targetBullId;
   final Value<int> scoreValue;
+  final Value<int> rawScoreValue;
+  final Value<String> scoreDisposition;
   final Value<bool> isInnerTen;
   final Value<bool> isBoundaryUncertain;
   final Value<int> rowid;
@@ -5382,7 +5615,10 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
     this.multiplicity = const Value.absent(),
     this.isMiss = const Value.absent(),
     this.isPositionUncertain = const Value.absent(),
+    this.targetBullId = const Value.absent(),
     this.scoreValue = const Value.absent(),
+    this.rawScoreValue = const Value.absent(),
+    this.scoreDisposition = const Value.absent(),
     this.isInnerTen = const Value.absent(),
     this.isBoundaryUncertain = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -5398,7 +5634,10 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
     this.multiplicity = const Value.absent(),
     this.isMiss = const Value.absent(),
     this.isPositionUncertain = const Value.absent(),
+    this.targetBullId = const Value.absent(),
     required int scoreValue,
+    this.rawScoreValue = const Value.absent(),
+    this.scoreDisposition = const Value.absent(),
     this.isInnerTen = const Value.absent(),
     this.isBoundaryUncertain = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -5418,7 +5657,10 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
     Expression<int>? multiplicity,
     Expression<bool>? isMiss,
     Expression<bool>? isPositionUncertain,
+    Expression<String>? targetBullId,
     Expression<int>? scoreValue,
+    Expression<int>? rawScoreValue,
+    Expression<String>? scoreDisposition,
     Expression<bool>? isInnerTen,
     Expression<bool>? isBoundaryUncertain,
     Expression<int>? rowid,
@@ -5435,7 +5677,10 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
       if (isMiss != null) 'is_miss': isMiss,
       if (isPositionUncertain != null)
         'is_position_uncertain': isPositionUncertain,
+      if (targetBullId != null) 'target_bull_id': targetBullId,
       if (scoreValue != null) 'score_value': scoreValue,
+      if (rawScoreValue != null) 'raw_score_value': rawScoreValue,
+      if (scoreDisposition != null) 'score_disposition': scoreDisposition,
       if (isInnerTen != null) 'is_inner_ten': isInnerTen,
       if (isBoundaryUncertain != null)
         'is_boundary_uncertain': isBoundaryUncertain,
@@ -5454,7 +5699,10 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
     Value<int>? multiplicity,
     Value<bool>? isMiss,
     Value<bool>? isPositionUncertain,
+    Value<String?>? targetBullId,
     Value<int>? scoreValue,
+    Value<int>? rawScoreValue,
+    Value<String>? scoreDisposition,
     Value<bool>? isInnerTen,
     Value<bool>? isBoundaryUncertain,
     Value<int>? rowid,
@@ -5470,7 +5718,10 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
       multiplicity: multiplicity ?? this.multiplicity,
       isMiss: isMiss ?? this.isMiss,
       isPositionUncertain: isPositionUncertain ?? this.isPositionUncertain,
+      targetBullId: targetBullId ?? this.targetBullId,
       scoreValue: scoreValue ?? this.scoreValue,
+      rawScoreValue: rawScoreValue ?? this.rawScoreValue,
+      scoreDisposition: scoreDisposition ?? this.scoreDisposition,
       isInnerTen: isInnerTen ?? this.isInnerTen,
       isBoundaryUncertain: isBoundaryUncertain ?? this.isBoundaryUncertain,
       rowid: rowid ?? this.rowid,
@@ -5510,8 +5761,17 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
     if (isPositionUncertain.present) {
       map['is_position_uncertain'] = Variable<bool>(isPositionUncertain.value);
     }
+    if (targetBullId.present) {
+      map['target_bull_id'] = Variable<String>(targetBullId.value);
+    }
     if (scoreValue.present) {
       map['score_value'] = Variable<int>(scoreValue.value);
+    }
+    if (rawScoreValue.present) {
+      map['raw_score_value'] = Variable<int>(rawScoreValue.value);
+    }
+    if (scoreDisposition.present) {
+      map['score_disposition'] = Variable<String>(scoreDisposition.value);
     }
     if (isInnerTen.present) {
       map['is_inner_ten'] = Variable<bool>(isInnerTen.value);
@@ -5538,7 +5798,10 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
           ..write('multiplicity: $multiplicity, ')
           ..write('isMiss: $isMiss, ')
           ..write('isPositionUncertain: $isPositionUncertain, ')
+          ..write('targetBullId: $targetBullId, ')
           ..write('scoreValue: $scoreValue, ')
+          ..write('rawScoreValue: $rawScoreValue, ')
+          ..write('scoreDisposition: $scoreDisposition, ')
           ..write('isInnerTen: $isInnerTen, ')
           ..write('isBoundaryUncertain: $isBoundaryUncertain, ')
           ..write('rowid: $rowid')
@@ -9840,6 +10103,8 @@ typedef $$ShootingSeriesTableCreateCompanionBuilder =
       Value<int> totalScore,
       Value<int> innerTenCount,
       Value<int> missCount,
+      Value<int> scorePenalty,
+      Value<int?> scoredBullCount,
       Value<bool> hasBoundaryWarnings,
       required DateTime createdAtUtc,
       required DateTime updatedAtUtc,
@@ -9865,6 +10130,8 @@ typedef $$ShootingSeriesTableUpdateCompanionBuilder =
       Value<int> totalScore,
       Value<int> innerTenCount,
       Value<int> missCount,
+      Value<int> scorePenalty,
+      Value<int?> scoredBullCount,
       Value<bool> hasBoundaryWarnings,
       Value<DateTime> createdAtUtc,
       Value<DateTime> updatedAtUtc,
@@ -10057,6 +10324,16 @@ class $$ShootingSeriesTableFilterComposer
 
   ColumnFilters<int> get missCount => $composableBuilder(
     column: $table.missCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get scorePenalty => $composableBuilder(
+    column: $table.scorePenalty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get scoredBullCount => $composableBuilder(
+    column: $table.scoredBullCount,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10297,6 +10574,16 @@ class $$ShootingSeriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get scorePenalty => $composableBuilder(
+    column: $table.scorePenalty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get scoredBullCount => $composableBuilder(
+    column: $table.scoredBullCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get hasBoundaryWarnings => $composableBuilder(
     column: $table.hasBoundaryWarnings,
     builder: (column) => ColumnOrderings(column),
@@ -10473,6 +10760,16 @@ class $$ShootingSeriesTableAnnotationComposer
 
   GeneratedColumn<int> get missCount =>
       $composableBuilder(column: $table.missCount, builder: (column) => column);
+
+  GeneratedColumn<int> get scorePenalty => $composableBuilder(
+    column: $table.scorePenalty,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get scoredBullCount => $composableBuilder(
+    column: $table.scoredBullCount,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get hasBoundaryWarnings => $composableBuilder(
     column: $table.hasBoundaryWarnings,
@@ -10691,6 +10988,8 @@ class $$ShootingSeriesTableTableManager
                 Value<int> totalScore = const Value.absent(),
                 Value<int> innerTenCount = const Value.absent(),
                 Value<int> missCount = const Value.absent(),
+                Value<int> scorePenalty = const Value.absent(),
+                Value<int?> scoredBullCount = const Value.absent(),
                 Value<bool> hasBoundaryWarnings = const Value.absent(),
                 Value<DateTime> createdAtUtc = const Value.absent(),
                 Value<DateTime> updatedAtUtc = const Value.absent(),
@@ -10714,6 +11013,8 @@ class $$ShootingSeriesTableTableManager
                 totalScore: totalScore,
                 innerTenCount: innerTenCount,
                 missCount: missCount,
+                scorePenalty: scorePenalty,
+                scoredBullCount: scoredBullCount,
                 hasBoundaryWarnings: hasBoundaryWarnings,
                 createdAtUtc: createdAtUtc,
                 updatedAtUtc: updatedAtUtc,
@@ -10739,6 +11040,8 @@ class $$ShootingSeriesTableTableManager
                 Value<int> totalScore = const Value.absent(),
                 Value<int> innerTenCount = const Value.absent(),
                 Value<int> missCount = const Value.absent(),
+                Value<int> scorePenalty = const Value.absent(),
+                Value<int?> scoredBullCount = const Value.absent(),
                 Value<bool> hasBoundaryWarnings = const Value.absent(),
                 required DateTime createdAtUtc,
                 required DateTime updatedAtUtc,
@@ -10762,6 +11065,8 @@ class $$ShootingSeriesTableTableManager
                 totalScore: totalScore,
                 innerTenCount: innerTenCount,
                 missCount: missCount,
+                scorePenalty: scorePenalty,
+                scoredBullCount: scoredBullCount,
                 hasBoundaryWarnings: hasBoundaryWarnings,
                 createdAtUtc: createdAtUtc,
                 updatedAtUtc: updatedAtUtc,
@@ -11701,7 +12006,10 @@ typedef $$ShotImpactsTableCreateCompanionBuilder =
       Value<int> multiplicity,
       Value<bool> isMiss,
       Value<bool> isPositionUncertain,
+      Value<String?> targetBullId,
       required int scoreValue,
+      Value<int> rawScoreValue,
+      Value<String> scoreDisposition,
       Value<bool> isInnerTen,
       Value<bool> isBoundaryUncertain,
       Value<int> rowid,
@@ -11718,7 +12026,10 @@ typedef $$ShotImpactsTableUpdateCompanionBuilder =
       Value<int> multiplicity,
       Value<bool> isMiss,
       Value<bool> isPositionUncertain,
+      Value<String?> targetBullId,
       Value<int> scoreValue,
+      Value<int> rawScoreValue,
+      Value<String> scoreDisposition,
       Value<bool> isInnerTen,
       Value<bool> isBoundaryUncertain,
       Value<int> rowid,
@@ -11814,8 +12125,23 @@ class $$ShotImpactsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get targetBullId => $composableBuilder(
+    column: $table.targetBullId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get scoreValue => $composableBuilder(
     column: $table.scoreValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rawScoreValue => $composableBuilder(
+    column: $table.rawScoreValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get scoreDisposition => $composableBuilder(
+    column: $table.scoreDisposition,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11925,8 +12251,23 @@ class $$ShotImpactsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get targetBullId => $composableBuilder(
+    column: $table.targetBullId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get scoreValue => $composableBuilder(
     column: $table.scoreValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rawScoreValue => $composableBuilder(
+    column: $table.rawScoreValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get scoreDisposition => $composableBuilder(
+    column: $table.scoreDisposition,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -12028,8 +12369,23 @@ class $$ShotImpactsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get targetBullId => $composableBuilder(
+    column: $table.targetBullId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get scoreValue => $composableBuilder(
     column: $table.scoreValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get rawScoreValue => $composableBuilder(
+    column: $table.rawScoreValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get scoreDisposition => $composableBuilder(
+    column: $table.scoreDisposition,
     builder: (column) => column,
   );
 
@@ -12128,7 +12484,10 @@ class $$ShotImpactsTableTableManager
                 Value<int> multiplicity = const Value.absent(),
                 Value<bool> isMiss = const Value.absent(),
                 Value<bool> isPositionUncertain = const Value.absent(),
+                Value<String?> targetBullId = const Value.absent(),
                 Value<int> scoreValue = const Value.absent(),
+                Value<int> rawScoreValue = const Value.absent(),
+                Value<String> scoreDisposition = const Value.absent(),
                 Value<bool> isInnerTen = const Value.absent(),
                 Value<bool> isBoundaryUncertain = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -12143,7 +12502,10 @@ class $$ShotImpactsTableTableManager
                 multiplicity: multiplicity,
                 isMiss: isMiss,
                 isPositionUncertain: isPositionUncertain,
+                targetBullId: targetBullId,
                 scoreValue: scoreValue,
+                rawScoreValue: rawScoreValue,
+                scoreDisposition: scoreDisposition,
                 isInnerTen: isInnerTen,
                 isBoundaryUncertain: isBoundaryUncertain,
                 rowid: rowid,
@@ -12160,7 +12522,10 @@ class $$ShotImpactsTableTableManager
                 Value<int> multiplicity = const Value.absent(),
                 Value<bool> isMiss = const Value.absent(),
                 Value<bool> isPositionUncertain = const Value.absent(),
+                Value<String?> targetBullId = const Value.absent(),
                 required int scoreValue,
+                Value<int> rawScoreValue = const Value.absent(),
+                Value<String> scoreDisposition = const Value.absent(),
                 Value<bool> isInnerTen = const Value.absent(),
                 Value<bool> isBoundaryUncertain = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -12175,7 +12540,10 @@ class $$ShotImpactsTableTableManager
                 multiplicity: multiplicity,
                 isMiss: isMiss,
                 isPositionUncertain: isPositionUncertain,
+                targetBullId: targetBullId,
                 scoreValue: scoreValue,
+                rawScoreValue: rawScoreValue,
+                scoreDisposition: scoreDisposition,
                 isInnerTen: isInnerTen,
                 isBoundaryUncertain: isBoundaryUncertain,
                 rowid: rowid,

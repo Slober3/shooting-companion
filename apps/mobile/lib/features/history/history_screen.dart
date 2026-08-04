@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../app/providers.dart';
 import '../../data/shooting_repository.dart';
 import '../../widgets/compact_page_scaffold.dart';
+import '../../widgets/app_notice.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
 import '../session/active_session_screen.dart';
 import '../session/manual_series_screen.dart';
@@ -358,10 +359,10 @@ class _SessionRow extends ConsumerWidget {
       await _openEditor(context, draftId);
     } on ActiveSessionExistsException {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Beëindig eerst de andere actieve sessie.'),
-        ),
+      AppMessenger.show(
+        context,
+        kind: AppNoticeKind.warning,
+        message: 'Beëindig eerst de andere actieve sessie.',
       );
     }
   }
@@ -428,9 +429,11 @@ class _SessionRow extends ConsumerWidget {
     if (accepted != true) return;
     await ref.read(repositoryProvider).deleteSession(item.session.id);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
+    AppMessenger.show(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Sessie verwijderd')));
+      kind: AppNoticeKind.success,
+      message: 'Sessie verwijderd',
+    );
   }
 }
 

@@ -31,7 +31,9 @@ Drift rows or Flutter widgets.
 ## Library lifecycle
 
 Active selection streams exclude archived records. Historical detail, filters,
-exports and reports use all-record streams so names remain resolvable. Removing
+exports and reports use all-record streams so names remain resolvable. Series
+overview/detail queries resolve firearm, ammunition and cartridge metadata in
+the repository instead of starting a query per visible row. Removing
 an unused custom item hard-deletes it; removing a referenced item archives it in
 the same transaction as its usage check. Built-in cartridges and official ISSF
 targets are repository-protected and can only be duplicated. Editing a used
@@ -58,6 +60,16 @@ Appearance choices are key/value preferences and require no database migration.
 Semantic marker/status colours live in a `ThemeExtension`. PDF report data,
 font loading and document composition are separate contracts; Noto Sans is
 bundled locally so report generation remains offline and Unicode-safe.
+Application feedback is routed through one floating, dismissible notice layer;
+forms use shared spacing tokens and detached, inset-safe action docks.
+
+## Multi-bull targets
+
+Target schema 2 adds physical bull centres, record/sighter roles and a stored
+multi-bull scoring policy. The BR50 renderer draws a neutral A3 training view;
+it does not embed the official target artwork. Impacts retain `targetBullId`,
+their raw ring value and counting disposition. Confirmed series store the
+penalty and scored-bull count so historical totals are never silently changed.
 
 ## Versioning
 
@@ -65,4 +77,4 @@ bundled locally so report generation remains offline and Unicode-safe.
 - Database: Drift `schemaVersion` and explicit migrations.
 - Target: `profileId@profileVersion`; snapshots are stored per series.
 - Photo alignment: algorithm version stored with corners and matrix.
-- Backup: binary `SCB1` container with manifest v3; v1 and v2 stay importable.
+- Backup: binary `SCB1` container with manifest v4; v1-v3 stay importable.

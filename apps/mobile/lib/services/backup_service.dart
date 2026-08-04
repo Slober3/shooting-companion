@@ -60,11 +60,11 @@ class NormalizedBackupPayload {
   );
 }
 
-/// Converts every supported SCB1 payload to the schema-3 JSON shape.
+/// Converts every supported SCB1 payload to the schema-4 JSON shape.
 class BackupPayloadAdapter {
   const BackupPayloadAdapter._();
 
-  static const currentFormatVersion = 3;
+  static const currentFormatVersion = 4;
   static const _formatName = 'shooting-companion-backup';
 
   static NormalizedBackupPayload normalize({
@@ -84,9 +84,10 @@ class BackupPayloadAdapter {
     }
 
     final normalized = switch (version) {
-      1 => _upgradeV2(_upgradeV1(data)),
-      2 => _upgradeV2(data),
-      _ => _normalizeV3(data),
+      1 => _upgradeV4(_upgradeV2(_upgradeV1(data))),
+      2 => _upgradeV4(_upgradeV2(data)),
+      3 => _upgradeV4(_normalizeV3(data)),
+      _ => _normalizeV4(data),
     };
     final sessionCount = _integer(manifest['sessionCount'], 'sessionCount');
     final seriesCount = _integer(manifest['seriesCount'], 'seriesCount');
@@ -120,6 +121,32 @@ class BackupPayloadAdapter {
     return result;
   }
 
+  static Map<String, dynamic> _normalizeV4(Map<String, dynamic> data) {
+    final result = _normalizeV3(data);
+    _validateBullReferences(result);
+    return result;
+  }
+
+  static Map<String, dynamic> _upgradeV4(Map<String, dynamic> data) {
+    final result = <String, dynamic>{
+      for (final entry in data.entries) entry.key: entry.value,
+    };
+    result['series'] = (result['series']! as List).map((value) {
+      return Map<String, dynamic>.from(value as Map)
+        ..['scorePenalty'] = 0
+        ..['scoredBullCount'] = null;
+    }).toList();
+    result['impacts'] = (result['impacts']! as List).map((value) {
+      final row = Map<String, dynamic>.from(value as Map);
+      return row
+        ..['targetBullId'] = null
+        ..['rawScoreValue'] = row['scoreValue'] ?? 0
+        ..['scoreDisposition'] = 'counted';
+    }).toList();
+    _validateBullReferences(result);
+    return result;
+  }
+
   static Map<String, dynamic> _upgradeV2(Map<String, dynamic> data) {
     final result = _normalizeV2(data);
     result['cartridges'] = (result['cartridges']! as List).map((value) {
@@ -149,6 +176,43 @@ class BackupPayloadAdapter {
       if (row['id'] is! String || !cartridgeIds.contains(row['cartridgeId'])) {
         throw const FormatException(
           'Munitieprofiel verwijst naar een onbekend kaliber.',
+        );
+      }
+    }
+  }
+
+  static void _validateBullReferences(Map<String, dynamic> data) {
+    final bullIdsBySeries = <String, Set<String>>{};
+    for (final value in data['series']! as List) {
+      final row = value as Map;
+      final seriesId = row['id'];
+      final snapshot = row['targetProfileJson'];
+      if (seriesId is! String || snapshot is! String) {
+        throw const FormatException('Reeks bevat geen geldig doelprofiel.');
+      }
+      final decoded = jsonDecode(snapshot);
+      if (decoded is! Map) {
+        throw const FormatException('Ongeldig doelprofielsnapshot.');
+      }
+      final bulls = decoded['bulls'];
+      bullIdsBySeries[seriesId] = bulls is List
+          ? bulls
+                .whereType<Map>()
+                .map((bull) => bull['id'])
+                .whereType<String>()
+                .toSet()
+          : <String>{};
+    }
+    for (final value in data['impacts']! as List) {
+      final row = value as Map;
+      final bullId = row['targetBullId'];
+      if (bullId == null) continue;
+      final seriesId = row['seriesId'];
+      if (bullId is! String ||
+          seriesId is! String ||
+          !(bullIdsBySeries[seriesId]?.contains(bullId) ?? false)) {
+        throw const FormatException(
+          'Treffer verwijst naar een onbekend doelroosje.',
         );
       }
     }
@@ -605,8 +669,8 @@ class BackupService {
         jsonEncode({
           'format': 'shooting-companion-backup',
           'formatVersion': BackupPayloadAdapter.currentFormatVersion,
-          'appVersion': '0.3.0',
-          'databaseSchemaVersion': 3,
+          'appVersion': '0.3.0+6',
+          'databaseSchemaVersion': 4,
           'minimumAppVersion': '0.2.0',
           'createdAtUtc': createdAt.toIso8601String(),
           'sessionCount': sessions.length,

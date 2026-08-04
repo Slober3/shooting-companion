@@ -11,8 +11,9 @@ import '../../app/providers.dart';
 import '../../data/app_database.dart';
 import '../../data/shooting_repository.dart';
 import '../../services/image_storage_service.dart';
+import '../../widgets/app_action_dock.dart';
+import '../../widgets/app_notice.dart';
 import '../../widgets/responsive_metric_grid.dart';
-import '../../widgets/safe_bottom_action_bar.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
 import 'manual_series_screen.dart';
 import 'series_detail_screen.dart';
@@ -116,12 +117,18 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         error: (error, stack) => Center(child: Text('Laden mislukt: $error')),
       ),
       bottomNavigationBar: isActive && value != null
-          ? SafeBottomActionBar(
+          ? AppActionDock(
               actions: [
-                OutlinedButton.icon(
-                  onPressed: _isCompleting ? null : () => _complete(value),
-                  icon: const Icon(Icons.flag_outlined),
-                  label: const Text('Sessie beëindigen'),
+                Semantics(
+                  button: true,
+                  label: 'Actieve sessie beëindigen',
+                  child: ExcludeSemantics(
+                    child: OutlinedButton.icon(
+                      onPressed: _isCompleting ? null : () => _complete(value),
+                      icon: const Icon(Icons.flag_outlined),
+                      label: const Text('Beëindigen', maxLines: 1),
+                    ),
+                  ),
                 ),
                 FilledButton.icon(
                   onPressed: _isCompleting ? null : () => _openDraft(value),
@@ -348,8 +355,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
         await _storage.deleteStoredImage(stored.path);
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Foto toevoegen mislukt: $error')),
+        AppMessenger.show(
+          context,
+          kind: AppNoticeKind.error,
+          message: 'Foto toevoegen mislukt: $error',
         );
       }
     }
@@ -561,92 +570,97 @@ class _SessionBody extends ConsumerWidget {
               ),
             ),
           ),
-        if (detail.confirmedSeries.isEmpty)
+        if (detail.confirmedSeriesItems.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
             child: Text('Nog geen bevestigde reeks.'),
           )
         else
-          ...detail.confirmedSeries.map(
-            (series) => _SeriesTile(series: series),
-          ),
+          ...detail.confirmedSeriesItems.map((item) => _SeriesTile(item: item)),
       ],
     );
   }
 }
 
 class _SeriesTile extends ConsumerWidget {
-  const _SeriesTile({required this.series});
+  const _SeriesTile({required this.item});
 
-  final SeriesRecord series;
+  final SeriesOverviewItem item;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => ListTile(
-    contentPadding: EdgeInsets.zero,
-    leading: CircleAvatar(child: Text('${series.sequenceNumber}')),
-    title: Text(
-      '${series.totalScore}/${series.maximumPossibleScore} · '
-      '${series.innerTenCount} X',
-    ),
-    subtitle: Text(
-      '${series.distanceMeters.toStringAsFixed(0)} m · '
-      '${series.shotCount} schoten',
-    ),
-    onTap: () => Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => SeriesDetailScreen(seriesId: series.id),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final series = item.series;
+    final material = [
+      if (item.firearm != null) item.firearm!.name,
+      if (item.ammoLot != null) item.ammoLot!.displayName,
+    ].join(' · ');
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: CircleAvatar(child: Text('${series.sequenceNumber}')),
+      title: Text(
+        '${series.totalScore}/${series.maximumPossibleScore} · '
+        '${series.innerTenCount} X',
       ),
-    ),
-    trailing: PopupMenuButton<String>(
-      tooltip: 'Reeksacties',
-      onSelected: (action) async {
-        if (action == 'view') {
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => SeriesDetailScreen(seriesId: series.id),
-            ),
-          );
-        } else if (action == 'edit') {
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ManualSeriesScreen(
-                sessionId: series.sessionId,
-                seriesId: series.id,
+      subtitle: Text(
+        '${series.distanceMeters.toStringAsFixed(0)} m · '
+        '${series.shotCount} schoten${material.isEmpty ? '' : '\n$material'}',
+      ),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => SeriesDetailScreen(seriesId: series.id),
+        ),
+      ),
+      trailing: PopupMenuButton<String>(
+        tooltip: 'Reeksacties',
+        onSelected: (action) async {
+          if (action == 'view') {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => SeriesDetailScreen(seriesId: series.id),
               ),
-            ),
-          );
-        } else if (action == 'delete') {
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Reeks verwijderen?'),
-              content: Text(
-                'Reeks ${series.sequenceNumber} en gekoppelde foto’s verdwijnen.',
+            );
+          } else if (action == 'edit') {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ManualSeriesScreen(
+                  sessionId: series.sessionId,
+                  seriesId: series.id,
+                ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Annuleren'),
+            );
+          } else if (action == 'delete') {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Reeks verwijderen?'),
+                content: Text(
+                  'Reeks ${series.sequenceNumber} en gekoppelde foto’s verdwijnen.',
                 ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Verwijderen'),
-                ),
-              ],
-            ),
-          );
-          if (confirmed == true) {
-            await ref.read(repositoryProvider).deleteSeries(series.id);
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Annuleren'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Verwijderen'),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed == true) {
+              await ref.read(repositoryProvider).deleteSeries(series.id);
+            }
           }
-        }
-      },
-      itemBuilder: (_) => const [
-        PopupMenuItem(value: 'view', child: Text('Bekijken')),
-        PopupMenuItem(value: 'edit', child: Text('Bewerken')),
-        PopupMenuItem(value: 'delete', child: Text('Verwijderen')),
-      ],
-    ),
-  );
+        },
+        itemBuilder: (_) => const [
+          PopupMenuItem(value: 'view', child: Text('Bekijken')),
+          PopupMenuItem(value: 'edit', child: Text('Bewerken')),
+          PopupMenuItem(value: 'delete', child: Text('Verwijderen')),
+        ],
+      ),
+    );
+  }
 }
 
 class _PhotoViewerPage extends ConsumerWidget {

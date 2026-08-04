@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/app_database.dart';
 import '../../widgets/app_expandable_section.dart';
 import '../../widgets/app_form_scaffold.dart';
+import '../../widgets/app_form_group.dart';
 import '../../widgets/app_multiline_field.dart';
 import '../../widgets/app_select_field.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
@@ -121,7 +122,7 @@ class _SessionEditSheetState extends State<_SessionEditSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppFormSpacing.field),
             AppSelectField<String?>(
               label: 'Schietstand',
               initialValue: _rangeId,
@@ -139,7 +140,7 @@ class _SessionEditSheetState extends State<_SessionEditSheet> {
               ],
               onChanged: (value) => setState(() => _rangeId = value),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppFormSpacing.field),
             AppMultilineField(
               controller: _notes,
               label: 'Notities',
@@ -157,7 +158,7 @@ class _SessionEditSheetState extends State<_SessionEditSheet> {
                   maxLines: 4,
                   validator: (value) => _maximumLength(value, 160),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppFormSpacing.field),
                 AppMultilineField(
                   controller: _conditions,
                   label: 'Omstandigheden',

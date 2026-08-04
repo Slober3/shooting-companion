@@ -372,7 +372,7 @@ class _MessagePanel extends StatelessWidget {
     child: Column(
       children: [
         Icon(icon, size: 40),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Text(message, textAlign: TextAlign.center),
       ],
     ),
@@ -474,7 +474,7 @@ class _FilterSheetState extends State<_FilterSheet> {
           onChanged: (value) =>
               setState(() => filters = filters.copyWith(period: value)),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         _NullableDropdown<String>(
           label: 'Kaart',
           value: filters.targetId,
@@ -489,7 +489,7 @@ class _FilterSheetState extends State<_FilterSheet> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         _NullableDropdown<double>(
           label: 'Afstand',
           value: filters.distanceMeters,
@@ -505,7 +505,7 @@ class _FilterSheetState extends State<_FilterSheet> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         _NullableDropdown<String>(
           label: 'Wapen',
           value: filters.firearmId,
@@ -519,7 +519,7 @@ class _FilterSheetState extends State<_FilterSheet> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         _NullableDropdown<String>(
           label: 'Munitie',
           value: filters.ammoLotId,

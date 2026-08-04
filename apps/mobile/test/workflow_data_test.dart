@@ -567,14 +567,14 @@ void main() {
     final quick = await repository.startQuickSession();
     await tester.pumpWidget(_testApp(database, const TodayScreen()));
     await _pumpUi(tester);
-    expect(find.text('Sessie beëindigen'), findsOneWidget);
+    expect(find.text('Beëindigen'), findsOneWidget);
     await _disposeTestTree(tester);
 
     await tester.pumpWidget(
       _testApp(database, ActiveSessionScreen(sessionId: quick.sessionId)),
     );
     await _pumpUi(tester);
-    expect(find.text('Sessie beëindigen'), findsOneWidget);
+    expect(find.text('Beëindigen'), findsOneWidget);
     await _disposeTestTree(tester);
   });
 }

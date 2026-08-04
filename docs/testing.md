@@ -15,7 +15,9 @@ flutter build apk --release
 Pure Dart packages are also tested independently. Acceptance covers:
 
 - scoring boundaries, non-ten target maxima, misses and multiplicity;
-- v1/v2-to-v3 migration and all three backup manifest versions;
+- BR50 A3 geometry, 25 record bulls, sighters, duplicate shots, X ties,
+  incomplete cards, multiplicity, fixed maximum and excess-shot penalties;
+- v1/v2/v3-to-v4 migration and all four backup manifest versions;
 - built-in library protection, unused deletion, referenced archiving, restore,
   dependent-ammunition transactions and immutable target versioning;
 - one-active-session and one-draft-series invariants;
@@ -28,6 +30,8 @@ Pure Dart packages are also tested independently. Acceptance covers:
 - bottom system insets, open keyboard, portrait and landscape;
 - Unicode PDF extraction and Poppler rendering with repeated table headers;
 - all four palettes in light/dark mode and persisted appearance fallbacks;
+- floating notice dismissal/deduplication, one-line action labels, joined
+  material metadata and route/keyboard/layout stress variants;
 - absence of internet, audio and external-storage permissions in the built APK.
 
 Device-only camera permission and navigation-mode checks are documented as a

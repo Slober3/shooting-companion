@@ -123,12 +123,16 @@ class SessionDetail {
     required this.session,
     required this.confirmedSeries,
     required this.draftSeries,
+    required this.confirmedSeriesItems,
+    required this.draftSeriesItem,
     required this.images,
   });
 
   final SessionRecord session;
   final List<SeriesRecord> confirmedSeries;
   final SeriesRecord? draftSeries;
+  final List<SeriesOverviewItem> confirmedSeriesItems;
+  final SeriesOverviewItem? draftSeriesItem;
   final List<ImageAssetRecord> images;
 
   int get seriesCount => confirmedSeries.length;
@@ -143,6 +147,20 @@ class SessionDetail {
   int get innerTenCount =>
       confirmedSeries.fold(0, (sum, series) => sum + series.innerTenCount);
   int get photoCount => images.length;
+}
+
+class SeriesOverviewItem {
+  const SeriesOverviewItem({
+    required this.series,
+    required this.firearm,
+    required this.ammoLot,
+    required this.cartridge,
+  });
+
+  final SeriesRecord series;
+  final FirearmRecord? firearm;
+  final AmmoLotRecord? ammoLot;
+  final CartridgeRecord? cartridge;
 }
 
 class SessionListItem {
@@ -265,6 +283,9 @@ class SeriesDetail {
     required this.images,
     required this.primaryImage,
     required this.photoAlignment,
+    required this.firearm,
+    required this.ammoLot,
+    required this.cartridge,
   });
 
   final SeriesRecord series;
@@ -272,6 +293,9 @@ class SeriesDetail {
   final List<ImageAssetRecord> images;
   final ImageAssetRecord? primaryImage;
   final PhotoAlignmentRecord? photoAlignment;
+  final FirearmRecord? firearm;
+  final AmmoLotRecord? ammoLot;
+  final CartridgeRecord? cartridge;
 
   domain.TargetProfile get target =>
       domain.TargetProfile.fromJsonString(series.targetProfileJson);
@@ -481,6 +505,9 @@ class ShootingRepository {
           database.trainingSessions,
           database.shootingSeries,
           database.imageAssets,
+          database.firearms,
+          database.ammoLots,
+          database.cartridges,
         },
       )
       .watch()
@@ -494,6 +521,9 @@ class ShootingRepository {
           database.shotImpacts,
           database.imageAssets,
           database.photoAlignments,
+          database.firearms,
+          database.ammoLots,
+          database.cartridges,
         },
       )
       .watch()
@@ -540,7 +570,7 @@ class ShootingRepository {
       );
       batch.insertAllOnConflictUpdate(
         database.targetProfiles,
-        IssfTargetProfiles.all
+        [...IssfTargetProfiles.all, ...WrabfTargetProfiles.all]
             .map(
               (target) => TargetProfilesCompanion.insert(
                 versionedId: target.versionedId,
@@ -1689,6 +1719,9 @@ class ShootingRepository {
                       ? Value(shot.impact.yMm)
                       : const Value.absent(),
                   scoreValue: Value(shot.value),
+                  rawScoreValue: Value(shot.value),
+                  targetBullId: Value(shot.targetBullId),
+                  scoreDisposition: Value(shot.disposition.name),
                   isInnerTen: Value(shot.isInnerTen),
                   isBoundaryUncertain: Value(shot.isBoundaryUncertain),
                 ),
@@ -1709,6 +1742,8 @@ class ShootingRepository {
             totalScore: Value(score.total),
             innerTenCount: Value(score.innerTenCount),
             missCount: Value(score.missCount),
+            scorePenalty: Value(score.penalty),
+            scoredBullCount: Value(score.scoredBullCount),
             hasBoundaryWarnings: Value(score.hasBoundaryWarnings),
             updatedAtUtc: Value(updatedAtUtc),
           ),
@@ -1744,14 +1779,23 @@ class ShootingRepository {
               ..where((row) => row.sessionId.equals(sessionId))
               ..orderBy([(row) => OrderingTerm.desc(row.createdAtUtc)]))
             .get();
+    final overviewItems = await Future.wait(series.map(_seriesOverviewItem));
+    final confirmedItems = overviewItems
+        .where(
+          (item) => item.series.status == domain.SeriesStatus.confirmed.name,
+        )
+        .toList(growable: false);
+    final draftItem = overviewItems
+        .where((item) => item.series.status == domain.SeriesStatus.draft.name)
+        .firstOrNull;
     return SessionDetail(
       session: session,
-      confirmedSeries: series
-          .where((item) => item.status == domain.SeriesStatus.confirmed.name)
+      confirmedSeries: confirmedItems
+          .map((item) => item.series)
           .toList(growable: false),
-      draftSeries: series
-          .where((item) => item.status == domain.SeriesStatus.draft.name)
-          .firstOrNull,
+      draftSeries: draftItem?.series,
+      confirmedSeriesItems: confirmedItems,
+      draftSeriesItem: draftItem,
       images: images,
     );
   }
@@ -1777,12 +1821,28 @@ class ShootingRepository {
         : await (database.select(
             database.photoAlignments,
           )..where((row) => row.imageId.equals(primary.id))).getSingleOrNull();
+    final overview = await _seriesOverviewItem(series);
     return SeriesDetail(
       series: series,
       impacts: impacts,
       images: images,
       primaryImage: primary,
       photoAlignment: alignment,
+      firearm: overview.firearm,
+      ammoLot: overview.ammoLot,
+      cartridge: overview.cartridge,
+    );
+  }
+
+  Future<SeriesOverviewItem> _seriesOverviewItem(SeriesRecord series) async {
+    final firearmId = series.firearmId;
+    final ammoLotId = series.ammoLotId;
+    final cartridgeId = series.cartridgeId;
+    return SeriesOverviewItem(
+      series: series,
+      firearm: firearmId == null ? null : await _firearm(firearmId),
+      ammoLot: ammoLotId == null ? null : await _ammoLot(ammoLotId),
+      cartridge: cartridgeId == null ? null : await _cartridge(cartridgeId),
     );
   }
 
@@ -1894,6 +1954,7 @@ class ShootingRepository {
                 (impact) => impact.copyWith(
                   clearSourceImage: true,
                   clearImageCoordinates: true,
+                  clearTargetBull: true,
                 ),
               )
               .toList(growable: false)
@@ -1925,6 +1986,8 @@ class ShootingRepository {
         totalScore: Value(score.total),
         innerTenCount: Value(score.innerTenCount),
         missCount: Value(score.missCount),
+        scorePenalty: Value(score.penalty),
+        scoredBullCount: Value(score.scoredBullCount),
         hasBoundaryWarnings: Value(score.hasBoundaryWarnings),
         updatedAtUtc: Value(now),
       ),
@@ -1947,7 +2010,10 @@ class ShootingRepository {
               multiplicity: Value(shot.impact.multiplicity),
               isMiss: Value(shot.impact.isMiss),
               isPositionUncertain: Value(shot.impact.isPositionUncertain),
+              targetBullId: Value(shot.targetBullId),
               scoreValue: shot.value,
+              rawScoreValue: Value(shot.value),
+              scoreDisposition: Value(shot.disposition.name),
               isInnerTen: Value(shot.isInnerTen),
               isBoundaryUncertain: Value(shot.isBoundaryUncertain),
             ),
@@ -2153,6 +2219,7 @@ class ShootingRepository {
 
   bool _sameStoredImpact(ImpactRecord existing, domain.ShotImpact resulting) =>
       _sameImpactMetadata(existing, resulting) &&
+      existing.targetBullId == resulting.targetBullId &&
       existing.xMm == resulting.xMm &&
       existing.yMm == resulting.yMm;
 
@@ -2182,6 +2249,12 @@ domain.TargetProfile _copyTargetProfile(
   lineThicknessMm: source.lineThicknessMm,
   lineBreakingRule: source.lineBreakingRule,
   validationStatus: source.validationStatus,
+  targetKind: source.targetKind,
+  defaultDistanceMeters: source.defaultDistanceMeters,
+  supportedDistancesMeters: source.supportedDistancesMeters,
+  bulls: source.bulls,
+  multiBullScoringPolicy: source.multiBullScoringPolicy,
+  rendererKind: source.rendererKind,
 );
 
 DateTime _nextSqliteSecond(DateTime value) {

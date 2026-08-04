@@ -9,6 +9,7 @@ import '../../app/providers.dart';
 import '../../services/backup_service.dart';
 import '../../services/export_service.dart';
 import '../../widgets/compact_page_scaffold.dart';
+import '../../widgets/app_notice.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
 import '../settings/appearance_providers.dart';
 
@@ -196,8 +197,10 @@ class _DataTransferScreenState extends ConsumerState<_DataTransferScreen> {
       );
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Back-upcontrole mislukt: $error')),
+        AppMessenger.show(
+          context,
+          kind: AppNoticeKind.error,
+          message: 'Back-upcontrole mislukt: $error',
         );
       }
       return;
@@ -258,9 +261,11 @@ class _DataTransferScreenState extends ConsumerState<_DataTransferScreen> {
       await action();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        AppMessenger.show(
           context,
-        ).showSnackBar(SnackBar(content: Text('Actie mislukt: $error')));
+          kind: AppNoticeKind.error,
+          message: 'Actie mislukt: $error',
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -386,7 +391,7 @@ class _PasswordSheetState extends State<_PasswordSheet> {
                 : null,
             onChanged: (_) => setState(() {}),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           TextFormField(
             controller: second,
             obscureText: obscure,

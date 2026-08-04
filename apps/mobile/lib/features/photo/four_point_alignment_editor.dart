@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shooting_companion_photo_geometry/photo_geometry.dart';
 
 import '../scoring/transformable_scoring_viewport.dart';
+import '../../widgets/app_notice.dart';
 
 /// Manual target-card alignment. Points are always selected in target-relative
 /// TL, TR, BR, BL order; this also supports a rotated card photo.
@@ -269,8 +270,10 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
     }
     final selected = _selectedCornerIndex;
     if (selected == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecteer eerst een genummerde hoek.')),
+      AppMessenger.show(
+        context,
+        kind: AppNoticeKind.info,
+        message: 'Selecteer eerst een genummerde hoek.',
       );
       return;
     }
@@ -285,13 +288,11 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
       return;
     }
     _lastInvalidFeedbackAt = now;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('De gekozen positie ligt buiten de foto.'),
-        ),
-      );
+    AppMessenger.show(
+      context,
+      kind: AppNoticeKind.warning,
+      message: 'De gekozen positie ligt buiten de foto.',
+    );
   }
 
   void _reset() {

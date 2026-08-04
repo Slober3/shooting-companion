@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/shooting_repository.dart';
 import '../../widgets/app_decision_dialog.dart';
+import '../../widgets/app_notice.dart';
 
 enum SessionEndDecision {
   cancel,
@@ -36,9 +37,7 @@ class SessionCompletionCoordinator {
   }) async {
     if (!_inFlightSessionIds.add(sessionId)) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Deze sessie wordt al beëindigd.')),
-        );
+        AppMessenger.info(context, 'Deze sessie wordt al beëindigd.');
       }
       return SessionCompletionUiOutcome.busy;
     }
@@ -88,17 +87,13 @@ class SessionCompletionCoordinator {
           _ => null,
         };
         if (message != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(message)));
+          AppMessenger.success(context, message);
         }
       }
       return outcome;
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sessie beëindigen mislukt: $error')),
-        );
+        AppMessenger.error(context, 'Sessie beëindigen mislukt: $error');
       }
       return SessionCompletionUiOutcome.failed;
     } finally {

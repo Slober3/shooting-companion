@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-enum FirearmType { pistol, revolver, other }
+enum FirearmType { pistol, revolver, rifle, other }
 
 enum SessionStatus { draft, active, completed }
 
@@ -8,9 +8,21 @@ enum SeriesStatus { draft, confirmed }
 
 enum ImageRole { primaryScoringPhoto, attachment }
 
-enum ValidationStatus { official, experimental }
+enum ValidationStatus {
+  official,
+  officialGeometryTrainingRendering,
+  experimental,
+}
 
-enum TargetKind { concentricRings }
+enum TargetKind { concentricRings, multiBullConcentric }
+
+enum TargetBullRole { record, sighter }
+
+enum TargetRendererKind { standard, br50Training }
+
+enum DuplicateShotPolicy { lowestScoreCounts }
+
+enum ScoreDisposition { counted, duplicateNotCounted, miss }
 
 enum LineBreakingRule { bulletEdgeTouchesHigherRing, centerOnly }
 
@@ -124,6 +136,85 @@ class RingZone {
   );
 }
 
+class TargetBull {
+  const TargetBull({
+    required this.id,
+    required this.label,
+    required this.centerXMm,
+    required this.centerYMm,
+    required this.role,
+    required this.scoringWidthMm,
+    required this.scoringHeightMm,
+  });
+
+  final String id;
+  final String label;
+  final double centerXMm;
+  final double centerYMm;
+  final TargetBullRole role;
+  final double scoringWidthMm;
+  final double scoringHeightMm;
+
+  bool contains(double xMm, double yMm) =>
+      (xMm - centerXMm).abs() <= scoringWidthMm / 2 &&
+      (yMm - centerYMm).abs() <= scoringHeightMm / 2;
+
+  Map<String, Object> toJson() => {
+    'id': id,
+    'label': label,
+    'centerXMm': centerXMm,
+    'centerYMm': centerYMm,
+    'role': role.name,
+    'scoringWidthMm': scoringWidthMm,
+    'scoringHeightMm': scoringHeightMm,
+  };
+
+  factory TargetBull.fromJson(Map<String, Object?> json) => TargetBull(
+    id: json['id']! as String,
+    label: json['label']! as String,
+    centerXMm: (json['centerXMm']! as num).toDouble(),
+    centerYMm: (json['centerYMm']! as num).toDouble(),
+    role: TargetBullRole.values.byName(json['role']! as String),
+    scoringWidthMm: (json['scoringWidthMm']! as num).toDouble(),
+    scoringHeightMm: (json['scoringHeightMm']! as num).toDouble(),
+  );
+}
+
+class MultiBullScoringPolicy {
+  const MultiBullScoringPolicy({
+    required this.recordBullCount,
+    required this.maximumShotsPerBull,
+    required this.duplicatePolicy,
+    required this.excessShotPenalty,
+    required this.fixedMaximumScore,
+  });
+
+  final int recordBullCount;
+  final int maximumShotsPerBull;
+  final DuplicateShotPolicy duplicatePolicy;
+  final int excessShotPenalty;
+  final int fixedMaximumScore;
+
+  Map<String, Object> toJson() => {
+    'recordBullCount': recordBullCount,
+    'maximumShotsPerBull': maximumShotsPerBull,
+    'duplicatePolicy': duplicatePolicy.name,
+    'excessShotPenalty': excessShotPenalty,
+    'fixedMaximumScore': fixedMaximumScore,
+  };
+
+  factory MultiBullScoringPolicy.fromJson(Map<String, Object?> json) =>
+      MultiBullScoringPolicy(
+        recordBullCount: json['recordBullCount']! as int,
+        maximumShotsPerBull: json['maximumShotsPerBull']! as int,
+        duplicatePolicy: DuplicateShotPolicy.values.byName(
+          json['duplicatePolicy']! as String,
+        ),
+        excessShotPenalty: json['excessShotPenalty']! as int,
+        fixedMaximumScore: json['fixedMaximumScore']! as int,
+      );
+}
+
 class TargetProfile {
   TargetProfile({
     required this.schemaVersion,
@@ -138,11 +229,23 @@ class TargetProfile {
     required this.lineThicknessMm,
     required this.lineBreakingRule,
     required this.validationStatus,
+    this.targetKind = TargetKind.concentricRings,
+    this.defaultDistanceMeters,
+    List<double> supportedDistancesMeters = const [],
+    List<TargetBull> bulls = const [],
+    this.multiBullScoringPolicy,
+    this.rendererKind = TargetRendererKind.standard,
     this.innerTenDiameterMm,
     this.blackOuterDiameterMm,
-  }) : rings = List.unmodifiable(
+  }) : assert(
+         targetKind != TargetKind.multiBullConcentric ||
+             (bulls.isNotEmpty && multiBullScoringPolicy != null),
+       ),
+       rings = List.unmodifiable(
          [...rings]..sort((a, b) => b.value.compareTo(a.value)),
-       );
+       ),
+       supportedDistancesMeters = List.unmodifiable(supportedDistancesMeters),
+       bulls = List.unmodifiable(bulls);
 
   final int schemaVersion;
   final String profileId;
@@ -150,7 +253,7 @@ class TargetProfile {
   final String displayName;
   final String authority;
   final String rulesEdition;
-  final TargetKind targetKind = TargetKind.concentricRings;
+  final TargetKind targetKind;
   final double physicalCardWidthMm;
   final double physicalCardHeightMm;
   final List<RingZone> rings;
@@ -159,11 +262,38 @@ class TargetProfile {
   final double lineThicknessMm;
   final LineBreakingRule lineBreakingRule;
   final ValidationStatus validationStatus;
+  final double? defaultDistanceMeters;
+  final List<double> supportedDistancesMeters;
+  final List<TargetBull> bulls;
+  final MultiBullScoringPolicy? multiBullScoringPolicy;
+  final TargetRendererKind rendererKind;
 
   String get versionedId => '$profileId@$profileVersion';
 
   int get maximumScore =>
       rings.fold(0, (max, ring) => ring.value > max ? ring.value : max);
+
+  List<TargetBull> get recordBulls => bulls
+      .where((bull) => bull.role == TargetBullRole.record)
+      .toList(growable: false);
+
+  TargetBull? bullById(String? id) {
+    if (id == null) return null;
+    for (final bull in bulls) {
+      if (bull.id == id) return bull;
+    }
+    return null;
+  }
+
+  TargetBull? bullAt(double xMm, double yMm, {bool recordOnly = false}) {
+    for (final bull in bulls) {
+      if ((!recordOnly || bull.role == TargetBullRole.record) &&
+          bull.contains(xMm, yMm)) {
+        return bull;
+      }
+    }
+    return null;
+  }
 
   Map<String, Object?> toJson() => {
     'schemaVersion': schemaVersion,
@@ -181,6 +311,11 @@ class TargetProfile {
     'lineThicknessMm': lineThicknessMm,
     'lineBreakingRule': lineBreakingRule.name,
     'validationStatus': validationStatus.name,
+    'defaultDistanceMeters': defaultDistanceMeters,
+    'supportedDistancesMeters': supportedDistancesMeters,
+    'bulls': bulls.map((bull) => bull.toJson()).toList(),
+    'multiBullScoringPolicy': multiBullScoringPolicy?.toJson(),
+    'rendererKind': rendererKind.name,
   };
 
   String toJsonString() => jsonEncode(toJson());
@@ -208,6 +343,31 @@ class TargetProfile {
     validationStatus: ValidationStatus.values.byName(
       json['validationStatus']! as String,
     ),
+    targetKind: TargetKind.values.byName(
+      (json['targetKind'] as String?) ?? TargetKind.concentricRings.name,
+    ),
+    defaultDistanceMeters: (json['defaultDistanceMeters'] as num?)?.toDouble(),
+    supportedDistancesMeters:
+        (json['supportedDistancesMeters'] as List<Object?>?)
+            ?.map((value) => (value! as num).toDouble())
+            .toList() ??
+        const [],
+    bulls:
+        (json['bulls'] as List<Object?>?)
+            ?.map(
+              (bull) =>
+                  TargetBull.fromJson((bull! as Map).cast<String, Object?>()),
+            )
+            .toList() ??
+        const [],
+    multiBullScoringPolicy: json['multiBullScoringPolicy'] == null
+        ? null
+        : MultiBullScoringPolicy.fromJson(
+            (json['multiBullScoringPolicy']! as Map).cast<String, Object?>(),
+          ),
+    rendererKind: TargetRendererKind.values.byName(
+      (json['rendererKind'] as String?) ?? TargetRendererKind.standard.name,
+    ),
   );
 
   factory TargetProfile.fromJsonString(String source) => TargetProfile.fromJson(
@@ -226,6 +386,9 @@ class ShotImpact {
     this.multiplicity = 1,
     this.isMiss = false,
     this.isPositionUncertain = false,
+    this.targetBullId,
+    this.rawScoreValue,
+    this.scoreDisposition = ScoreDisposition.counted,
   }) : assert(multiplicity > 0),
        assert(
          (imageXNormalized == null) == (imageYNormalized == null),
@@ -249,6 +412,9 @@ class ShotImpact {
   final int multiplicity;
   final bool isMiss;
   final bool isPositionUncertain;
+  final String? targetBullId;
+  final int? rawScoreValue;
+  final ScoreDisposition scoreDisposition;
 
   ShotImpact copyWith({
     double? xMm,
@@ -261,6 +427,10 @@ class ShotImpact {
     int? multiplicity,
     bool? isMiss,
     bool? isPositionUncertain,
+    String? targetBullId,
+    bool clearTargetBull = false,
+    int? rawScoreValue,
+    ScoreDisposition? scoreDisposition,
   }) => ShotImpact(
     id: id,
     xMm: xMm ?? this.xMm,
@@ -277,6 +447,9 @@ class ShotImpact {
     multiplicity: multiplicity ?? this.multiplicity,
     isMiss: isMiss ?? this.isMiss,
     isPositionUncertain: isPositionUncertain ?? this.isPositionUncertain,
+    targetBullId: clearTargetBull ? null : targetBullId ?? this.targetBullId,
+    rawScoreValue: rawScoreValue ?? this.rawScoreValue,
+    scoreDisposition: scoreDisposition ?? this.scoreDisposition,
   );
 }
 

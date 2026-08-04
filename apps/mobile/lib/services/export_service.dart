@@ -29,6 +29,8 @@ class ExportSeriesRow {
     required this.missCount,
     required this.projectileDiameterMm,
     required this.photoCount,
+    this.firearmName,
+    this.ammoLotName,
     this.notes,
   });
 
@@ -45,7 +47,16 @@ class ExportSeriesRow {
   final int missCount;
   final double projectileDiameterMm;
   final int photoCount;
+  final String? firearmName;
+  final String? ammoLotName;
   final String? notes;
+
+  String get materialDescription => [
+    if (firearmName != null && firearmName!.trim().isNotEmpty)
+      firearmName!.trim(),
+    if (ammoLotName != null && ammoLotName!.trim().isNotEmpty)
+      ammoLotName!.trim(),
+  ].join(' · ');
 
   double get percentage =>
       maximumPossibleScore == 0 ? 0 : totalScore * 100 / maximumPossibleScore;
@@ -59,7 +70,7 @@ class ExportFormatter {
     final lines = <String>[
       'session_id,datum,status,reeks,doelprofiel,afstand_m,'
           'geregistreerde_schoten,score,maximum,percentage,x,missers,'
-          'projectieldiameter_mm,reeksnotitie,foto_aantal',
+          'projectieldiameter_mm,wapen,munitieprofiel,reeksnotitie,foto_aantal',
     ];
     for (final row in rows) {
       lines.add(
@@ -77,6 +88,8 @@ class ExportFormatter {
           '${row.innerTenCount}',
           '${row.missCount}',
           _decimal(row.projectileDiameterMm),
+          row.firearmName ?? '',
+          row.ammoLotName ?? '',
           row.notes ?? '',
           '${row.photoCount}',
         ].map(_csv).join(','),
@@ -204,6 +217,7 @@ class PdfReportBuilder {
             headers: const [
               'Datum',
               'Doelkaart',
+              'Materiaal',
               'Reeks',
               'Afstand',
               'Schoten',
@@ -216,6 +230,7 @@ class PdfReportBuilder {
                   (item) => [
                     formatter.format(item.sessionStartedAtUtc.toLocal()),
                     item.targetName,
+                    item.materialDescription,
                     '${item.sequenceNumber}',
                     '${item.distanceMeters.toStringAsFixed(0)} m',
                     '${item.shotCount}',
@@ -228,13 +243,14 @@ class PdfReportBuilder {
             headerCount: 1,
             columnWidths: const {
               0: pw.FixedColumnWidth(105),
-              1: pw.FlexColumnWidth(2.8),
-              2: pw.FixedColumnWidth(45),
-              3: pw.FixedColumnWidth(58),
-              4: pw.FixedColumnWidth(58),
-              5: pw.FixedColumnWidth(70),
-              6: pw.FixedColumnWidth(45),
-              7: pw.FixedColumnWidth(35),
+              1: pw.FlexColumnWidth(2.3),
+              2: pw.FlexColumnWidth(1.8),
+              3: pw.FixedColumnWidth(42),
+              4: pw.FixedColumnWidth(54),
+              5: pw.FixedColumnWidth(54),
+              6: pw.FixedColumnWidth(66),
+              7: pw.FixedColumnWidth(42),
+              8: pw.FixedColumnWidth(32),
             },
             cellStyle: const pw.TextStyle(fontSize: 9),
             cellPadding: const pw.EdgeInsets.symmetric(
@@ -322,12 +338,18 @@ class ExportService {
           series.miss_count,
           series.projectile_diameter_mm,
           series.notes,
+          firearm.name AS firearm_name,
+          ammo.display_name AS ammo_lot_name,
           COUNT(image.id) AS photo_count
         FROM shooting_series AS series
         INNER JOIN training_sessions AS session
           ON session.id = series.session_id
         LEFT JOIN image_assets AS image
           ON image.series_id = series.id
+        LEFT JOIN firearms AS firearm
+          ON firearm.id = series.firearm_id
+        LEFT JOIN ammo_lots AS ammo
+          ON ammo.id = series.ammo_lot_id
         WHERE series.status = 'confirmed'
         GROUP BY series.id
         ORDER BY session.started_at_utc, series.sequence_number
@@ -336,6 +358,8 @@ class ExportService {
             database.trainingSessions,
             database.shootingSeries,
             database.imageAssets,
+            database.firearms,
+            database.ammoLots,
           },
         )
         .get();
@@ -358,6 +382,8 @@ class ExportService {
           missCount: row.read<int>('miss_count'),
           projectileDiameterMm: row.read<double>('projectile_diameter_mm'),
           photoCount: row.read<int>('photo_count'),
+          firearmName: row.readNullable<String>('firearm_name'),
+          ammoLotName: row.readNullable<String>('ammo_lot_name'),
           notes: row.readNullable<String>('notes'),
         ),
     ];

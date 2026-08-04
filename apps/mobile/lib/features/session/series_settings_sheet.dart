@@ -5,6 +5,7 @@ import 'package:shooting_companion_domain/domain.dart';
 import '../../data/app_database.dart';
 import '../../widgets/app_expandable_section.dart';
 import '../../widgets/app_form_scaffold.dart';
+import '../../widgets/app_form_group.dart';
 import '../../widgets/app_multiline_field.dart';
 import '../../widgets/app_select_field.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
@@ -123,6 +124,23 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
           widget.initial.distanceMeters ||
       _nullable(_notes.text) != widget.initial.notes;
 
+  bool get _distanceLocked => _target.supportedDistancesMeters.length == 1;
+
+  void _changeTarget(String id, List<TargetProfile> targets) {
+    final selected = targets.firstWhere((target) => target.versionedId == id);
+    setState(() {
+      _target = selected;
+      final fixedDistance = selected.supportedDistancesMeters.length == 1
+          ? selected.supportedDistancesMeters.single
+          : selected.defaultDistanceMeters;
+      if (fixedDistance != null) {
+        _distance.text = fixedDistance.toStringAsFixed(
+          fixedDistance % 1 == 0 ? 0 : 1,
+        );
+      }
+    });
+  }
+
   @override
   void dispose() {
     _distance.dispose();
@@ -160,13 +178,9 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
                     ),
                   )
                   .toList(),
-              onChanged: (id) => setState(() {
-                _target = targetProfiles.firstWhere(
-                  (target) => target.versionedId == id,
-                );
-              }),
+              onChanged: (id) => _changeTarget(id, targetProfiles),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppFormSpacing.field),
             AdaptiveFormRow(
               minimumChildWidth: 160,
               children: [
@@ -186,6 +200,7 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
                 ),
                 TextFormField(
                   controller: _distance,
+                  enabled: !_distanceLocked,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
@@ -233,7 +248,7 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
                   onChanged: (value) => setState(() => _firearmId = value),
                 ),
                 if (filteredLots.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppFormSpacing.field),
                   AppSelectField<String?>(
                     label: 'Munitieprofiel (optioneel)',
                     initialValue: _ammoLotId,
@@ -252,7 +267,7 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
                     onChanged: (value) => setState(() => _ammoLotId = value),
                   ),
                 ],
-                const SizedBox(height: 12),
+                const SizedBox(height: AppFormSpacing.field),
                 AppMultilineField(
                   controller: _notes,
                   label: 'Reeksnotitie (optioneel)',

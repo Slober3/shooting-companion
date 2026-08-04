@@ -10,7 +10,7 @@ import 'package:shooting_companion/data/app_database.dart';
 import 'package:shooting_companion/services/backup_service.dart';
 
 void main() {
-  group('BackupPayloadAdapter v1/v2 -> v3', () {
+  group('BackupPayloadAdapter v1-v3 -> v4', () {
     test('uses impact multiplicity for actual count and ignores scans', () {
       final data = _v1Data(
         expectedShots: 99,
@@ -49,6 +49,8 @@ void main() {
       expect((impacts.first as Map).containsKey('origin'), isFalse);
       expect((impacts.first as Map).containsKey('confidence'), isFalse);
       expect((impacts.first as Map)['sourceImageId'], isNull);
+      expect((impacts.first as Map)['targetBullId'], isNull);
+      expect((impacts.first as Map)['scoreDisposition'], 'counted');
 
       final images = payload.data['images']! as List;
       expect((images.first as Map)['role'], 'primaryScoringPhoto');
@@ -74,7 +76,7 @@ void main() {
     test('rejects future versions and inconsistent record counts', () {
       expect(
         () => BackupPayloadAdapter.normalize(
-          manifest: _manifest(version: 4),
+          manifest: _manifest(version: 5),
           data: _v1Data(expectedShots: 1),
         ),
         throwsFormatException,
@@ -83,6 +85,39 @@ void main() {
         () => BackupPayloadAdapter.normalize(
           manifest: {..._manifest(version: 1), 'seriesCount': 2},
           data: _v1Data(expectedShots: 1),
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('rejects a v4 impact with an unknown target bull', () {
+      final legacy = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 1),
+        data: _v1Data(
+          expectedShots: 1,
+          impacts: const [
+            {
+              'id': 'impact-1',
+              'seriesId': 'series-1',
+              'multiplicity': 1,
+              'scoreValue': 7,
+            },
+          ],
+        ),
+      );
+      final data = <String, dynamic>{
+        for (final entry in legacy.data.entries) entry.key: entry.value,
+      };
+      data['impacts'] = [
+        for (final value in data['impacts']! as List)
+          Map<String, dynamic>.from(value as Map)
+            ..['targetBullId'] = 'unknown-bull',
+      ];
+
+      expect(
+        () => BackupPayloadAdapter.normalize(
+          manifest: _manifest(version: 4),
+          data: data,
         ),
         throwsFormatException,
       );
@@ -126,7 +161,7 @@ void main() {
   });
 
   test(
-    'SCB1 v3 roundtrip preserves library state, draft, media and settings',
+    'SCB1 v4 roundtrip preserves library state, draft, media and settings',
     () async {
       final workspace = await Directory.systemTemp.createTemp(
         'shooting-companion-backup-test-',
@@ -276,7 +311,7 @@ void main() {
         backup,
         'test-password-123',
       );
-      expect(inspected.formatVersion, 3);
+      expect(inspected.formatVersion, 4);
       expect(inspected.sessionCount, 1);
       expect(inspected.seriesCount, 1);
       expect(inspected.imageCount, 1);
@@ -289,7 +324,7 @@ void main() {
         backup,
         'test-password-123',
       );
-      expect(restored.summary.formatVersion, 3);
+      expect(restored.summary.formatVersion, 4);
       expect(
         await database.select(database.trainingSessions).get(),
         hasLength(1),

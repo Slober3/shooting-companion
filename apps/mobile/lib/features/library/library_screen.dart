@@ -13,6 +13,7 @@ import '../../widgets/app_action_dock.dart';
 import '../../widgets/app_decision_dialog.dart';
 import '../../widgets/app_form_scaffold.dart';
 import '../../widgets/app_multiline_field.dart';
+import '../../widgets/app_notice.dart';
 import '../../widgets/app_select_field.dart';
 import '../../widgets/compact_page_scaffold.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
@@ -533,7 +534,7 @@ class _Empty extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(Icons.inbox_outlined, size: 44),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(text, textAlign: TextAlign.center),
           const SizedBox(height: 16),
           FilledButton.icon(
@@ -919,9 +920,11 @@ Future<void> _duplicateCartridge(
 ) async {
   await ref.read(repositoryProvider).duplicateCartridge(item.id);
   if (context.mounted) {
-    ScaffoldMessenger.of(
+    AppMessenger.show(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Bewerkbare kopie gemaakt')));
+      kind: AppNoticeKind.success,
+      message: 'Bewerkbare kopie gemaakt',
+    );
   }
 }
 
@@ -932,9 +935,11 @@ Future<void> _duplicateTarget(
 ) async {
   await ref.read(repositoryProvider).duplicateTargetProfile(item.versionedId);
   if (context.mounted) {
-    ScaffoldMessenger.of(
+    AppMessenger.show(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Bewerkbare kopie gemaakt')));
+      kind: AppNoticeKind.success,
+      message: 'Bewerkbare kopie gemaakt',
+    );
   }
 }
 
@@ -996,7 +1001,12 @@ Future<void> _removeLibraryItem(
     LibraryRemovalResult.blockedDependency =>
       'Verwijdering geblokkeerd door afhankelijke profielen',
   };
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  final noticeKind = switch (result) {
+    LibraryRemovalResult.deleted ||
+    LibraryRemovalResult.archived => AppNoticeKind.success,
+    _ => AppNoticeKind.warning,
+  };
+  AppMessenger.show(context, kind: noticeKind, message: message);
 }
 
 class _ArchivedLibraryScreen extends ConsumerWidget {
@@ -1141,15 +1151,19 @@ Future<void> _restoreArchived(
         await repository.restoreTargetProfile(item.id);
     }
     if (context.mounted) {
-      ScaffoldMessenger.of(
+      AppMessenger.show(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Item hersteld')));
+        kind: AppNoticeKind.success,
+        message: 'Item hersteld',
+      );
     }
   } on StateError catch (error) {
     if (context.mounted) {
-      ScaffoldMessenger.of(
+      AppMessenger.show(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+        kind: AppNoticeKind.error,
+        message: error.message,
+      );
     }
   }
 }
@@ -1208,7 +1222,7 @@ class _CartridgeDialogState extends State<_CartridgeDialog> {
             decoration: const InputDecoration(labelText: 'Naam *'),
             validator: (value) => _requiredText(value, 'Vul een naam in'),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           TextFormField(
             controller: _diameter,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -1219,7 +1233,7 @@ class _CartridgeDialogState extends State<_CartridgeDialog> {
             ),
             validator: (value) => _positiveNumberError(value, 'diameter'),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           AppMultilineField(
             controller: _notes,
             label: 'Notities',
@@ -1319,21 +1333,21 @@ class _FirearmDialogState extends ConsumerState<_FirearmDialog> {
               decoration: const InputDecoration(labelText: 'Naam *'),
               validator: (value) => _requiredText(value, 'Vul een naam in'),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: manufacturer,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Fabrikant'),
               validator: _optionalTextLength,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: model,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Model'),
               validator: _optionalTextLength,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             AppSelectField<domain.FirearmType>(
               label: 'Type',
               initialValue: type,
@@ -1347,13 +1361,17 @@ class _FirearmDialogState extends ConsumerState<_FirearmDialog> {
                   label: 'Revolver',
                 ),
                 AppSelectOption(
+                  value: domain.FirearmType.rifle,
+                  label: 'Geweer',
+                ),
+                AppSelectOption(
                   value: domain.FirearmType.other,
                   label: 'Anders',
                 ),
               ],
               onChanged: (value) => setState(() => type = value),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             AppSelectField<String?>(
               label: 'Standaardkaliber',
               initialValue: cartridgeId,
@@ -1371,7 +1389,7 @@ class _FirearmDialogState extends ConsumerState<_FirearmDialog> {
               ],
               onChanged: (value) => setState(() => cartridgeId = value),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             AppMultilineField(
               controller: notes,
               label: 'Vizier en notities',
@@ -1497,7 +1515,7 @@ class _AmmoDialogState extends ConsumerState<_AmmoDialog> {
               onChanged: (value) => setState(() => cartridgeId = value),
               validation: (value) => value == null ? 'Kies een kaliber' : null,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: name,
               textInputAction: TextInputAction.next,
@@ -1505,28 +1523,28 @@ class _AmmoDialogState extends ConsumerState<_AmmoDialog> {
               validator: (value) =>
                   _requiredText(value, 'Vul een weergavenaam in'),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: manufacturer,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Fabrikant'),
               validator: _optionalTextLength,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: product,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Product'),
               validator: _optionalTextLength,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: lot,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Lotnummer'),
               validator: _optionalTextLength,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: weight,
               keyboardType: const TextInputType.numberWithOptions(
@@ -1544,13 +1562,13 @@ class _AmmoDialogState extends ConsumerState<_AmmoDialog> {
                     : null;
               },
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: projectile,
               decoration: const InputDecoration(labelText: 'Projectieltype'),
               validator: _optionalTextLength,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             AppMultilineField(
               controller: notes,
               label: 'Notities',
@@ -1660,20 +1678,20 @@ class _RangeDialogState extends State<_RangeDialog> {
             decoration: const InputDecoration(labelText: 'Naam *'),
             validator: (value) => _requiredText(value, 'Vul een naam in'),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           TextFormField(
             controller: location,
             textInputAction: TextInputAction.next,
             decoration: const InputDecoration(labelText: 'Locatiebeschrijving'),
             validator: _optionalTextLength,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           SwitchListTile(
             value: indoor,
             onChanged: (value) => setState(() => indoor = value),
             title: Text(indoor ? 'Binnenstand' : 'Buitenstand'),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           Text('Afstanden', style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 8),
           for (var index = 0; index < distanceRows.length; index++) ...[
@@ -1727,7 +1745,7 @@ class _RangeDialogState extends State<_RangeDialog> {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ],
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           AppMultilineField(
             controller: notes,
             label: 'Notities',
@@ -1912,7 +1930,7 @@ class _TargetDialogState extends State<_TargetDialog> {
           validator: (value) =>
               _requiredText(value, 'Vul een naam in', maximum: 120),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         AdaptiveFormRow(
           minimumChildWidth: 150,
           children: [
@@ -1964,7 +1982,7 @@ class _TargetDialogState extends State<_TargetDialog> {
             error = null;
           }),
         ),
-        if (index != ringRows.length - 1) const SizedBox(height: 10),
+        if (index != ringRows.length - 1) const SizedBox(height: 16),
       ],
       const SizedBox(height: 12),
       OutlinedButton.icon(
