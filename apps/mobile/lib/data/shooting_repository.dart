@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -115,6 +116,119 @@ class SessionDetail {
   int get photoCount => images.length;
 }
 
+class SessionListItem {
+  const SessionListItem({
+    required this.session,
+    required this.confirmedSeriesCount,
+    required this.shotCount,
+    required this.totalScore,
+    required this.maximumPossibleScore,
+    required this.innerTenCount,
+    required this.photoCount,
+    required this.sessionPhotoCount,
+    required this.draftSeriesId,
+    required this.draftShotCount,
+    required this.draftPhotoCount,
+    required this.draftHasNotes,
+    required this.draftWasEdited,
+    required this.thumbnailPath,
+  });
+
+  final SessionRecord session;
+  final int confirmedSeriesCount;
+  final int shotCount;
+  final int totalScore;
+  final int maximumPossibleScore;
+  final int innerTenCount;
+  final int photoCount;
+  final int sessionPhotoCount;
+  final String? draftSeriesId;
+  final int draftShotCount;
+  final int draftPhotoCount;
+  final bool draftHasNotes;
+  final bool draftWasEdited;
+  final String? thumbnailPath;
+
+  bool get hasDraft => draftSeriesId != null;
+  bool get hasMeaningfulDraft =>
+      draftShotCount > 0 ||
+      draftPhotoCount > 0 ||
+      draftHasNotes ||
+      draftWasEdited;
+}
+
+extension SessionRecordContent on SessionRecord {
+  bool get hasUserDetails =>
+      rangeId != null ||
+      (trainingGoal?.trim().isNotEmpty ?? false) ||
+      (conditions?.trim().isNotEmpty ?? false) ||
+      (notes?.trim().isNotEmpty ?? false);
+}
+
+enum SessionListStatusFilter { all, active, completed }
+
+class SessionListFilters {
+  const SessionListFilters({
+    this.status = SessionListStatusFilter.all,
+    this.startedAtOrAfterUtc,
+  });
+
+  final SessionListStatusFilter status;
+  final DateTime? startedAtOrAfterUtc;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SessionListFilters &&
+          status == other.status &&
+          startedAtOrAfterUtc == other.startedAtOrAfterUtc;
+
+  @override
+  int get hashCode => Object.hash(status, startedAtOrAfterUtc);
+}
+
+enum DraftCompletionStrategy { requireResolved, discard, confirm }
+
+enum SessionCompletionOutcome {
+  completed,
+  deletedEmpty,
+  alreadyCompleted,
+  notFound,
+}
+
+class SessionCompletionResult {
+  const SessionCompletionResult(this.outcome, {this.confirmedDraftId});
+
+  final SessionCompletionOutcome outcome;
+  final String? confirmedDraftId;
+
+  bool get removed =>
+      outcome == SessionCompletionOutcome.deletedEmpty ||
+      outcome == SessionCompletionOutcome.notFound;
+}
+
+class UnresolvedDraftException implements Exception {
+  const UnresolvedDraftException({
+    required this.seriesId,
+    required this.shotCount,
+    required this.photoCount,
+    required this.hasNotes,
+    required this.wasEdited,
+  });
+
+  final String seriesId;
+  final int shotCount;
+  final int photoCount;
+  final bool hasNotes;
+  final bool wasEdited;
+
+  @override
+  String toString() =>
+      'Conceptreeks $seriesId bevat $shotCount schoten, $photoCount foto\'s'
+      '${hasNotes ? ' en een notitie' : ''}'
+      '${wasEdited ? ' en bewaarde wijzigingen' : ''}.';
+}
+
 class SeriesDetail {
   const SeriesDetail({
     required this.series,
@@ -134,6 +248,137 @@ class SeriesDetail {
       domain.TargetProfile.fromJsonString(series.targetProfileJson);
 }
 
+String _sessionListSql(String whereClause) =>
+    '''
+  WITH filtered_sessions AS (
+    SELECT *
+    FROM training_sessions AS session
+    $whereClause
+  ),
+  series_aggregate AS (
+    SELECT
+      session_id,
+      SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END)
+        AS confirmed_series_count,
+      SUM(CASE WHEN status = 'confirmed' THEN shot_count ELSE 0 END)
+        AS shot_count,
+      SUM(CASE WHEN status = 'confirmed' THEN total_score ELSE 0 END)
+        AS total_score,
+      SUM(CASE WHEN status = 'confirmed' THEN maximum_possible_score ELSE 0 END)
+        AS maximum_possible_score,
+      SUM(CASE WHEN status = 'confirmed' THEN inner_ten_count ELSE 0 END)
+        AS inner_ten_count,
+      MAX(CASE WHEN status = 'draft' THEN id END) AS draft_series_id,
+      MAX(CASE WHEN status = 'draft' THEN shot_count ELSE 0 END)
+        AS draft_shot_count,
+      MAX(CASE
+        WHEN status = 'draft' AND TRIM(COALESCE(notes, '')) <> '' THEN 1
+        ELSE 0
+      END) AS draft_has_notes,
+      MAX(CASE
+        WHEN status = 'draft' AND updated_at_utc > created_at_utc THEN 1
+        ELSE 0
+      END) AS draft_was_edited
+    FROM shooting_series
+    WHERE session_id IN (SELECT id FROM filtered_sessions)
+    GROUP BY session_id
+  ),
+  image_aggregate AS (
+    SELECT
+      session_id,
+      COUNT(*) AS photo_count,
+      SUM(CASE WHEN series_id IS NULL THEN 1 ELSE 0 END)
+        AS session_photo_count
+    FROM image_assets
+    WHERE session_id IN (SELECT id FROM filtered_sessions)
+    GROUP BY session_id
+  )
+  SELECT
+    session.id,
+    session.status,
+    session.started_at_utc,
+    session.local_utc_offset_minutes,
+    session.ended_at_utc,
+    session.updated_at_utc,
+    session.photo_safety_acknowledged_at_utc,
+    session.range_id,
+    session.training_goal,
+    session.conditions,
+    session.notes,
+    COALESCE(series.confirmed_series_count, 0) AS confirmed_series_count,
+    COALESCE(series.shot_count, 0) AS shot_count,
+    COALESCE(series.total_score, 0) AS total_score,
+    COALESCE(series.maximum_possible_score, 0) AS maximum_possible_score,
+    COALESCE(series.inner_ten_count, 0) AS inner_ten_count,
+    COALESCE(images.photo_count, 0) AS photo_count,
+    COALESCE(images.session_photo_count, 0) AS session_photo_count,
+    series.draft_series_id,
+    COALESCE(series.draft_shot_count, 0) AS draft_shot_count,
+    COALESCE(series.draft_has_notes, 0) AS draft_has_notes,
+    COALESCE(series.draft_was_edited, 0) AS draft_was_edited,
+    COALESCE((
+      SELECT COUNT(*)
+      FROM image_assets AS draft_image
+      WHERE draft_image.series_id = series.draft_series_id
+    ), 0) AS draft_photo_count,
+    (
+      SELECT preview.path
+      FROM image_assets AS preview
+      WHERE preview.session_id = session.id
+      ORDER BY
+        CASE WHEN preview.role = 'primaryScoringPhoto' THEN 0 ELSE 1 END,
+        preview.created_at_utc DESC,
+        preview.id DESC
+      LIMIT 1
+    ) AS thumbnail_path
+  FROM filtered_sessions AS session
+  LEFT JOIN series_aggregate AS series ON series.session_id = session.id
+  LEFT JOIN image_aggregate AS images ON images.session_id = session.id
+''';
+
+SessionListItem _sessionListItemFromRow(QueryRow row) {
+  final data = row.data;
+  return SessionListItem(
+    session: SessionRecord(
+      id: data['id']! as String,
+      status: data['status']! as String,
+      startedAtUtc: _dateTimeFromDatabase(data['started_at_utc'])!,
+      localUtcOffsetMinutes: data['local_utc_offset_minutes']! as int,
+      endedAtUtc: _dateTimeFromDatabase(data['ended_at_utc']),
+      updatedAtUtc: _dateTimeFromDatabase(data['updated_at_utc'])!,
+      photoSafetyAcknowledgedAtUtc: _dateTimeFromDatabase(
+        data['photo_safety_acknowledged_at_utc'],
+      ),
+      rangeId: data['range_id'] as String?,
+      trainingGoal: data['training_goal'] as String?,
+      conditions: data['conditions'] as String?,
+      notes: data['notes'] as String?,
+    ),
+    confirmedSeriesCount: data['confirmed_series_count']! as int,
+    shotCount: data['shot_count']! as int,
+    totalScore: data['total_score']! as int,
+    maximumPossibleScore: data['maximum_possible_score']! as int,
+    innerTenCount: data['inner_ten_count']! as int,
+    photoCount: data['photo_count']! as int,
+    sessionPhotoCount: data['session_photo_count']! as int,
+    draftSeriesId: data['draft_series_id'] as String?,
+    draftShotCount: data['draft_shot_count']! as int,
+    draftPhotoCount: data['draft_photo_count']! as int,
+    draftHasNotes: (data['draft_has_notes']! as int) != 0,
+    draftWasEdited: (data['draft_was_edited']! as int) != 0,
+    thumbnailPath: data['thumbnail_path'] as String?,
+  );
+}
+
+DateTime? _dateTimeFromDatabase(Object? value) {
+  if (value == null) return null;
+  if (value is DateTime) return value.toUtc();
+  if (value is int) {
+    return DateTime.fromMillisecondsSinceEpoch(value * 1000, isUtc: true);
+  }
+  return DateTime.parse(value as String).toUtc();
+}
+
 class ShootingRepository {
   ShootingRepository(this.database, {Uuid? uuid})
     : _uuid = uuid ?? const Uuid();
@@ -142,6 +387,46 @@ class ShootingRepository {
   final Uuid _uuid;
 
   Stream<List<SessionRecord>> watchSessions() => database.watchSessions();
+
+  Stream<List<SessionListItem>> watchSessionListItems([
+    SessionListFilters filters = const SessionListFilters(),
+  ]) {
+    final predicates = <String>[];
+    final variables = <Variable<Object>>[];
+    switch (filters.status) {
+      case SessionListStatusFilter.all:
+        break;
+      case SessionListStatusFilter.active:
+        predicates.add('session.status = ?');
+        variables.add(Variable<String>(domain.SessionStatus.active.name));
+      case SessionListStatusFilter.completed:
+        predicates.add('session.status = ?');
+        variables.add(Variable<String>(domain.SessionStatus.completed.name));
+    }
+    final startedAtOrAfterUtc = filters.startedAtOrAfterUtc;
+    if (startedAtOrAfterUtc != null) {
+      predicates.add('session.started_at_utc >= ?');
+      variables.add(Variable<DateTime>(startedAtOrAfterUtc.toUtc()));
+    }
+    final where = predicates.isEmpty ? '' : 'WHERE ${predicates.join(' AND ')}';
+    return database
+        .customSelect(
+          '''
+            ${_sessionListSql(where)}
+            ORDER BY session.started_at_utc DESC, session.id DESC
+          ''',
+          variables: variables,
+          readsFrom: {
+            database.trainingSessions,
+            database.shootingSeries,
+            database.imageAssets,
+          },
+        )
+        .watch()
+        .map(
+          (rows) => rows.map(_sessionListItemFromRow).toList(growable: false),
+        );
+  }
 
   Stream<SessionRecord?> watchActiveSession() => database.watchActiveSession();
 
@@ -444,6 +729,43 @@ class ShootingRepository {
     notes: notes,
   );
 
+  Future<SessionCompletionResult> saveConfirmAndCompleteSeries({
+    required String seriesId,
+    required domain.TargetProfile target,
+    required double distanceMeters,
+    required double projectileDiameterMm,
+    required List<domain.ShotImpact> impacts,
+    String? cartridgeId,
+    String? firearmId,
+    String? ammoLotId,
+    String? notes,
+  }) => database.transaction(() async {
+    final series = await _series(seriesId);
+    if (series == null) throw StateError('De reeks bestaat niet.');
+    if (series.status != domain.SeriesStatus.draft.name) {
+      throw StateError('Alleen een conceptreeks kan worden afgerond.');
+    }
+    if (impacts.isEmpty) {
+      throw StateError('Voeg minstens één treffer of misser toe.');
+    }
+    await _replaceSeries(
+      seriesId: seriesId,
+      expectedStatus: domain.SeriesStatus.draft,
+      target: target,
+      distanceMeters: distanceMeters,
+      projectileDiameterMm: projectileDiameterMm,
+      impacts: impacts,
+      cartridgeId: cartridgeId,
+      firearmId: firearmId,
+      ammoLotId: ammoLotId,
+      notes: notes,
+    );
+    return completeSession(
+      series.sessionId,
+      draftStrategy: DraftCompletionStrategy.confirm,
+    );
+  });
+
   Future<void> confirmSeries(String seriesId) => database.transaction(() async {
     final series = await _series(seriesId);
     if (series == null) throw StateError('De reeks bestaat niet.');
@@ -506,24 +828,109 @@ class ShootingRepository {
     if (changed != 1) throw StateError('De sessie bestaat niet.');
   }
 
-  Future<void> completeSession(String sessionId) async {
-    final detail = await getSessionDetail(sessionId);
-    if (detail == null) throw StateError('De sessie bestaat niet.');
-    if (detail.confirmedSeries.isEmpty &&
-        (detail.draftSeries == null || detail.draftSeries!.shotCount == 0) &&
-        detail.images.isEmpty) {
-      await deleteSession(sessionId);
-      return;
-    }
+  Future<SessionCompletionResult> completeSession(
+    String sessionId, {
+    DraftCompletionStrategy draftStrategy =
+        DraftCompletionStrategy.requireResolved,
+  }) async {
+    final filesToDelete = <String>{};
+    final result = await database.transaction(() async {
+      final session = await _session(sessionId);
+      if (session == null) {
+        return const SessionCompletionResult(SessionCompletionOutcome.notFound);
+      }
+      if (session.status == domain.SessionStatus.completed.name) {
+        return const SessionCompletionResult(
+          SessionCompletionOutcome.alreadyCompleted,
+        );
+      }
 
-    await database.transaction(() async {
-      final draft = detail.draftSeries;
-      if (draft != null && draft.shotCount == 0) {
+      final series =
+          await (database.select(database.shootingSeries)
+                ..where((row) => row.sessionId.equals(sessionId))
+                ..orderBy([(row) => OrderingTerm.asc(row.sequenceNumber)]))
+              .get();
+      final draft = series
+          .where((item) => item.status == domain.SeriesStatus.draft.name)
+          .firstOrNull;
+      final draftImages = draft == null
+          ? const <ImageAssetRecord>[]
+          : await (database.select(
+              database.imageAssets,
+            )..where((row) => row.seriesId.equals(draft.id))).get();
+      final hasMeaningfulDraft =
+          draft != null &&
+          (draft.shotCount > 0 ||
+              draftImages.isNotEmpty ||
+              (draft.notes?.trim().isNotEmpty ?? false) ||
+              draft.updatedAtUtc.isAfter(draft.createdAtUtc));
+      if (hasMeaningfulDraft &&
+          draftStrategy == DraftCompletionStrategy.requireResolved) {
+        throw UnresolvedDraftException(
+          seriesId: draft.id,
+          shotCount: draft.shotCount,
+          photoCount: draftImages.length,
+          hasNotes: draft.notes?.trim().isNotEmpty ?? false,
+          wasEdited: draft.updatedAtUtc.isAfter(draft.createdAtUtc),
+        );
+      }
+
+      final now = DateTime.now().toUtc();
+      String? confirmedDraftId;
+      var confirmedSeriesCount = series
+          .where((item) => item.status == domain.SeriesStatus.confirmed.name)
+          .length;
+      if (draft != null &&
+          hasMeaningfulDraft &&
+          draftStrategy == DraftCompletionStrategy.confirm) {
+        if (draft.shotCount <= 0) {
+          throw StateError(
+            'Een concept met alleen foto\'s kan niet als reeks worden bevestigd.',
+          );
+        }
+        await (database.update(
+          database.shootingSeries,
+        )..where((row) => row.id.equals(draft.id))).write(
+          ShootingSeriesCompanion(
+            status: Value(domain.SeriesStatus.confirmed.name),
+            confirmedAtUtc: Value(now),
+            updatedAtUtc: Value(now),
+          ),
+        );
+        confirmedDraftId = draft.id;
+        confirmedSeriesCount++;
+      } else if (draft != null) {
+        for (final image in draftImages) {
+          filesToDelete.add(image.path);
+        }
         await (database.delete(
           database.shootingSeries,
         )..where((row) => row.id.equals(draft.id))).go();
       }
-      final now = DateTime.now().toUtc();
+
+      final sessionOnlyImages =
+          await (database.select(database.imageAssets)..where(
+                (row) =>
+                    row.sessionId.equals(sessionId) & row.seriesId.isNull(),
+              ))
+              .get();
+      if (confirmedSeriesCount == 0 &&
+          sessionOnlyImages.isEmpty &&
+          !session.hasUserDetails) {
+        final remainingImages = await (database.select(
+          database.imageAssets,
+        )..where((row) => row.sessionId.equals(sessionId))).get();
+        for (final image in remainingImages) {
+          filesToDelete.add(image.path);
+        }
+        await (database.delete(
+          database.trainingSessions,
+        )..where((row) => row.id.equals(sessionId))).go();
+        return const SessionCompletionResult(
+          SessionCompletionOutcome.deletedEmpty,
+        );
+      }
+
       await (database.update(
         database.trainingSessions,
       )..where((row) => row.id.equals(sessionId))).write(
@@ -534,8 +941,31 @@ class ShootingRepository {
         ),
       );
       await _renumberSeries(sessionId);
+      return SessionCompletionResult(
+        SessionCompletionOutcome.completed,
+        confirmedDraftId: confirmedDraftId,
+      );
     });
+
+    for (final path in filesToDelete) {
+      await _deleteFileIfPresent(path);
+    }
+    return result;
   }
+
+  Future<SessionCompletionResult> confirmDraftAndCompleteSession(
+    String sessionId,
+  ) => completeSession(
+    sessionId,
+    draftStrategy: DraftCompletionStrategy.confirm,
+  );
+
+  Future<SessionCompletionResult> discardDraftAndCompleteSession(
+    String sessionId,
+  ) => completeSession(
+    sessionId,
+    draftStrategy: DraftCompletionStrategy.discard,
+  );
 
   Future<void> reopenSession(String sessionId) =>
       database.transaction(() async {
@@ -649,6 +1079,195 @@ class ShootingRepository {
           ),
         );
     await _touchSession(image.sessionId, alignment.updatedAtUtc.toUtc());
+  });
+
+  /// Stores a new alignment and the recalculated positions that depend on its
+  /// primary image as one indivisible operation.
+  ///
+  /// [resultingImpacts] is the complete post-alignment impact collection. The
+  /// method deliberately rejects additions, removals, or changes to impacts
+  /// that do not originate from [alignment.imageId]. This keeps a photo
+  /// realignment from accidentally rewriting manually placed impacts.
+  Future<void> realignSeriesPhoto({
+    required String seriesId,
+    required domain.StoredPhotoAlignment alignment,
+    required domain.TargetProfile target,
+    required double projectileDiameterMm,
+    required List<domain.ShotImpact> resultingImpacts,
+  }) => database.transaction(() async {
+    final series = await _series(seriesId);
+    if (series == null) throw StateError('De reeks bestaat niet.');
+    if (projectileDiameterMm <= 0) {
+      throw ArgumentError.value(
+        projectileDiameterMm,
+        'projectileDiameterMm',
+        'Moet groter zijn dan nul',
+      );
+    }
+    if (series.targetProfileVersionedId != target.versionedId ||
+        series.targetProfileJson != target.toJsonString()) {
+      throw StateError(
+        'De kaart is gewijzigd. Lijn de primaire foto opnieuw uit voor de '
+        'opgeslagen kaartversie.',
+      );
+    }
+
+    final image = await _image(alignment.imageId);
+    if (image == null || image.seriesId != seriesId) {
+      throw StateError('De uitlijning hoort niet bij een foto van deze reeks.');
+    }
+    final isPrimary = image.role == domain.ImageRole.primaryScoringPhoto.name;
+    final isAttachment = image.role == domain.ImageRole.attachment.name;
+    if (!isPrimary && !isAttachment) {
+      throw StateError('Deze foto kan niet als primaire scorefoto dienen.');
+    }
+
+    final existingRecords = await (database.select(
+      database.shotImpacts,
+    )..where((row) => row.seriesId.equals(seriesId))).get();
+    final existingById = {
+      for (final impact in existingRecords) impact.id: impact,
+    };
+    final resultingById = {
+      for (final impact in resultingImpacts) impact.id: impact,
+    };
+    if (resultingById.length != resultingImpacts.length ||
+        resultingById.length != existingById.length ||
+        !resultingById.keys.toSet().containsAll(existingById.keys)) {
+      throw StateError(
+        'Heruitlijning mag geen treffers toevoegen of verwijderen.',
+      );
+    }
+
+    for (final entry in existingById.entries) {
+      final existing = entry.value;
+      final resulting = resultingById[entry.key]!;
+      final dependsOnPhoto =
+          existing.sourceImageId == alignment.imageId &&
+          existing.imageXNormalized != null &&
+          existing.imageYNormalized != null;
+      if (dependsOnPhoto) {
+        if (!_sameImpactMetadata(existing, resulting) ||
+            resulting.sourceImageId != alignment.imageId ||
+            resulting.imageXNormalized == null ||
+            resulting.imageYNormalized == null) {
+          throw StateError(
+            'Heruitlijning mag alleen de fysieke positie van '
+            'foto-afhankelijke treffers wijzigen.',
+          );
+        }
+      } else if (!_sameStoredImpact(existing, resulting)) {
+        throw StateError(
+          'Heruitlijning mag handmatige of andere fototreffers niet wijzigen.',
+        );
+      }
+    }
+
+    final score = ScoreEngine.score(
+      target: target,
+      impacts: resultingImpacts,
+      projectileDiameterMm: projectileDiameterMm,
+    );
+    final updatedAtUtc = alignment.updatedAtUtc.toUtc();
+
+    if (!isPrimary) {
+      final oldPrimaries =
+          await (database.select(database.imageAssets)..where(
+                (row) =>
+                    row.seriesId.equals(seriesId) &
+                    row.role.equals(domain.ImageRole.primaryScoringPhoto.name),
+              ))
+              .get();
+      for (final oldPrimary in oldPrimaries) {
+        await (database.update(
+          database.imageAssets,
+        )..where((row) => row.id.equals(oldPrimary.id))).write(
+          ImageAssetsCompanion(
+            role: Value(domain.ImageRole.attachment.name),
+            updatedAtUtc: Value(updatedAtUtc),
+          ),
+        );
+        await (database.delete(
+          database.photoAlignments,
+        )..where((row) => row.imageId.equals(oldPrimary.id))).go();
+      }
+      final promoted =
+          await (database.update(
+            database.imageAssets,
+          )..where((row) => row.id.equals(image.id))).write(
+            ImageAssetsCompanion(
+              role: Value(domain.ImageRole.primaryScoringPhoto.name),
+              updatedAtUtc: Value(updatedAtUtc),
+            ),
+          );
+      if (promoted != 1) {
+        throw StateError('De scorefoto kon niet primair worden gemaakt.');
+      }
+    }
+
+    await database
+        .into(database.photoAlignments)
+        .insertOnConflictUpdate(
+          PhotoAlignmentsCompanion.insert(
+            imageId: alignment.imageId,
+            cornersJson: jsonEncode(
+              alignment.orderedCorners.map((point) => point.toJson()).toList(),
+            ),
+            matrixJson: jsonEncode(alignment.homographyMatrix),
+            algorithmVersion: alignment.algorithmVersion,
+            updatedAtUtc: updatedAtUtc,
+          ),
+        );
+
+    for (final shot in score.shots) {
+      final existing = existingById[shot.impact.id]!;
+      final dependsOnPhoto =
+          existing.sourceImageId == alignment.imageId &&
+          existing.imageXNormalized != null &&
+          existing.imageYNormalized != null;
+      final changed =
+          await (database.update(database.shotImpacts)..where(
+                (row) =>
+                    row.id.equals(shot.impact.id) &
+                    row.seriesId.equals(seriesId),
+              ))
+              .write(
+                ShotImpactsCompanion(
+                  xMm: dependsOnPhoto
+                      ? Value(shot.impact.xMm)
+                      : const Value.absent(),
+                  yMm: dependsOnPhoto
+                      ? Value(shot.impact.yMm)
+                      : const Value.absent(),
+                  scoreValue: Value(shot.value),
+                  isInnerTen: Value(shot.isInnerTen),
+                  isBoundaryUncertain: Value(shot.isBoundaryUncertain),
+                ),
+              );
+      if (changed != 1) {
+        throw StateError('Een treffer is tijdens het uitlijnen gewijzigd.');
+      }
+    }
+
+    final updated =
+        await (database.update(
+          database.shootingSeries,
+        )..where((row) => row.id.equals(seriesId))).write(
+          ShootingSeriesCompanion(
+            projectileDiameterMm: Value(projectileDiameterMm),
+            shotCount: Value(score.actualShotCount),
+            maximumPossibleScore: Value(score.maximumPossible),
+            totalScore: Value(score.total),
+            innerTenCount: Value(score.innerTenCount),
+            missCount: Value(score.missCount),
+            hasBoundaryWarnings: Value(score.hasBoundaryWarnings),
+            updatedAtUtc: Value(updatedAtUtc),
+          ),
+        );
+    if (updated != 1) {
+      throw StateError('De reeks is tijdens het uitlijnen gewijzigd.');
+    }
+    await _touchSession(series.sessionId, updatedAtUtc);
   });
 
   Future<void> deleteImage(String imageId) async {
@@ -835,7 +1454,10 @@ class ShootingRepository {
       impacts: normalizedImpacts,
       projectileDiameterMm: projectileDiameterMm,
     );
-    final now = DateTime.now().toUtc();
+    // Drift stores SQLite DateTimes with second precision. Round a persisted
+    // edit up so it cannot collapse onto the draft creation time; completion
+    // uses that distinction to protect settings-only concepts.
+    final now = _nextSqliteSecond(DateTime.now().toUtc());
 
     await (database.update(
       database.shootingSeries,
@@ -1025,12 +1647,43 @@ class ShootingRepository {
   }
 
   Future<void> _deleteFileIfPresent(String path) async {
-    final file = File(path);
-    if (await file.exists()) await file.delete();
+    try {
+      final file = File(path);
+      if (await file.exists()) await file.delete();
+    } on FileSystemException catch (error, stackTrace) {
+      developer.log(
+        'Lokaal mediabestand kon niet worden opgeruimd: $path',
+        name: 'shooting_companion.media_cleanup',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
+
+  bool _sameImpactMetadata(
+    ImpactRecord existing,
+    domain.ShotImpact resulting,
+  ) =>
+      existing.id == resulting.id &&
+      existing.sourceImageId == resulting.sourceImageId &&
+      existing.imageXNormalized == resulting.imageXNormalized &&
+      existing.imageYNormalized == resulting.imageYNormalized &&
+      existing.multiplicity == resulting.multiplicity &&
+      existing.isMiss == resulting.isMiss &&
+      existing.isPositionUncertain == resulting.isPositionUncertain;
+
+  bool _sameStoredImpact(ImpactRecord existing, domain.ShotImpact resulting) =>
+      _sameImpactMetadata(existing, resulting) &&
+      existing.xMm == resulting.xMm &&
+      existing.yMm == resulting.yMm;
 
   String? _nullIfBlank(String? value) {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
+}
+
+DateTime _nextSqliteSecond(DateTime value) {
+  final seconds = value.toUtc().millisecondsSinceEpoch ~/ 1000;
+  return DateTime.fromMillisecondsSinceEpoch((seconds + 1) * 1000, isUtc: true);
 }

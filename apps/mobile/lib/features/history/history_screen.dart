@@ -5,11 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/providers.dart';
-import '../../data/app_database.dart';
 import '../../data/shooting_repository.dart';
 import '../../widgets/compact_page_scaffold.dart';
+import '../../widgets/safe_sheet_scaffold.dart';
 import '../session/active_session_screen.dart';
 import '../session/manual_series_screen.dart';
+import '../session/session_completion_flow.dart';
 
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
@@ -22,44 +23,83 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   _SessionStatusFilter _status = _SessionStatusFilter.all;
   _LogPeriod _period = _LogPeriod.all;
 
+  int get _activeFilterCount =>
+      (_status == _SessionStatusFilter.all ? 0 : 1) +
+      (_period == _LogPeriod.all ? 0 : 1);
+
+  SessionListFilters get _filters => SessionListFilters(
+    status: switch (_status) {
+      _SessionStatusFilter.all => SessionListStatusFilter.all,
+      _SessionStatusFilter.active => SessionListStatusFilter.active,
+      _SessionStatusFilter.completed => SessionListStatusFilter.completed,
+    },
+    startedAtOrAfterUtc: _cutoffFor(_period),
+  );
+
+  DateTime? _cutoffFor(_LogPeriod period) {
+    if (period == _LogPeriod.all) return null;
+    final now = DateTime.now().toUtc();
+    final todayUtc = DateTime.utc(now.year, now.month, now.day);
+    return switch (period) {
+      _LogPeriod.all => null,
+      _LogPeriod.last30Days => todayUtc.subtract(const Duration(days: 30)),
+      _LogPeriod.last90Days => todayUtc.subtract(const Duration(days: 90)),
+      _LogPeriod.lastYear => todayUtc.subtract(const Duration(days: 365)),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
-    final sessions = ref.watch(sessionsProvider);
+    final filters = _filters;
+    final sessions = ref.watch(sessionListItemsProvider(filters));
     return CompactPageScaffold(
       title: 'Logboek',
+      actions: [
+        IconButton(
+          key: const Key('history-filter-button'),
+          tooltip: 'Logboekfilters',
+          onPressed: _showFilters,
+          icon: _activeFilterCount == 0
+              ? const Icon(Icons.filter_list)
+              : Badge(
+                  label: Text('$_activeFilterCount'),
+                  child: const Icon(Icons.filter_list),
+                ),
+        ),
+      ],
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.invalidate(sessionsProvider);
-          await ref.read(sessionsProvider.future);
+          ref.invalidate(sessionListItemsProvider(filters));
+          await ref.read(sessionListItemsProvider(filters).future);
         },
         child: sessions.when(
-          data: (allSessions) {
-            final visibleSessions = allSessions.where(_isVisible).toList();
+          data: (visibleSessions) {
             return CustomScrollView(
               slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                  sliver: SliverToBoxAdapter(
-                    child: _FilterBar(
-                      status: _status,
-                      period: _period,
-                      onStatusChanged: (value) =>
-                          setState(() => _status = value),
-                      onPeriodChanged: (value) =>
-                          setState(() => _period = value),
+                if (_activeFilterCount > 0)
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                    sliver: SliverToBoxAdapter(
+                      child: _ActiveFilterChips(
+                        status: _status,
+                        period: _period,
+                        clearStatus: () =>
+                            setState(() => _status = _SessionStatusFilter.all),
+                        clearPeriod: () =>
+                            setState(() => _period = _LogPeriod.all),
+                      ),
                     ),
                   ),
-                ),
                 if (visibleSessions.isEmpty)
                   SliverFillRemaining(
                     hasScrollBody: false,
-                    child: _EmptyLogbook(filtered: allSessions.isNotEmpty),
+                    child: _EmptyLogbook(filtered: _activeFilterCount > 0),
                   )
                 else
                   SliverPadding(
                     padding: EdgeInsets.fromLTRB(
                       16,
-                      4,
+                      _activeFilterCount == 0 ? 8 : 4,
                       16,
                       24 + MediaQuery.viewPaddingOf(context).bottom,
                     ),
@@ -68,7 +108,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       separatorBuilder: (context, index) =>
                           const Divider(height: 1),
                       itemBuilder: (context, index) =>
-                          _SessionRow(session: visibleSessions[index]),
+                          _SessionRow(item: visibleSessions[index]),
                     ),
                   ),
               ],
@@ -89,100 +129,115 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     );
   }
 
-  bool _isVisible(SessionRecord session) {
-    final isActive = session.status == 'active';
-    if (_status == _SessionStatusFilter.active && !isActive) return false;
-    if (_status == _SessionStatusFilter.completed && isActive) return false;
-
-    final cutoff = switch (_period) {
-      _LogPeriod.all => null,
-      _LogPeriod.last30Days => DateTime.now().toUtc().subtract(
-        const Duration(days: 30),
+  Future<void> _showFilters() async {
+    var selectedStatus = _status;
+    var selectedPeriod = _period;
+    final result = await showSafeModalSheet<(_SessionStatusFilter, _LogPeriod)>(
+      context: context,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeSheetScaffold(
+          title: 'Logboek filteren',
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Status', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final option in _SessionStatusFilter.values)
+                    ChoiceChip(
+                      label: Text(option.label),
+                      selected: selectedStatus == option,
+                      onSelected: (_) =>
+                          setSheetState(() => selectedStatus = option),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text('Periode', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final option in _LogPeriod.values)
+                    ChoiceChip(
+                      label: Text(option.label),
+                      selected: selectedPeriod == option,
+                      onSelected: (_) =>
+                          setSheetState(() => selectedPeriod = option),
+                    ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => setSheetState(() {
+                selectedStatus = _SessionStatusFilter.all;
+                selectedPeriod = _LogPeriod.all;
+              }),
+              child: const Text('Filters wissen'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.pop(sheetContext, (selectedStatus, selectedPeriod)),
+              child: const Text('Toepassen'),
+            ),
+          ],
+        ),
       ),
-      _LogPeriod.last90Days => DateTime.now().toUtc().subtract(
-        const Duration(days: 90),
-      ),
-      _LogPeriod.lastYear => DateTime.now().toUtc().subtract(
-        const Duration(days: 365),
-      ),
-    };
-    return cutoff == null || !session.startedAtUtc.isBefore(cutoff);
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _status = result.$1;
+      _period = result.$2;
+    });
   }
 }
 
-class _FilterBar extends StatelessWidget {
-  const _FilterBar({
+class _ActiveFilterChips extends StatelessWidget {
+  const _ActiveFilterChips({
     required this.status,
     required this.period,
-    required this.onStatusChanged,
-    required this.onPeriodChanged,
+    required this.clearStatus,
+    required this.clearPeriod,
   });
 
   final _SessionStatusFilter status;
   final _LogPeriod period;
-  final ValueChanged<_SessionStatusFilter> onStatusChanged;
-  final ValueChanged<_LogPeriod> onPeriodChanged;
+  final VoidCallback clearStatus;
+  final VoidCallback clearPeriod;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (final option in _SessionStatusFilter.values) ...[
-              FilterChip(
-                label: Text(option.label),
-                selected: status == option,
-                onSelected: (_) => onStatusChanged(option),
-              ),
-              const SizedBox(width: 8),
-            ],
-          ],
-        ),
-      ),
-      const SizedBox(height: 4),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            const Icon(Icons.date_range_outlined, size: 20),
-            const SizedBox(width: 8),
-            for (final option in _LogPeriod.values) ...[
-              ChoiceChip(
-                label: Text(option.label),
-                selected: period == option,
-                onSelected: (_) => onPeriodChanged(option),
-              ),
-              const SizedBox(width: 8),
-            ],
-          ],
-        ),
-      ),
-    ],
+  Widget build(BuildContext context) => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: Row(
+      children: [
+        if (status != _SessionStatusFilter.all) ...[
+          InputChip(
+            label: Text('Status: ${status.label}'),
+            onDeleted: clearStatus,
+          ),
+          const SizedBox(width: 8),
+        ],
+        if (period != _LogPeriod.all)
+          InputChip(label: Text(period.label), onDeleted: clearPeriod),
+      ],
+    ),
   );
 }
 
 class _SessionRow extends ConsumerWidget {
-  const _SessionRow({required this.session});
+  const _SessionRow({required this.item});
 
-  final SessionRecord session;
+  final SessionListItem item;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final series = ref.watch(seriesProvider(session.id));
-    final images = ref.watch(sessionImagesProvider(session.id));
-    final records = series.valueOrNull ?? const <SeriesRecord>[];
-    final confirmed = records
-        .where((item) => item.status == 'confirmed')
-        .toList();
-    final total = confirmed.fold(0, (sum, item) => sum + item.totalScore);
-    final maximum = confirmed.fold(
-      0,
-      (sum, item) => sum + item.maximumPossibleScore,
-    );
-    final imageRecords = images.valueOrNull ?? const <ImageAssetRecord>[];
+    final session = item.session;
     final date = DateFormat(
       'd MMM yyyy · HH:mm',
       'nl_BE',
@@ -191,7 +246,7 @@ class _SessionRow extends ConsumerWidget {
     return Semantics(
       container: true,
       label:
-          '${session.status == 'active' ? 'Actieve' : 'Beëindigde'} sessie van $date, ${confirmed.length} reeksen, score $total van $maximum',
+          '${session.status == 'active' ? 'Actieve' : 'Beëindigde'} sessie van $date, ${item.confirmedSeriesCount} reeksen, score ${item.totalScore} van ${item.maximumPossibleScore}',
       child: InkWell(
         onTap: () => _openDetails(context),
         child: ConstrainedBox(
@@ -201,7 +256,7 @@ class _SessionRow extends ConsumerWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _OptionalThumbnail(images: imageRecords),
+                _OptionalThumbnail(path: item.thumbnailPath),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,7 +283,9 @@ class _SessionRow extends ConsumerWidget {
                       Text(date, style: Theme.of(context).textTheme.bodySmall),
                       const SizedBox(height: 2),
                       Text(
-                        '${confirmed.length} ${confirmed.length == 1 ? 'reeks' : 'reeksen'} · $total/$maximum · ${imageRecords.length} ${imageRecords.length == 1 ? 'foto' : 'foto’s'}',
+                        '${item.confirmedSeriesCount} ${item.confirmedSeriesCount == 1 ? 'reeks' : 'reeksen'} · '
+                        '${item.totalScore}/${item.maximumPossibleScore} · '
+                        '${item.photoCount} ${item.photoCount == 1 ? 'foto' : 'foto’s'}',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall,
@@ -238,13 +295,7 @@ class _SessionRow extends ConsumerWidget {
                 ),
                 _SessionMenu(
                   isActive: session.status == 'active',
-                  onSelected: (action) => _handleAction(
-                    context,
-                    ref,
-                    action,
-                    records,
-                    imageRecords.length,
-                  ),
+                  onSelected: (action) => _handleAction(context, ref, action),
                 ),
               ],
             ),
@@ -257,8 +308,10 @@ class _SessionRow extends ConsumerWidget {
   void _openDetails(BuildContext context, {bool edit = false}) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            ActiveSessionScreen(sessionId: session.id, openEditOnLoad: edit),
+        builder: (_) => ActiveSessionScreen(
+          sessionId: item.session.id,
+          openEditOnLoad: edit,
+        ),
       ),
     );
   }
@@ -267,51 +320,42 @@ class _SessionRow extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     _SessionAction action,
-    List<SeriesRecord> series,
-    int photoCount,
   ) async {
     switch (action) {
       case _SessionAction.view:
         _openDetails(context);
-        return;
       case _SessionAction.edit:
         _openDetails(context, edit: true);
-        return;
       case _SessionAction.continueSession:
-        await _continue(context, ref, series);
-        return;
+        await _continue(context, ref);
+      case _SessionAction.endSession:
+        await _end(context, ref);
       case _SessionAction.delete:
-        await _delete(context, ref, series, photoCount);
-        return;
+        await _delete(context, ref);
     }
   }
 
-  Future<void> _continue(
-    BuildContext context,
-    WidgetRef ref,
-    List<SeriesRecord> series,
-  ) async {
-    if (session.status == 'active') {
-      final drafts = series.where((item) => item.status == 'draft');
-      if (drafts.isNotEmpty) {
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ManualSeriesScreen(
-              sessionId: session.id,
-              seriesId: drafts.first.id,
-            ),
-          ),
-        );
-      } else {
-        _openDetails(context);
-      }
+  Future<void> _continue(BuildContext context, WidgetRef ref) async {
+    if (item.session.status == 'active') {
+      final draftId =
+          item.draftSeriesId ??
+          await ref
+              .read(repositoryProvider)
+              .createOrResumeDraftSeries(item.session.id);
+      if (!context.mounted) return;
+      await _openEditor(context, draftId);
       return;
     }
 
     try {
-      await ref.read(repositoryProvider).reopenSession(session.id);
+      final repository = ref.read(repositoryProvider);
+      await repository.reopenSession(item.session.id);
       if (!context.mounted) return;
-      _openDetails(context);
+      final draftId = await repository.createOrResumeDraftSeries(
+        item.session.id,
+      );
+      if (!context.mounted) return;
+      await _openEditor(context, draftId);
     } on ActiveSessionExistsException {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -322,23 +366,52 @@ class _SessionRow extends ConsumerWidget {
     }
   }
 
-  Future<void> _delete(
-    BuildContext context,
-    WidgetRef ref,
-    List<SeriesRecord> series,
-    int photoCount,
-  ) async {
-    final confirmed = series.where((item) => item.status == 'confirmed').length;
+  Future<void> _openEditor(BuildContext context, String draftId) =>
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) =>
+              ManualSeriesScreen(sessionId: item.session.id, seriesId: draftId),
+        ),
+      );
+
+  Future<void> _end(BuildContext context, WidgetRef ref) async {
+    await SessionCompletionCoordinator.run(
+      context: context,
+      repository: ref.read(repositoryProvider),
+      sessionId: item.session.id,
+      promptData: SessionEndPromptData(
+        confirmedSeriesCount: item.confirmedSeriesCount,
+        draftSeriesId: item.draftSeriesId,
+        draftShotCount: item.draftShotCount,
+        draftPhotoCount: item.draftPhotoCount,
+        draftHasNotes: item.draftHasNotes,
+        draftWasEdited: item.draftWasEdited,
+        sessionPhotoCount: item.sessionPhotoCount,
+        hasSessionDetails: item.session.hasUserDetails,
+      ),
+      openDraft: (draftId) => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) =>
+              ManualSeriesScreen(sessionId: item.session.id, seriesId: draftId),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
     final date = DateFormat(
       'd MMMM yyyy',
       'nl_BE',
-    ).format(session.startedAtUtc.toLocal());
+    ).format(item.session.startedAtUtc.toLocal());
     final accepted = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Sessie verwijderen?'),
         content: Text(
-          'De sessie van $date bevat $confirmed ${confirmed == 1 ? 'reeks' : 'reeksen'} en $photoCount ${photoCount == 1 ? 'foto' : 'foto’s'}. Alle gekoppelde gegevens worden permanent verwijderd.',
+          'De sessie van $date bevat ${item.confirmedSeriesCount} '
+          '${item.confirmedSeriesCount == 1 ? 'reeks' : 'reeksen'} en '
+          '${item.photoCount} ${item.photoCount == 1 ? 'foto' : 'foto’s'}. '
+          'Alle gekoppelde gegevens worden permanent verwijderd.',
         ),
         actions: [
           TextButton(
@@ -353,7 +426,7 @@ class _SessionRow extends ConsumerWidget {
       ),
     );
     if (accepted != true) return;
-    await ref.read(repositoryProvider).deleteSession(session.id);
+    await ref.read(repositoryProvider).deleteSession(item.session.id);
     if (!context.mounted) return;
     ScaffoldMessenger.of(
       context,
@@ -362,29 +435,29 @@ class _SessionRow extends ConsumerWidget {
 }
 
 class _OptionalThumbnail extends StatelessWidget {
-  const _OptionalThumbnail({required this.images});
+  const _OptionalThumbnail({required this.path});
 
-  final List<ImageAssetRecord> images;
+  final String? path;
 
   @override
   Widget build(BuildContext context) {
     final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.5;
     final compactWidth = MediaQuery.sizeOf(context).width < 360;
     if (largeText || compactWidth) return const SizedBox.shrink();
-    final existing = images.where((image) => File(image.path).existsSync());
-    final image = existing.isEmpty ? null : existing.first;
+    final file = path == null ? null : File(path!);
+    final canShow = file?.existsSync() ?? false;
     return Padding(
       padding: const EdgeInsets.only(right: 12),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: SizedBox.square(
           dimension: 52,
-          child: image == null
+          child: !canShow
               ? ColoredBox(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: const Icon(Icons.adjust),
                 )
-              : Image.file(File(image.path), fit: BoxFit.cover),
+              : Image.file(file!, fit: BoxFit.cover),
         ),
       ),
     );
@@ -433,6 +506,14 @@ class _SessionMenu extends StatelessWidget {
           text: 'Verdergaan',
         ),
       ),
+      if (isActive)
+        const PopupMenuItem(
+          value: _SessionAction.endSession,
+          child: _MenuLabel(
+            icon: Icons.flag_outlined,
+            text: 'Sessie beëindigen',
+          ),
+        ),
       const PopupMenuDivider(),
       const PopupMenuItem(
         value: _SessionAction.delete,
@@ -479,7 +560,7 @@ class _EmptyLogbook extends StatelessWidget {
   );
 }
 
-enum _SessionAction { view, edit, continueSession, delete }
+enum _SessionAction { view, edit, continueSession, endSession, delete }
 
 enum _SessionStatusFilter {
   all('Alle'),

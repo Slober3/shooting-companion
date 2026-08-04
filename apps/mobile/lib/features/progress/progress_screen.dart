@@ -7,6 +7,7 @@ import '../../app/providers.dart';
 import '../../data/app_database.dart';
 import '../../widgets/compact_page_scaffold.dart';
 import '../../widgets/responsive_metric_grid.dart';
+import '../../widgets/safe_sheet_scaffold.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
@@ -127,10 +128,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   }) async {
     final allSeries = await ref.read(repositoryProvider).getConfirmedSeries();
     if (!mounted) return;
-    final result = await showModalBottomSheet<_AnalysisFilters>(
+    final result = await showSafeModalSheet<_AnalysisFilters>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
       builder: (context) => _FilterSheet(
         initial: _filters,
         targets: targets,
@@ -447,100 +446,92 @@ class _FilterSheetState extends State<_FilterSheet> {
   }
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: EdgeInsets.fromLTRB(
-      16,
-      16,
-      16,
-      16 + MediaQuery.viewInsetsOf(context).bottom,
-    ),
-    child: SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('Analysefilters', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<_AnalysisPeriod>(
-            initialValue: filters.period,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Periode'),
-            items: [
-              for (final period in _AnalysisPeriod.values)
-                DropdownMenuItem(value: period, child: Text(period.label)),
-            ],
-            onChanged: (value) =>
-                setState(() => filters = filters.copyWith(period: value)),
-          ),
-          const SizedBox(height: 12),
-          _NullableDropdown<String>(
-            label: 'Kaart',
-            value: filters.targetId,
-            items: {
-              for (final target in widget.targets)
-                target.versionedId: target.displayName,
-            },
-            onChanged: (value) => setState(
-              () => filters = filters.copyWith(
-                targetId: value,
-                clearTarget: value == null,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          _NullableDropdown<double>(
-            label: 'Afstand',
-            value: filters.distanceMeters,
-            items: {
-              for (final distance in widget.distances)
-                distance:
-                    '${distance.toStringAsFixed(_distanceDigits(distance))} m',
-            },
-            onChanged: (value) => setState(
-              () => filters = filters.copyWith(
-                distanceMeters: value,
-                clearDistance: value == null,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          _NullableDropdown<String>(
-            label: 'Wapen',
-            value: filters.firearmId,
-            items: {
-              for (final firearm in widget.firearms) firearm.id: firearm.name,
-            },
-            onChanged: (value) => setState(
-              () => filters = filters.copyWith(
-                firearmId: value,
-                clearFirearm: value == null,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          _NullableDropdown<String>(
-            label: 'Munitie',
-            value: filters.ammoLotId,
-            items: {
-              for (final ammo in widget.ammoLots) ammo.id: ammo.displayName,
-            },
-            onChanged: (value) => setState(
-              () => filters = filters.copyWith(
-                ammoLotId: value,
-                clearAmmo: value == null,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, filters),
-            child: const Text('Filters toepassen'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, const _AnalysisFilters()),
-            child: const Text('Alles wissen'),
-          ),
-        ],
+  Widget build(BuildContext context) => SafeSheetScaffold(
+    title: 'Analysefilters',
+    actions: [
+      FilledButton(
+        onPressed: () => Navigator.pop(context, filters),
+        child: const Text('Filters toepassen'),
       ),
+      TextButton(
+        onPressed: () => Navigator.pop(context, const _AnalysisFilters()),
+        child: const Text('Alles wissen'),
+      ),
+    ],
+    body: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DropdownButtonFormField<_AnalysisPeriod>(
+          initialValue: filters.period,
+          isExpanded: true,
+          decoration: const InputDecoration(labelText: 'Periode'),
+          items: [
+            for (final period in _AnalysisPeriod.values)
+              DropdownMenuItem(value: period, child: Text(period.label)),
+          ],
+          onChanged: (value) =>
+              setState(() => filters = filters.copyWith(period: value)),
+        ),
+        const SizedBox(height: 12),
+        _NullableDropdown<String>(
+          label: 'Kaart',
+          value: filters.targetId,
+          items: {
+            for (final target in widget.targets)
+              target.versionedId: target.displayName,
+          },
+          onChanged: (value) => setState(
+            () => filters = filters.copyWith(
+              targetId: value,
+              clearTarget: value == null,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _NullableDropdown<double>(
+          label: 'Afstand',
+          value: filters.distanceMeters,
+          items: {
+            for (final distance in widget.distances)
+              distance:
+                  '${distance.toStringAsFixed(_distanceDigits(distance))} m',
+          },
+          onChanged: (value) => setState(
+            () => filters = filters.copyWith(
+              distanceMeters: value,
+              clearDistance: value == null,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _NullableDropdown<String>(
+          label: 'Wapen',
+          value: filters.firearmId,
+          items: {
+            for (final firearm in widget.firearms) firearm.id: firearm.name,
+          },
+          onChanged: (value) => setState(
+            () => filters = filters.copyWith(
+              firearmId: value,
+              clearFirearm: value == null,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _NullableDropdown<String>(
+          label: 'Munitie',
+          value: filters.ammoLotId,
+          items: {
+            for (final ammo in widget.ammoLots) ammo.id: ammo.displayName,
+          },
+          onChanged: (value) => setState(
+            () => filters = filters.copyWith(
+              ammoLotId: value,
+              clearAmmo: value == null,
+            ),
+          ),
+        ),
+      ],
     ),
   );
 }

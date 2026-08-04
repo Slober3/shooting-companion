@@ -8,7 +8,7 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CompactPageScaffold(
-      title: 'Over',
+      title: 'Over en privacy',
       body: ListView(
         padding: EdgeInsets.fromLTRB(
           24,
@@ -30,7 +30,7 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Versie 0.2.0',
+            'Versie 0.3.0',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
@@ -43,17 +43,28 @@ class AboutScreen extends StatelessWidget {
           const SizedBox(height: 28),
           const ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.verified_user_outlined),
-            title: Text('Privé en lokaal'),
-            subtitle: Text('Je gegevens verlaten deze app niet automatisch.'),
+            leading: Icon(Icons.cloud_off_outlined),
+            title: Text('Volledig offline'),
+            subtitle: Text(
+              'Geen account, advertenties, telemetrie of internettoegang.',
+            ),
+          ),
+          const Divider(),
+          const ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.photo_outlined),
+            title: Text('Privéfoto’s'),
+            subtitle: Text(
+              'Foto’s blijven lokaal en EXIF-gegevens worden bij import verwijderd.',
+            ),
           ),
           const Divider(),
           const ListTile(
             contentPadding: EdgeInsets.zero,
             leading: Icon(Icons.rule_outlined),
-            title: Text('Training, niet certificering'),
+            title: Text('Trainingshulpmiddel'),
             subtitle: Text(
-              'Resultaten zijn bedoeld als persoonlijke trainingsmetingen.',
+              'Handmatig berekende scores zijn niet gecertificeerd voor wedstrijden.',
             ),
           ),
           const Divider(),

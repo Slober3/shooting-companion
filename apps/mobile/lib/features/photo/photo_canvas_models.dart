@@ -1,7 +1,5 @@
 import 'package:shooting_companion_photo_geometry/photo_geometry.dart';
 
-enum PhotoCanvasInteractionMode { editImpacts, panAndZoom }
-
 /// A database-independent impact rendered on an aligned target photo.
 class PhotoCanvasImpact {
   const PhotoCanvasImpact({

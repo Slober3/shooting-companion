@@ -249,6 +249,7 @@ class AppDatabase extends _$AppDatabase {
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
+      await _createInvariantIndexes();
       if (details.wasCreated || details.hadUpgrade) {
         final violations = await customSelect('PRAGMA foreign_key_check').get();
         if (violations.isNotEmpty) {
@@ -273,6 +274,18 @@ class AppDatabase extends _$AppDatabase {
       CREATE UNIQUE INDEX IF NOT EXISTS one_primary_image_per_series
       ON image_assets(series_id)
       WHERE role = 'primaryScoringPhoto'
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS series_by_session_status
+      ON shooting_series(session_id, status, sequence_number)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS images_by_session_created
+      ON image_assets(session_id, created_at_utc DESC)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS images_by_series
+      ON image_assets(series_id)
     ''');
   }
 

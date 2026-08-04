@@ -32,7 +32,7 @@ class MoreScreen extends StatelessWidget {
           _MoreTile(
             icon: Icons.tune_outlined,
             title: 'Instellingen',
-            subtitle: 'Weergave, opslag en privacy',
+            subtitle: 'Taal, weergave en opslag',
             onTap: () => _open(context, const SettingsScreen()),
           ),
           const Divider(indent: 72),
@@ -52,8 +52,8 @@ class MoreScreen extends StatelessWidget {
           const Divider(indent: 72),
           _MoreTile(
             icon: Icons.info_outline,
-            title: 'Over Shooting Companion',
-            subtitle: 'Versie, licentie en gebruiksgrenzen',
+            title: 'Over en privacy',
+            subtitle: 'Versie, privacy, licentie en gebruiksgrenzen',
             onTap: () => _open(context, const AboutScreen()),
           ),
         ],

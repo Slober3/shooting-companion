@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:shooting_companion_domain/domain.dart';
 
 import '../../data/app_database.dart';
+import '../../widgets/safe_sheet_scaffold.dart';
 
 class SeriesSettingsValues {
   const SeriesSettingsValues({
@@ -29,10 +30,8 @@ Future<SeriesSettingsValues?> showSeriesSettingsSheet({
   required List<CartridgeRecord> cartridges,
   required List<FirearmRecord> firearms,
   required List<AmmoLotRecord> ammoLots,
-}) => showModalBottomSheet<SeriesSettingsValues>(
+}) => showSafeModalSheet<SeriesSettingsValues>(
   context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
   builder: (_) => _SeriesSettingsSheet(
     initial: initial,
     targets: targets,
@@ -105,169 +104,144 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
       _ammoLotId = null;
     }
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        12,
-        16,
-        MediaQuery.viewInsetsOf(context).bottom + 16,
-      ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Reeksinstellingen',
-                      style: Theme.of(context).textTheme.titleLarge,
+    return Form(
+      key: _formKey,
+      child: SafeSheetScaffold(
+        title: 'Reeksinstellingen',
+        actions: [
+          FilledButton(onPressed: _submit, child: const Text('Toepassen')),
+        ],
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            DropdownButtonFormField<String>(
+              initialValue: _target.versionedId,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Doelkaart'),
+              items: targetProfiles
+                  .map(
+                    (target) => DropdownMenuItem(
+                      value: target.versionedId,
+                      child: Text(
+                        target.displayName,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    tooltip: 'Sluiten',
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _target.versionedId,
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Doelkaart'),
-                items: targetProfiles
-                    .map(
-                      (target) => DropdownMenuItem(
-                        value: target.versionedId,
-                        child: Text(
-                          target.displayName,
-                          overflow: TextOverflow.ellipsis,
+                  )
+                  .toList(),
+              onChanged: (id) => setState(() {
+                _target = targetProfiles.firstWhere(
+                  (target) => target.versionedId == id,
+                );
+              }),
+            ),
+            const SizedBox(height: 12),
+            AdaptiveFormRow(
+              minimumChildWidth: 160,
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: _cartridgeId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Kaliber'),
+                  items: widget.cartridges
+                      .map(
+                        (item) => DropdownMenuItem(
+                          value: item.id,
+                          child: Text(
+                            item.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (id) => setState(() {
-                  _target = targetProfiles.firstWhere(
-                    (target) => target.versionedId == id,
-                  );
-                }),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _cartridgeId,
-                      isExpanded: true,
-                      decoration: const InputDecoration(labelText: 'Kaliber'),
-                      items: widget.cartridges
-                          .map(
-                            (item) => DropdownMenuItem(
-                              value: item.id,
-                              child: Text(
-                                item.name,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (id) => setState(() {
-                        _cartridgeId = id!;
-                        _ammoLotId = null;
-                      }),
-                    ),
+                      )
+                      .toList(),
+                  onChanged: (id) => setState(() {
+                    _cartridgeId = id!;
+                    _ammoLotId = null;
+                  }),
+                ),
+                TextFormField(
+                  controller: _distance,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _distance,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp('[0-9,.]')),
-                      ],
-                      decoration: const InputDecoration(
-                        labelText: 'Afstand',
-                        suffixText: 'm',
-                      ),
-                      validator: (value) {
-                        final distance = double.tryParse(
-                          (value ?? '').replaceAll(',', '.'),
-                        );
-                        return distance == null || distance <= 0
-                            ? 'Vul een afstand in'
-                            : null;
-                      },
-                    ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp('[0-9,.]')),
+                  ],
+                  decoration: const InputDecoration(
+                    labelText: 'Afstand',
+                    suffixText: 'm',
                   ),
-                ],
-              ),
+                  validator: (value) {
+                    final distance = double.tryParse(
+                      (value ?? '').replaceAll(',', '.'),
+                    );
+                    return distance == null ||
+                            !distance.isFinite ||
+                            distance <= 0
+                        ? 'Vul een geldige afstand in'
+                        : null;
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: _firearmId,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Wapen (optioneel)'),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('Niet opgegeven'),
+                ),
+                ...widget.firearms.map(
+                  (item) => DropdownMenuItem<String?>(
+                    value: item.id,
+                    child: Text(item.name, overflow: TextOverflow.ellipsis),
+                  ),
+                ),
+              ],
+              onChanged: (value) => setState(() => _firearmId = value),
+            ),
+            if (filteredLots.isNotEmpty) ...[
               const SizedBox(height: 12),
               DropdownButtonFormField<String?>(
-                initialValue: _firearmId,
+                initialValue: _ammoLotId,
                 isExpanded: true,
                 decoration: const InputDecoration(
-                  labelText: 'Wapen (optioneel)',
+                  labelText: 'Munitielot (optioneel)',
                 ),
                 items: [
                   const DropdownMenuItem<String?>(
                     value: null,
                     child: Text('Niet opgegeven'),
                   ),
-                  ...widget.firearms.map(
-                    (item) => DropdownMenuItem<String?>(
-                      value: item.id,
-                      child: Text(item.name, overflow: TextOverflow.ellipsis),
+                  ...filteredLots.map(
+                    (lot) => DropdownMenuItem<String?>(
+                      value: lot.id,
+                      child: Text(
+                        lot.displayName,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ],
-                onChanged: (value) => setState(() => _firearmId = value),
+                onChanged: (value) => setState(() => _ammoLotId = value),
               ),
-              if (filteredLots.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String?>(
-                  initialValue: _ammoLotId,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Munitielot (optioneel)',
-                  ),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Niet opgegeven'),
-                    ),
-                    ...filteredLots.map(
-                      (lot) => DropdownMenuItem<String?>(
-                        value: lot.id,
-                        child: Text(
-                          lot.displayName,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ],
-                  onChanged: (value) => setState(() => _ammoLotId = value),
-                ),
-              ],
-              const SizedBox(height: 12),
-              TextField(
-                controller: _notes,
-                minLines: 2,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Reeksnotitie (optioneel)',
-                ),
-              ),
-              const SizedBox(height: 16),
-              FilledButton(onPressed: _submit, child: const Text('Toepassen')),
             ],
-          ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _notes,
+              minLines: 2,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                labelText: 'Reeksnotitie (optioneel)',
+              ),
+              validator: (value) => (value?.trim().length ?? 0) > 1000
+                  ? 'Gebruik maximaal 1000 tekens'
+                  : null,
+            ),
+          ],
         ),
       ),
     );

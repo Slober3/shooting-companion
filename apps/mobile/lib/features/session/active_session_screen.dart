@@ -13,9 +13,13 @@ import '../../data/shooting_repository.dart';
 import '../../services/image_storage_service.dart';
 import '../../widgets/responsive_metric_grid.dart';
 import '../../widgets/safe_bottom_action_bar.dart';
+import '../../widgets/safe_sheet_scaffold.dart';
 import 'manual_series_screen.dart';
 import 'series_detail_screen.dart';
+import 'session_completion_flow.dart';
 import 'session_edit_sheet.dart';
+
+enum ActiveSessionResult { completed, deleted }
 
 class ActiveSessionScreen extends ConsumerStatefulWidget {
   const ActiveSessionScreen({
@@ -36,6 +40,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   final _picker = ImagePicker();
   final _storage = ImageStorageService();
   bool _openedInitialEdit = false;
+  bool _isCompleting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -113,8 +118,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
       bottomNavigationBar: isActive && value != null
           ? SafeBottomActionBar(
               actions: [
+                OutlinedButton.icon(
+                  onPressed: _isCompleting ? null : () => _complete(value),
+                  icon: const Icon(Icons.flag_outlined),
+                  label: const Text('Sessie beëindigen'),
+                ),
                 FilledButton.icon(
-                  onPressed: () => _openDraft(value),
+                  onPressed: _isCompleting ? null : () => _openDraft(value),
                   icon: Icon(
                     value.draftSeries == null ? Icons.add : Icons.play_arrow,
                   ),
@@ -181,66 +191,45 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   }
 
   Future<void> _complete(SessionDetail detail) async {
+    if (_isCompleting) return;
+    setState(() => _isCompleting = true);
     final draft = detail.draftSeries;
-    if (draft != null && draft.shotCount > 0) {
-      final choice = await showDialog<String>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Conceptreeks is nog niet bewaard'),
-          content: Text(
-            'Reeks ${draft.sequenceNumber} bevat ${draft.shotCount} schoten.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Annuleren'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, 'discard'),
-              child: const Text('Concept verwijderen'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, 'open'),
-              child: const Text('Reeks openen'),
-            ),
-          ],
-        ),
-      );
-      if (choice == 'open') {
-        await _openDraft(detail);
-        return;
-      }
-      if (choice != 'discard') return;
-      await ref.read(repositoryProvider).deleteSeries(draft.id);
-    } else {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Sessie beëindigen?'),
-          content: const Text(
-            'Alle bevestigde reeksen blijven lokaal bewaard.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuleren'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Beëindigen'),
-            ),
-          ],
-        ),
-      );
-      if (confirmed != true) return;
+    final draftPhotoCount = draft == null
+        ? 0
+        : detail.images.where((image) => image.seriesId == draft.id).length;
+    final outcome = await SessionCompletionCoordinator.run(
+      context: context,
+      repository: ref.read(repositoryProvider),
+      sessionId: widget.sessionId,
+      promptData: SessionEndPromptData(
+        confirmedSeriesCount: detail.seriesCount,
+        draftSeriesId: draft?.id,
+        draftShotCount: draft?.shotCount ?? 0,
+        draftPhotoCount: draftPhotoCount,
+        draftHasNotes: draft?.notes?.trim().isNotEmpty ?? false,
+        draftWasEdited:
+            draft != null && draft.updatedAtUtc.isAfter(draft.createdAtUtc),
+        sessionPhotoCount: detail.images
+            .where((image) => image.seriesId == null)
+            .length,
+        hasSessionDetails: detail.session.hasUserDetails,
+      ),
+      openDraft: (_) => _openDraft(detail),
+    );
+    if (!mounted) return;
+    switch (outcome) {
+      case SessionCompletionUiOutcome.completed:
+      case SessionCompletionUiOutcome.alreadyCompleted:
+        Navigator.pop(context, ActiveSessionResult.completed);
+      case SessionCompletionUiOutcome.deleted:
+      case SessionCompletionUiOutcome.notFound:
+        Navigator.pop(context, ActiveSessionResult.deleted);
+      case SessionCompletionUiOutcome.canceled:
+      case SessionCompletionUiOutcome.openedDraft:
+      case SessionCompletionUiOutcome.failed:
+      case SessionCompletionUiOutcome.busy:
+        setState(() => _isCompleting = false);
     }
-    await ref.read(repositoryProvider).completeSession(widget.sessionId);
-    if (!mounted) return;
-    final stillExists = await ref
-        .read(repositoryProvider)
-        .getSessionDetail(widget.sessionId);
-    if (!mounted) return;
-    if (stillExists == null) Navigator.pop(context, true);
   }
 
   Future<void> _reopen() async {
@@ -293,25 +282,33 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
     );
     if (confirmed != true) return;
     await ref.read(repositoryProvider).deleteSession(widget.sessionId);
-    if (mounted) Navigator.pop(context, true);
+    if (mounted) Navigator.pop(context, ActiveSessionResult.deleted);
   }
 
   Future<void> _addSessionPhoto(SessionDetail detail) async {
-    final source = await showModalBottomSheet<ImageSource>(
+    final source = await showSafeModalSheet<ImageSource>(
       context: context,
-      useSafeArea: true,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.camera_alt_outlined),
-            title: const Text('Camera'),
-            onTap: () => Navigator.pop(context, ImageSource.camera),
-          ),
-          ListTile(
-            leading: const Icon(Icons.photo_library_outlined),
-            title: const Text('Galerij'),
-            onTap: () => Navigator.pop(context, ImageSource.gallery),
+      builder: (sheetContext) => SafeSheetScaffold(
+        title: 'Foto toevoegen',
+        body: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Camera'),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Galerij'),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(sheetContext),
+            child: const Text('Annuleren'),
           ),
         ],
       ),

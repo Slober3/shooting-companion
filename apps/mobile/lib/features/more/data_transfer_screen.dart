@@ -9,6 +9,8 @@ import '../../app/providers.dart';
 import '../../services/backup_service.dart';
 import '../../services/export_service.dart';
 import '../../widgets/compact_page_scaffold.dart';
+import '../../widgets/safe_sheet_scaffold.dart';
+import '../settings/appearance_providers.dart';
 
 class ExportReportsScreen extends StatelessWidget {
   const ExportReportsScreen({super.key});
@@ -152,9 +154,9 @@ class _DataTransferScreenState extends ConsumerState<_DataTransferScreen> {
   }
 
   Future<void> _backup(BuildContext context) async {
-    final password = await showDialog<String>(
+    final password = await showSafeModalSheet<String>(
       context: context,
-      builder: (_) => const _PasswordDialog(),
+      builder: (_) => const _PasswordSheet(),
     );
     if (password == null) return;
     await _run(() async {
@@ -179,9 +181,9 @@ class _DataTransferScreenState extends ConsumerState<_DataTransferScreen> {
     final selected = await openFile(acceptedTypeGroups: [backupType]);
     final selectedPath = selected?.path;
     if (selectedPath == null || !context.mounted) return;
-    final password = await showDialog<String>(
+    final password = await showSafeModalSheet<String>(
       context: context,
-      builder: (_) => const _RestorePasswordDialog(),
+      builder: (_) => const _RestorePasswordSheet(),
     );
     if (password == null || !context.mounted) return;
 
@@ -235,6 +237,7 @@ class _DataTransferScreenState extends ConsumerState<_DataTransferScreen> {
       ref.invalidate(ammoLotsProvider);
       ref.invalidate(rangesProvider);
       ref.invalidate(targetProfilesProvider);
+      ref.invalidate(appearanceSettingsProvider);
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(result.safetyBackup.path)],
@@ -323,17 +326,18 @@ class _Notice extends StatelessWidget {
   }
 }
 
-class _PasswordDialog extends StatefulWidget {
-  const _PasswordDialog();
+class _PasswordSheet extends StatefulWidget {
+  const _PasswordSheet();
 
   @override
-  State<_PasswordDialog> createState() => _PasswordDialogState();
+  State<_PasswordSheet> createState() => _PasswordSheetState();
 }
 
-class _PasswordDialogState extends State<_PasswordDialog> {
+class _PasswordSheetState extends State<_PasswordSheet> {
+  final formKey = GlobalKey<FormState>();
   final first = TextEditingController();
   final second = TextEditingController();
-  String? error;
+  bool obscure = true;
 
   @override
   void dispose() {
@@ -343,9 +347,11 @@ class _PasswordDialogState extends State<_PasswordDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Back-upwachtwoord'),
-    content: SingleChildScrollView(
+  Widget build(BuildContext context) => SafeSheetScaffold(
+    title: 'Back-upwachtwoord',
+    body: Form(
+      key: formKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -353,24 +359,40 @@ class _PasswordDialogState extends State<_PasswordDialog> {
             'Dit wachtwoord kan niet worden hersteld. Bewaar het veilig.',
           ),
           const SizedBox(height: 12),
-          TextField(
+          TextFormField(
             controller: first,
-            obscureText: true,
-            decoration: const InputDecoration(labelText: 'Wachtwoord'),
+            autofocus: true,
+            obscureText: obscure,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: 'Wachtwoord',
+              suffixIcon: IconButton(
+                onPressed: () => setState(() => obscure = !obscure),
+                tooltip: obscure ? 'Wachtwoord tonen' : 'Wachtwoord verbergen',
+                icon: Icon(
+                  obscure
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                ),
+              ),
+            ),
+            validator: (value) => (value?.length ?? 0) < 10
+                ? 'Gebruik minstens 10 tekens.'
+                : null,
+            onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 10),
-          TextField(
+          TextFormField(
             controller: second,
-            obscureText: true,
+            obscureText: obscure,
+            textInputAction: TextInputAction.done,
             decoration: const InputDecoration(labelText: 'Herhaal wachtwoord'),
+            validator: (value) => value != first.text
+                ? 'De wachtwoorden komen niet overeen.'
+                : null,
+            onChanged: (_) => setState(() {}),
+            onFieldSubmitted: (_) => _submit(context),
           ),
-          if (error != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              error!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
         ],
       ),
     ),
@@ -380,30 +402,31 @@ class _PasswordDialogState extends State<_PasswordDialog> {
         child: const Text('Annuleren'),
       ),
       FilledButton(
-        onPressed: () {
-          if (first.text.length < 10) {
-            setState(() => error = 'Gebruik minstens 10 tekens.');
-          } else if (first.text != second.text) {
-            setState(() => error = 'De wachtwoorden komen niet overeen.');
-          } else {
-            Navigator.pop(context, first.text);
-          }
-        },
+        onPressed: _isValid ? () => _submit(context) : null,
         child: const Text('Back-up maken'),
       ),
     ],
   );
+
+  bool get _isValid => first.text.length >= 10 && first.text == second.text;
+
+  void _submit(BuildContext context) {
+    if (formKey.currentState?.validate() != true) return;
+    Navigator.pop(context, first.text);
+  }
 }
 
-class _RestorePasswordDialog extends StatefulWidget {
-  const _RestorePasswordDialog();
+class _RestorePasswordSheet extends StatefulWidget {
+  const _RestorePasswordSheet();
 
   @override
-  State<_RestorePasswordDialog> createState() => _RestorePasswordDialogState();
+  State<_RestorePasswordSheet> createState() => _RestorePasswordSheetState();
 }
 
-class _RestorePasswordDialogState extends State<_RestorePasswordDialog> {
+class _RestorePasswordSheetState extends State<_RestorePasswordSheet> {
+  final formKey = GlobalKey<FormState>();
   final password = TextEditingController();
+  bool obscure = true;
 
   @override
   void dispose() {
@@ -412,16 +435,33 @@ class _RestorePasswordDialogState extends State<_RestorePasswordDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Back-up ontgrendelen'),
-    content: TextField(
-      controller: password,
-      autofocus: true,
-      obscureText: true,
-      decoration: const InputDecoration(labelText: 'Back-upwachtwoord'),
-      onSubmitted: (value) {
-        if (value.isNotEmpty) Navigator.pop(context, value);
-      },
+  Widget build(BuildContext context) => SafeSheetScaffold(
+    title: 'Back-up ontgrendelen',
+    body: Form(
+      key: formKey,
+      child: TextFormField(
+        controller: password,
+        autofocus: true,
+        obscureText: obscure,
+        textInputAction: TextInputAction.done,
+        decoration: InputDecoration(
+          labelText: 'Back-upwachtwoord',
+          suffixIcon: IconButton(
+            onPressed: () => setState(() => obscure = !obscure),
+            tooltip: obscure ? 'Wachtwoord tonen' : 'Wachtwoord verbergen',
+            icon: Icon(
+              obscure
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
+            ),
+          ),
+        ),
+        validator: (value) => value == null || value.isEmpty
+            ? 'Vul het back-upwachtwoord in.'
+            : null,
+        onChanged: (_) => setState(() {}),
+        onFieldSubmitted: (_) => _submit(context),
+      ),
     ),
     actions: [
       TextButton(
@@ -429,11 +469,14 @@ class _RestorePasswordDialogState extends State<_RestorePasswordDialog> {
         child: const Text('Annuleren'),
       ),
       FilledButton(
-        onPressed: () => password.text.isEmpty
-            ? null
-            : Navigator.pop(context, password.text),
+        onPressed: password.text.isEmpty ? null : () => _submit(context),
         child: const Text('Controleren'),
       ),
     ],
   );
+
+  void _submit(BuildContext context) {
+    if (formKey.currentState?.validate() != true) return;
+    Navigator.pop(context, password.text);
+  }
 }
