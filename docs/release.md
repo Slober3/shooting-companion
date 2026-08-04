@@ -7,7 +7,7 @@
 5. Generate SHA-256 and an SBOM.
 6. Tag with SemVer and attach APK, checksum, SBOM and limitations.
 
-Version 0.2 uses debug signing for local release-mode testing only. Public
+Version 0.3 uses debug signing for local release-mode testing only. Public
 GitHub artifacts require a dedicated release key and protected workflow.
 
 ## Toolchain note

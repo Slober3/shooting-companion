@@ -12,7 +12,7 @@ jobs:
   flutter:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.44.8
@@ -24,6 +24,8 @@ jobs:
       - name: Verify generated database
         working-directory: apps/mobile
         run: dart run build_runner build --delete-conflicting-outputs
+      - name: Reject stale generated database code
+        run: git diff --exit-code
       - name: Format
         run: dart format --output=none --set-exit-if-changed apps/mobile/lib apps/mobile/test packages
       - name: Analyze
@@ -32,6 +34,29 @@ jobs:
       - name: Flutter tests
         working-directory: apps/mobile
         run: flutter test
+      - name: Verify Unicode PDF rendering
+        working-directory: apps/mobile
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+          PDF="build/test-output/unicode-report.pdf"
+          test -s "$PDF"
+          pdftotext "$PDF" build/test-output/unicode-report.txt
+          grep -F "Offline trainingsrapport • gegenereerd" build/test-output/unicode-report.txt
+          grep -F "é ë ï ’ – —" build/test-output/unicode-report.txt
+          if grep -F $'\uFFFD' build/test-output/unicode-report.txt; then
+            echo "Unicode replacement glyph found in PDF" >&2
+            exit 1
+          fi
+          pdftoppm -png -r 120 "$PDF" build/test-output/unicode-report-page
+          test -s build/test-output/unicode-report-page-1.png
+          test -s build/test-output/unicode-report-page-2.png
+      - name: Upload rendered PDF fixture
+        uses: actions/upload-artifact@v4
+        with:
+          name: unicode-pdf-render
+          path: apps/mobile/build/test-output/unicode-report-page-*.png
       - name: Dart package tests
         shell: bash
         run: |

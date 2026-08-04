@@ -2,6 +2,39 @@
 
 All notable changes follow [Semantic Versioning](https://semver.org/).
 
+## 0.3.0 - 2026-08-03
+
+### Added
+
+- Added an 8x transformable scoring viewport with pinch zoom, pan, visible zoom
+  controls and a crosshair-based precision mode.
+- Added explicit Place and Edit tools, a complete points/misses list and a
+  50-step editor-local undo history.
+- Added persistent System/Light/Dark appearance modes and Range Orange, Steel
+  Blue, Forest Green and High Contrast palettes.
+- Added atomic save-confirm-complete and photo-realignment repository use cases.
+- Added embedded Noto Sans regular/bold fonts and Unicode PDF regression output.
+
+### Changed
+
+- Moved Logbook filters into one safe filter surface and calculate list
+  aggregates and filters in one parameterized SQLite query.
+- Hardened sheets, forms, keyboard handling, system insets and landscape editor
+  layouts for edge-to-edge Android.
+- Replaced the free-form custom-target ring syntax with a validated three-step
+  wizard and preview.
+- Session completion is visible from Start, Logbook, session detail and the
+  series editor without relying on long press.
+
+### Fixed
+
+- Nearby or overlapping markers no longer steal taps while placing a shot.
+- Dragging a marker no longer pans the zoomed scoring viewport underneath it.
+- Drafts containing only notes or changed settings are never silently discarded.
+- Range distances entered with a Dutch decimal comma retain their exact value.
+- Bottom actions remain above gesture and three-button navigation bars.
+- PDF bullets, accents, smart apostrophes and en/em dashes render correctly.
+
 ## 0.2.0 - 2026-08-03
 
 ### Changed

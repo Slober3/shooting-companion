@@ -20,8 +20,12 @@ Pure Dart packages are also tested independently. Acceptance covers:
 - draft autosave, confirm/edit replacement and sequence renumbering;
 - image staging, missing-file deletion and primary-image replacement;
 - homography identity, rotation, perspective and roundtrip precision;
+- place/edit hit testing at 0, 5, 15 and 25 dp, exact overlaps, zoomed inverse
+  transforms, precision placement and one-step drag undo;
 - 320, 360 and 412 dp widths at 1.0, 1.3 and 2.0 text scales;
 - bottom system insets, open keyboard, portrait and landscape;
+- Unicode PDF extraction and Poppler rendering with repeated table headers;
+- all four palettes in light/dark mode and persisted appearance fallbacks;
 - absence of internet, audio and external-storage permissions in the built APK.
 
 Device-only camera permission and navigation-mode checks are documented as a
