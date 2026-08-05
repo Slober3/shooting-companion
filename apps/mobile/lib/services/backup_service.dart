@@ -10,6 +10,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 import '../data/app_database.dart';
+import '../data/timer_preset_defaults.dart';
 
 typedef BackupDirectoryProvider = Future<Directory> Function();
 
@@ -60,11 +61,11 @@ class NormalizedBackupPayload {
   );
 }
 
-/// Converts every supported SCB1 payload to the schema-5 JSON shape.
+/// Converts every supported SCB1 payload to the schema-6 JSON shape.
 class BackupPayloadAdapter {
   const BackupPayloadAdapter._();
 
-  static const currentFormatVersion = 5;
+  static const currentFormatVersion = 6;
   static const _formatName = 'shooting-companion-backup';
 
   static NormalizedBackupPayload normalize({
@@ -84,11 +85,12 @@ class BackupPayloadAdapter {
     }
 
     final normalized = switch (version) {
-      1 => _upgradeV5(_upgradeV4(_upgradeV2(_upgradeV1(data)))),
-      2 => _upgradeV5(_upgradeV4(_upgradeV2(data))),
-      3 => _upgradeV5(_upgradeV4(_normalizeV3(data))),
-      4 => _upgradeV5(_normalizeV4(data)),
-      _ => _normalizeV5(data),
+      1 => _upgradeV6(_upgradeV5(_upgradeV4(_upgradeV2(_upgradeV1(data))))),
+      2 => _upgradeV6(_upgradeV5(_upgradeV4(_upgradeV2(data)))),
+      3 => _upgradeV6(_upgradeV5(_upgradeV4(_normalizeV3(data)))),
+      4 => _upgradeV6(_upgradeV5(_normalizeV4(data))),
+      5 => _upgradeV6(_normalizeV5(data)),
+      _ => _normalizeV6(data),
     };
     final sessionCount = _integer(manifest['sessionCount'], 'sessionCount');
     final seriesCount = _integer(manifest['seriesCount'], 'seriesCount');
@@ -133,6 +135,36 @@ class BackupPayloadAdapter {
     result['seriesReflections'] = _table(data, 'seriesReflections');
     result['coachFeedback'] = _table(data, 'coachFeedback');
     _validateInsightRelations(result);
+    return result;
+  }
+
+  static Map<String, dynamic> _normalizeV6(Map<String, dynamic> data) {
+    final result = _normalizeV5(data);
+    result['trainingActivities'] = _table(data, 'trainingActivities');
+    result['trainingActivitySeriesLinks'] = _table(
+      data,
+      'trainingActivitySeriesLinks',
+    );
+    result['shotTimerEvents'] = _table(data, 'shotTimerEvents');
+    result['timerPresets'] = _table(data, 'timerPresets');
+    result['acousticCalibrationProfiles'] = _table(
+      data,
+      'acousticCalibrationProfiles',
+    );
+    _validateTrainingRelations(result);
+    return result;
+  }
+
+  static Map<String, dynamic> _upgradeV6(Map<String, dynamic> data) {
+    final result = <String, dynamic>{
+      for (final entry in data.entries) entry.key: entry.value,
+    };
+    result['trainingActivities'] = <Map<String, dynamic>>[];
+    result['trainingActivitySeriesLinks'] = <Map<String, dynamic>>[];
+    result['shotTimerEvents'] = <Map<String, dynamic>>[];
+    result['timerPresets'] = <Map<String, dynamic>>[];
+    result['acousticCalibrationProfiles'] = <Map<String, dynamic>>[];
+    _validateTrainingRelations(result);
     return result;
   }
 
@@ -339,6 +371,229 @@ class BackupPayloadAdapter {
     }
   }
 
+  static void _validateTrainingRelations(Map<String, dynamic> data) {
+    final sessionIds = (data['sessions']! as List)
+        .map((value) => (value as Map)['id'])
+        .whereType<String>()
+        .toSet();
+    final seriesSessionById = <String, String>{};
+    for (final value in data['series']! as List) {
+      final row = value as Map;
+      final id = row['id'];
+      final sessionId = row['sessionId'];
+      if (id is String && sessionId is String) {
+        seriesSessionById[id] = sessionId;
+      }
+    }
+    final firearmIds = (data['firearms']! as List)
+        .map((value) => (value as Map)['id'])
+        .whereType<String>()
+        .toSet();
+    final cartridgeIds = (data['cartridges']! as List)
+        .map((value) => (value as Map)['id'])
+        .whereType<String>()
+        .toSet();
+
+    final activitiesById = <String, Map>{};
+    for (final value in data['trainingActivities']! as List) {
+      final row = value as Map;
+      final id = row['id'];
+      final kind = row['kind'];
+      final status = row['status'];
+      final schemaVersion = row['schemaVersion'];
+      final sessionId = row['sessionId'];
+      if (id is! String ||
+          id.trim().isEmpty ||
+          activitiesById.containsKey(id) ||
+          !_trainingActivityKinds.contains(kind) ||
+          !_trainingActivityStatuses.contains(status) ||
+          schemaVersion is! int ||
+          schemaVersion < 1 ||
+          (sessionId != null &&
+              (sessionId is! String || !sessionIds.contains(sessionId))) ||
+          !_isJsonObject(row['configurationJson']) ||
+          !_isJsonObject(row['summaryJson']) ||
+          row['localUtcOffsetMinutes'] is! int ||
+          (row['localUtcOffsetMinutes'] as int).abs() > 24 * 60 ||
+          status == 'completed' && row['completedAtUtc'] == null) {
+        throw const FormatException('Trainingsactiviteit is ongeldig.');
+      }
+      activitiesById[id] = row;
+    }
+
+    final linkKeys = <String>{};
+    final linkSequences = <String, Set<int>>{};
+    final linkCountByActivity = <String, int>{};
+    for (final value in data['trainingActivitySeriesLinks']! as List) {
+      final row = value as Map;
+      final activityId = row['activityId'];
+      final seriesId = row['seriesId'];
+      final sequenceNumber = row['sequenceNumber'];
+      final activity = activitiesById[activityId];
+      final seriesSessionId = seriesSessionById[seriesId];
+      if (activityId is! String ||
+          seriesId is! String ||
+          activity == null ||
+          seriesSessionId == null ||
+          activity['sessionId'] != seriesSessionId ||
+          sequenceNumber is! int ||
+          sequenceNumber < 1 ||
+          !linkKeys.add('$activityId\u0000$seriesId') ||
+          !linkSequences
+              .putIfAbsent(activityId, () => <int>{})
+              .add(sequenceNumber)) {
+        throw const FormatException(
+          'Trainingsactiviteit bevat een ongeldige reekskoppeling.',
+        );
+      }
+      linkCountByActivity.update(
+        activityId,
+        (count) => count + 1,
+        ifAbsent: () => 1,
+      );
+    }
+    for (final entry in linkCountByActivity.entries) {
+      final kind = activitiesById[entry.key]!['kind'];
+      if (_timerActivityKinds.contains(kind) && entry.value > 1) {
+        throw const FormatException(
+          'Een timerrun is aan meer dan één reeks gekoppeld.',
+        );
+      }
+    }
+
+    final eventIds = <String>{};
+    final eventsByActivity = <String, List<Map>>{};
+    for (final value in data['shotTimerEvents']! as List) {
+      final row = value as Map;
+      final id = row['id'];
+      final activityId = row['activityId'];
+      final sequenceNumber = row['sequenceNumber'];
+      final elapsed = row['elapsedMicroseconds'];
+      final split = row['splitMicroseconds'];
+      final peak = row['normalizedPeak'];
+      final disposition = row['disposition'];
+      final exclusionReason = row['exclusionReason'];
+      if (id is! String ||
+          id.trim().isEmpty ||
+          !eventIds.add(id) ||
+          activityId is! String ||
+          !activitiesById.containsKey(activityId) ||
+          !_timerActivityKinds.contains(activitiesById[activityId]!['kind']) ||
+          sequenceNumber is! int ||
+          sequenceNumber < 1 ||
+          elapsed is! int ||
+          elapsed < 0 ||
+          split is! int ||
+          split < 0 ||
+          !_timerEventSources.contains(row['source']) ||
+          !_timerEventDispositions.contains(disposition) ||
+          (peak != null &&
+              (peak is! num || !peak.isFinite || peak < 0 || peak > 1)) ||
+          (disposition == 'excluded' &&
+              (exclusionReason is! String || exclusionReason.trim().isEmpty))) {
+        throw const FormatException('Timerevent is ongeldig.');
+      }
+      eventsByActivity.putIfAbsent(activityId, () => <Map>[]).add(row);
+    }
+    for (final events in eventsByActivity.values) {
+      events.sort(
+        (left, right) => (left['sequenceNumber'] as int).compareTo(
+          right['sequenceNumber'] as int,
+        ),
+      );
+      var previousElapsed = 0;
+      var previousCountedElapsed = 0;
+      for (var index = 0; index < events.length; index++) {
+        final row = events[index];
+        final sequenceNumber = row['sequenceNumber'] as int;
+        final elapsed = row['elapsedMicroseconds'] as int;
+        final split = row['splitMicroseconds'] as int;
+        if (sequenceNumber != index + 1 ||
+            index > 0 && elapsed <= previousElapsed ||
+            split > elapsed) {
+          throw const FormatException(
+            'Timerevents zijn niet geldig chronologisch opgeslagen.',
+          );
+        }
+        if (row['disposition'] == 'counted') {
+          if (split != elapsed - previousCountedElapsed) {
+            throw const FormatException(
+              'Timerevents hebben geen geldige getelde splits.',
+            );
+          }
+          previousCountedElapsed = elapsed;
+        }
+        previousElapsed = elapsed;
+      }
+    }
+
+    final presetIds = <String>{};
+    for (final value in data['timerPresets']! as List) {
+      final row = value as Map;
+      final id = row['id'];
+      final name = row['name'];
+      if (id is! String ||
+          !presetIds.add(id) ||
+          name is! String ||
+          name.trim().isEmpty ||
+          !_timerActivityKinds.contains(row['mode']) ||
+          !_isJsonObject(row['configurationJson']) ||
+          row['builtIn'] is! bool ||
+          row['archived'] is! bool) {
+        throw const FormatException('Timerpreset is ongeldig.');
+      }
+    }
+
+    final calibrationIds = <String>{};
+    for (final value in data['acousticCalibrationProfiles']! as List) {
+      final row = value as Map;
+      final id = row['id'];
+      final firearmId = row['firearmId'];
+      final cartridgeId = row['cartridgeId'];
+      final sampleRate = row['sampleRate'];
+      final sensitivity = row['sensitivity'];
+      final echoLockout = row['echoLockoutMicroseconds'];
+      final beepBlanking = row['beepBlankingMicroseconds'];
+      if (id is! String ||
+          !calibrationIds.add(id) ||
+          row['name'] is! String ||
+          (row['name'] as String).trim().isEmpty ||
+          (firearmId != null &&
+              (firearmId is! String || !firearmIds.contains(firearmId))) ||
+          (cartridgeId != null &&
+              (cartridgeId is! String ||
+                  !cartridgeIds.contains(cartridgeId))) ||
+          row['environment'] is! String ||
+          (row['environment'] as String).trim().isEmpty ||
+          row['audioRoute'] is! String ||
+          (row['audioRoute'] as String).trim().isEmpty ||
+          sampleRate is! int ||
+          sampleRate <= 0 ||
+          sensitivity is! num ||
+          !sensitivity.isFinite ||
+          sensitivity < 0 ||
+          echoLockout is! int ||
+          echoLockout < 0 ||
+          beepBlanking is! int ||
+          beepBlanking < 0 ||
+          row['detectorVersion'] is! String ||
+          (row['detectorVersion'] as String).trim().isEmpty) {
+        throw const FormatException(
+          'Akoestisch kalibratieprofiel is ongeldig.',
+        );
+      }
+    }
+  }
+
+  static bool _isJsonObject(Object? source) {
+    if (source is! String) return false;
+    try {
+      return jsonDecode(source) is Map;
+    } on FormatException {
+      return false;
+    }
+  }
+
   static const _goalMetrics = {
     'scorePercentage',
     'meanRadiusMm',
@@ -372,6 +627,39 @@ class BackupPayloadAdapter {
     'later',
     'dismiss',
   };
+
+  static const _trainingActivityKinds = {
+    'acousticLiveFire',
+    'par',
+    'cadence',
+    'externalManual',
+    'drill',
+    'experiment',
+    'sightVerification',
+    'coldSeries',
+  };
+
+  static const _timerActivityKinds = {
+    'acousticLiveFire',
+    'par',
+    'cadence',
+    'externalManual',
+  };
+
+  static const _trainingActivityStatuses = {
+    'draft',
+    'completed',
+    'interrupted',
+  };
+
+  static const _timerEventSources = {
+    'acoustic',
+    'manual',
+    'generatedPar',
+    'external',
+  };
+
+  static const _timerEventDispositions = {'counted', 'excluded'};
 
   static Map<String, dynamic> _upgradeV1(Map<String, dynamic> data) {
     final firearms = _table(data, 'firearms');
@@ -680,6 +968,31 @@ class BackupService {
       'photoAlignments',
       PhotoAlignmentRecord.fromJson,
     );
+    final trainingActivities = _rows(
+      data,
+      'trainingActivities',
+      TrainingActivityRecord.fromJson,
+    );
+    final trainingActivitySeriesLinks = _rows(
+      data,
+      'trainingActivitySeriesLinks',
+      TrainingActivitySeriesLinkRecord.fromJson,
+    );
+    final shotTimerEvents = _rows(
+      data,
+      'shotTimerEvents',
+      ShotTimerEventRecord.fromJson,
+    );
+    final timerPresets = _rows(
+      data,
+      'timerPresets',
+      TimerPresetRecord.fromJson,
+    );
+    final acousticCalibrationProfiles = _rows(
+      data,
+      'acousticCalibrationProfiles',
+      AcousticCalibrationProfileRecord.fromJson,
+    );
 
     // A safety backup must exist before either files or records are replaced.
     final safetyBackup = await createEncryptedBackup(password);
@@ -726,6 +1039,11 @@ class BackupService {
 
       await database.transaction(() async {
         await database.batch((batch) {
+          batch.deleteAll(database.shotTimerEvents);
+          batch.deleteAll(database.trainingActivitySeriesLinks);
+          batch.deleteAll(database.trainingActivities);
+          batch.deleteAll(database.timerPresets);
+          batch.deleteAll(database.acousticCalibrationProfiles);
           batch.deleteAll(database.photoAlignments);
           batch.deleteAll(database.shotImpacts);
           batch.deleteAll(database.seriesReflections);
@@ -755,6 +1073,21 @@ class BackupService {
           batch.insertAll(database.seriesReflections, reflections);
           batch.insertAll(database.coachFeedback, coachFeedback);
           batch.insertAll(database.preferences, settings);
+          batch.insertAll(database.trainingActivities, trainingActivities);
+          batch.insertAll(
+            database.trainingActivitySeriesLinks,
+            trainingActivitySeriesLinks,
+          );
+          batch.insertAll(database.shotTimerEvents, shotTimerEvents);
+          batch.insertAll(database.timerPresets, timerPresets);
+          batch.insertAllOnConflictUpdate(
+            database.timerPresets,
+            builtInTimerPresetCompanions(),
+          );
+          batch.insertAll(
+            database.acousticCalibrationProfiles,
+            acousticCalibrationProfiles,
+          );
         });
       });
     } catch (_) {
@@ -807,6 +1140,19 @@ class BackupService {
     final coachFeedback = await database.select(database.coachFeedback).get();
     final settings = await database.select(database.preferences).get();
     final targetProfiles = await database.select(database.targetProfiles).get();
+    final trainingActivities = await database
+        .select(database.trainingActivities)
+        .get();
+    final trainingActivitySeriesLinks = await database
+        .select(database.trainingActivitySeriesLinks)
+        .get();
+    final shotTimerEvents = await database
+        .select(database.shotTimerEvents)
+        .get();
+    final timerPresets = await database.select(database.timerPresets).get();
+    final acousticCalibrationProfiles = await database
+        .select(database.acousticCalibrationProfiles)
+        .get();
     final createdAt = _now().toUtc();
     final archive = Archive();
     final files = <Map<String, dynamic>>[];
@@ -840,8 +1186,8 @@ class BackupService {
         jsonEncode({
           'format': 'shooting-companion-backup',
           'formatVersion': BackupPayloadAdapter.currentFormatVersion,
-          'appVersion': '0.4.0+1',
-          'databaseSchemaVersion': 5,
+          'appVersion': '0.5.0+1',
+          'databaseSchemaVersion': 6,
           'minimumAppVersion': '0.2.0',
           'createdAtUtc': createdAt.toIso8601String(),
           'sessionCount': sessions.length,
@@ -869,6 +1215,19 @@ class BackupService {
           'coachFeedback': coachFeedback.map((row) => row.toJson()).toList(),
           'settings': settings.map((row) => row.toJson()).toList(),
           'targetProfiles': targetProfiles.map((row) => row.toJson()).toList(),
+          'trainingActivities': trainingActivities
+              .map((row) => row.toJson())
+              .toList(),
+          'trainingActivitySeriesLinks': trainingActivitySeriesLinks
+              .map((row) => row.toJson())
+              .toList(),
+          'shotTimerEvents': shotTimerEvents
+              .map((row) => row.toJson())
+              .toList(),
+          'timerPresets': timerPresets.map((row) => row.toJson()).toList(),
+          'acousticCalibrationProfiles': acousticCalibrationProfiles
+              .map((row) => row.toJson())
+              .toList(),
         }),
       ),
     );

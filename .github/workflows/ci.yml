@@ -77,6 +77,15 @@ jobs:
             (cd "$package" && dart pub get && dart analyze && dart test)
             echo "::endgroup::"
           done
+      - name: Shot timer Flutter package
+        working-directory: packages/shot_timer
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+      - name: Shot timer Android unit tests
+        working-directory: apps/mobile/android
+        run: ./gradlew :shooting_companion_shot_timer:testDebugUnitTest
       - name: Build release APK
         working-directory: apps/mobile
         run: flutter build apk --release

@@ -5,6 +5,7 @@ enum AnalysisMetricId {
   extremeSpread,
   standardDeviationX,
   standardDeviationY,
+  covarianceEllipse,
   empiricalR50,
   empiricalR90,
   moa,
@@ -148,6 +149,29 @@ abstract final class MetricDefinitions {
     ],
     dataRequirement:
         'Minstens drie positionele treffers; vanaf tien treffers volledig tonen.',
+  );
+
+  static const covarianceEllipse = MetricDefinition(
+    id: AnalysisMetricId.covarianceEllipse,
+    label: '1σ-spreidingsellips',
+    shortDescription:
+        'Een samenvatting van de richting en standaardspreiding van de groep.',
+    calculation:
+        'De app berekent de sample-covariantie van alle geldige positionele '
+        'treffers. De eigenvector met de grootste variantie bepaalt de richting; '
+        'de vierkantswortels van beide eigenwaarden bepalen de halve assen.',
+    interpretation:
+        'Een langgerekte ellips toont dat de groep in één richting sterker '
+        'varieert. De hoek beschrijft die richting op het scherm.',
+    limitations: [
+      'De 1σ-ellips is geen buitenrand en hoeft niet alle treffers te bevatten.',
+      'Treffers buiten de ellips tellen wel mee in alle groepsmaten.',
+      'Een verre treffer kan richting en afmetingen sterk beïnvloeden.',
+      'De ellips beschrijft het trefbeeld en verklaart geen technische oorzaak.',
+    ],
+    dataRequirement:
+        'Minstens drie positionele treffers; bij een kleine steekproef is de '
+        'vorm voorlopig.',
   );
 
   static const empiricalR50 = MetricDefinition(
@@ -327,6 +351,7 @@ abstract final class MetricDefinitions {
     extremeSpread,
     standardDeviationX,
     standardDeviationY,
+    covarianceEllipse,
     empiricalR50,
     empiricalR90,
     moa,

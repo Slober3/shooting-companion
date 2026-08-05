@@ -17,7 +17,7 @@ Pure Dart packages are also tested independently. Acceptance covers:
 - scoring boundaries, non-ten target maxima, misses and multiplicity;
 - BR50 A3 geometry, 25 record bulls, sighters, duplicate shots, X ties,
   incomplete cards, multiplicity, fixed maximum and excess-shot penalties;
-- v1/v2/v3/v4-to-v5 migration and all five backup manifest versions;
+- v1/v2/v3/v4/v5-to-v6 migration and all six backup manifest versions;
 - contextual series, session and historical-comparison analysis, including
   strict cohorts, visit-date chronology and archived material references;
 - metric explanation and chart accessibility at narrow widths and large text;
@@ -39,7 +39,9 @@ Pure Dart packages are also tested independently. Acceptance covers:
   primary-photo deletion that preserves impacts and scores;
 - target-aware group metrics, potential score, coaching thresholds, typed
   goals, post-series reflections and v5 relationship validation;
-- absence of internet, audio and external-storage permissions in the built APK.
+- absence of internet and external-storage permissions in the built APK;
+- just-in-time microphone permission, foreground-only capture and proof that no
+  raw audio enters storage, diagnostics, export or backup.
 
 Device-only camera permission and navigation-mode checks are documented as a
 manual gate when no Android device is connected to CI.
@@ -58,6 +60,7 @@ for package in \
   packages/analysis \
   packages/coaching \
   packages/training \
+  packages/shot_timer \
   packages/vision_api \
   packages/vision_research; do
   (cd "$package" && dart pub get && dart analyze && dart test)

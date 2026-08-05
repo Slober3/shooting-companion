@@ -7,6 +7,7 @@ Flutter UI -> use cases/repositories -> Drift/SQLite
           -> pure scoring package
           -> pure analysis package -> pure coaching rules
           -> pure training definitions and calculators
+          -> shot-timer contracts -> foreground Android audio engine
           -> photo geometry package -> immutable local media
           -> experimental vision API -> native vision core -> candidate review
           -> local encrypted vision-research export
@@ -34,6 +35,12 @@ Derived analysis caches, coach cards and experiment calculations are disposable
 and are not written into historical target snapshots. Persisted goals,
 reflections or user feedback belong to repositories as user data; they must not
 be confused with regenerated conclusions.
+
+Shot-timer configuration, reviewed events and series links are structured
+training data. Relative microseconds are authoritative; UTC timestamps only
+place a run in the logbook. The Android engine emits state and impulse events,
+never raw audio. Timer event counts are deliberately independent from confirmed
+impact counts and can only produce a mismatch warning.
 
 The experimental vision packages are outside the confirmed-score path. Native
 analysis returns immutable JSON candidates plus provenance; only explicit user
@@ -105,4 +112,4 @@ penalty and scored-bull count so historical totals are never silently changed.
 - Database: Drift `schemaVersion` and explicit migrations.
 - Target: `profileId@profileVersion`; snapshots are stored per series.
 - Photo alignment: algorithm version stored with corners and matrix.
-- Backup: binary `SCB1` container with manifest v5; v1-v4 stay importable.
+- Backup: binary `SCB1` container with manifest v6; v1-v5 stay importable.

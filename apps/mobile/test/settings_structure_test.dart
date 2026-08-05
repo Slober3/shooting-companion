@@ -44,6 +44,11 @@ void main() {
     expect(find.byType(AboutScreen), findsOneWidget);
     expect(find.text('Volledig offline'), findsOneWidget);
     expect(find.text('Privéfoto’s'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Trainingshulpmiddel'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Trainingshulpmiddel'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

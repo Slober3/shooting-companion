@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shooting_companion/app/providers.dart';
 import 'package:shooting_companion/features/training_tools/training_tools.dart';
 import 'package:shooting_companion_training/training.dart';
 
@@ -12,7 +14,7 @@ void main() {
       _app(TrainingToolsScreen(onDrillSelected: (value) => selected = value)),
     );
 
-    await tester.tap(find.byKey(const ValueKey('training-tool-drills')));
+    await _tapTool(tester, 'training-tool-drills');
     await tester.pumpAndSettle();
     expect(find.text('Drills'), findsOneWidget);
     expect(
@@ -37,6 +39,23 @@ void main() {
     expect(find.text('Drills'), findsOneWidget);
   });
 
+  testWidgets('opens the structured shot timer setup', (tester) async {
+    await tester.pumpWidget(_app(const TrainingToolsScreen()));
+
+    expect(
+      find.byKey(const ValueKey('training-tool-calibration-profiles')),
+      findsNothing,
+    );
+    await tester.tap(find.byKey(const ValueKey('training-tool-shot-timer')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Timer instellen'), findsOneWidget);
+    expect(find.text('Akoestische live fire'), findsNothing);
+    expect(find.text('Live-firedetectie'), findsNothing);
+    expect(find.text('Par timer'), findsOneWidget);
+    expect(find.byKey(const ValueKey('start-shot-timer')), findsOneWidget);
+  });
+
   testWidgets('creates a balanced ABBA plan and explains minimum data', (
     tester,
   ) async {
@@ -47,7 +66,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byKey(const ValueKey('training-tool-experiment')));
+    await _tapTool(tester, 'training-tool-experiment');
     await tester.pumpAndSettle();
     expect(find.text('A/B-experiment'), findsOneWidget);
     expect(
@@ -87,7 +106,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(_app(const TrainingToolsScreen()));
-    await tester.tap(find.byKey(const ValueKey('training-tool-sight')));
+    await _tapTool(tester, 'training-tool-sight');
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -143,21 +162,38 @@ void main() {
 
     expect(find.text('Trainingstools'), findsOneWidget);
     expect(tester.takeException(), isNull);
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('training-tool-drills')),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('training-tool-drills')));
+    await _tapTool(tester, 'training-tool-drills');
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('drill-library-list')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
 
-Widget _app(Widget home) => MaterialApp(
-  theme: ThemeData.from(
-    colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF3F6F8F)),
-    useMaterial3: true,
+Future<void> _tapTool(WidgetTester tester, String key) async {
+  final finder = find.byKey(ValueKey(key));
+  await tester.scrollUntilVisible(
+    finder,
+    240,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
+}
+
+Widget _app(Widget home) => ProviderScope(
+  overrides: [
+    timerPresetsProvider.overrideWith((ref) => Stream.value(const [])),
+    acousticCalibrationProfilesProvider.overrideWith(
+      (ref) => Stream.value(const []),
+    ),
+  ],
+  child: MaterialApp(
+    theme: ThemeData.from(
+      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF3F6F8F)),
+      useMaterial3: true,
+    ),
+    home: home,
   ),
-  home: home,
 );

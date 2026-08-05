@@ -2,6 +2,49 @@
 
 All notable changes follow [Semantic Versioning](https://semver.org/).
 
+## 0.5.0 - 2026-08-05
+
+### Added
+
+- Added structured offline shot-timer activities with public par, cadence and
+  external-manual modes, reviewed events, local history and optional links to
+  a series.
+- Added the pure Dart timer state machine, statistics, presets and fake clock.
+  The native Android AudioRecord/AudioTrack engine remains development-only
+  behind a compile-time gate that is disabled in this release.
+- Added timer-run and timer-event CSV exports and compact linked-run summaries
+  to the PDF training report.
+- Added one shared group plot with a deterministic extreme-spread segment,
+  data-basis summary, overlay controls, legend and accessible explanations.
+- Added one sendable potential-score compute service shared by global and
+  single-series analysis routes.
+
+### Changed
+
+- Clarified that the standard blue covariance ellipse is a 1-sigma spread
+  indicator rather than an outline and that valid distant impacts remain part
+  of all group calculations.
+- Replaced the remaining divided group-metric expansion with the shared
+  divider-free expandable component.
+- Upgraded the Drift database and encrypted backup manifest to version 6 while
+  preserving imports from versions 1 through 5.
+- Integrated the planned 0.4.2 analysis hotfix into 0.5.0; version 0.4.2 was
+  not published as a separate build.
+
+### Privacy and validation boundaries
+
+- The stable 0.5.0+1 release does not expose acoustic timing and does not
+  declare microphone permission. Par, cadence and external input remain fully
+  available without microphone access.
+- Acoustic timing can be compiled into internal development/profile builds for
+  validation, but is not a public feature or reliability claim in this release.
+- Public acoustic support requires at least three Android devices including the
+  primary Samsung, indoor and outdoor testing, at least 300 independent strings
+  and 3,000 reference shots, at least 95% exact event counts, median timing
+  error at most 20 ms and P95 error at most 50 ms.
+- The release still declares no internet, location or external-storage
+  permission.
+
 ## 0.4.1 - 2026-08-05
 
 ### Added

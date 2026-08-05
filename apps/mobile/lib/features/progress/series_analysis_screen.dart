@@ -1,5 +1,3 @@
-import 'dart:isolate';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -10,10 +8,12 @@ import '../../app/providers.dart';
 import '../../data/app_database.dart';
 import '../../data/shooting_repository.dart';
 import '../../widgets/app_notice.dart';
+import '../../widgets/app_expandable_section.dart';
 import '../scoring/target_canvas.dart';
 import 'analysis_adapter.dart';
 import 'analysis_explanations.dart';
 import 'group_analysis_widgets.dart';
+import 'potential_score_compute_service.dart';
 
 enum SeriesAnalysisPlotMode { target, group, heatmap }
 
@@ -187,20 +187,26 @@ class _SeriesAnalysisScreenState extends ConsumerState<SeriesAnalysisScreen> {
     if (_calculatingPotential) return;
     setState(() => _calculatingPotential = true);
     try {
-      final result = await Isolate.run(
-        () => PotentialScoreAnalyzer.analyze(
+      final response = await potentialScoreComputeService.calculate(
+        PotentialScoreComputeRequest(
+          seriesId: detail.series.id,
+          seriesUpdatedAtUtc: detail.series.updatedAtUtc,
           target: detail.target,
           impacts: impacts,
           projectileDiameterMm: detail.series.projectileDiameterMm,
         ),
       );
       if (!mounted) return;
-      setState(() => _potentialScore = result);
-    } catch (error) {
+      final current = ref
+          .read(seriesDetailProvider(widget.seriesId))
+          .valueOrNull;
+      if (current?.series.updatedAtUtc != detail.series.updatedAtUtc) return;
+      setState(() => _potentialScore = response.result);
+    } catch (_) {
       if (mounted) {
         AppMessenger.error(
           context,
-          'Potential score berekenen mislukt: $error',
+          'Potential score kon niet worden berekend. Probeer opnieuw.',
         );
       }
     } finally {
@@ -351,59 +357,71 @@ class _AdvancedMetricsCard extends StatelessWidget {
     if (metrics.positionedShotCount < 3) return const SizedBox.shrink();
     return Card(
       margin: EdgeInsets.zero,
-      child: ExpansionTile(
-        title: const Text('Meer groepsmaten'),
-        subtitle: const Text('Tik op een maat voor uitleg.'),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        children: [
-          if (metrics.extremeSpreadMoa case final value?)
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: AppExpandableSection(
+          title: 'Meer groepsmaten',
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Tik op een maat voor uitleg.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+            if (metrics.extremeSpreadMoa case final value?)
+              _MetricRow(
+                label: 'Spreiding in MOA',
+                value: value.toStringAsFixed(2),
+                definition: MetricDefinitions.moa,
+                evidence: evidence,
+              ),
+            if (metrics.extremeSpreadMilliradians case final value?)
+              _MetricRow(
+                label: 'Spreiding in millirad',
+                value: value.toStringAsFixed(2),
+                definition: MetricDefinitions.milliradians,
+                evidence: evidence,
+              ),
+            if (metrics.positionedShotCount >= 10) ...[
+              _MetricRow(
+                label: 'R50',
+                value: '${metrics.empiricalR50Mm.toStringAsFixed(1)} mm',
+                definition: MetricDefinitions.empiricalR50,
+                evidence: evidence,
+              ),
+              _MetricRow(
+                label: 'R90',
+                value: '${metrics.empiricalR90Mm.toStringAsFixed(1)} mm',
+                definition: MetricDefinitions.empiricalR90,
+                evidence: evidence,
+              ),
+            ],
             _MetricRow(
-              label: 'Spreiding in MOA',
-              value: value.toStringAsFixed(2),
-              definition: MetricDefinitions.moa,
+              label: 'Standaardafwijking horizontaal',
+              value:
+                  '${metrics.sampleStandardDeviationXMm.toStringAsFixed(1)} mm',
+              definition: MetricDefinitions.standardDeviationX,
               evidence: evidence,
             ),
-          if (metrics.extremeSpreadMilliradians case final value?)
             _MetricRow(
-              label: 'Spreiding in millirad',
-              value: value.toStringAsFixed(2),
-              definition: MetricDefinitions.milliradians,
-              evidence: evidence,
-            ),
-          if (metrics.positionedShotCount >= 10) ...[
-            _MetricRow(
-              label: 'R50',
-              value: '${metrics.empiricalR50Mm.toStringAsFixed(1)} mm',
-              definition: MetricDefinitions.empiricalR50,
+              label: 'Standaardafwijking verticaal',
+              value:
+                  '${metrics.sampleStandardDeviationYMm.toStringAsFixed(1)} mm',
+              definition: MetricDefinitions.standardDeviationY,
               evidence: evidence,
             ),
             _MetricRow(
-              label: 'R90',
-              value: '${metrics.empiricalR90Mm.toStringAsFixed(1)} mm',
-              definition: MetricDefinitions.empiricalR90,
+              label: 'Richting spreidingsellips',
+              value:
+                  '${metrics.covarianceEllipse.angleDegrees.toStringAsFixed(0)}° · '
+                  '${formatEllipseDirection(metrics.covarianceEllipse.angleDegrees)}',
+              definition: MetricDefinitions.covarianceEllipse,
               evidence: evidence,
             ),
           ],
-          _MetricRow(
-            label: 'Standaardafwijking horizontaal',
-            value:
-                '${metrics.sampleStandardDeviationXMm.toStringAsFixed(1)} mm',
-            definition: MetricDefinitions.standardDeviationX,
-            evidence: evidence,
-          ),
-          _MetricRow(
-            label: 'Standaardafwijking verticaal',
-            value:
-                '${metrics.sampleStandardDeviationYMm.toStringAsFixed(1)} mm',
-            definition: MetricDefinitions.standardDeviationY,
-            evidence: evidence,
-          ),
-          _MetricRow(
-            label: 'Richting spreidingsellips',
-            value:
-                '${metrics.covarianceEllipse.angleDegrees.toStringAsFixed(0)}°',
-          ),
-        ],
+        ),
       ),
     );
   }

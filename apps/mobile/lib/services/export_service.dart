@@ -32,11 +32,13 @@ class ExportSeriesRow {
     required this.missCount,
     required this.projectileDiameterMm,
     required this.photoCount,
+    this.timerRunCount = 0,
     this.seriesId,
     this.firearmName,
     this.ammoLotName,
     this.notes,
     this.photos = const [],
+    this.timerSummaries = const [],
   });
 
   final String sessionId;
@@ -53,10 +55,12 @@ class ExportSeriesRow {
   final int missCount;
   final double projectileDiameterMm;
   final int photoCount;
+  final int timerRunCount;
   final String? firearmName;
   final String? ammoLotName;
   final String? notes;
   final List<PdfReportPhoto> photos;
+  final List<String> timerSummaries;
 
   String get materialDescription => [
     if (firearmName != null && firearmName!.trim().isNotEmpty)
@@ -91,7 +95,8 @@ class ExportFormatter {
     final lines = <String>[
       'session_id,datum,status,reeks,doelprofiel,afstand_m,'
           'geregistreerde_schoten,score,maximum,percentage,x,missers,'
-          'projectieldiameter_mm,wapen,munitieprofiel,reeksnotitie,foto_aantal',
+          'projectieldiameter_mm,wapen,munitieprofiel,reeksnotitie,foto_aantal,'
+          'timer_run_count',
     ];
     for (final row in rows) {
       lines.add(
@@ -113,6 +118,7 @@ class ExportFormatter {
           row.ammoLotName ?? '',
           row.notes ?? '',
           '${row.photoCount}',
+          '${row.timerRunCount}',
         ].map(_csv).join(','),
       );
     }
@@ -170,6 +176,8 @@ class PdfReportData {
       seriesRows.fold(0, (sum, row) => sum + row.maximumPossibleScore);
   int get includedPhotoCount =>
       seriesRows.fold(0, (sum, row) => sum + row.photos.length);
+  int get includedTimerRunCount =>
+      seriesRows.fold(0, (sum, row) => sum + row.timerSummaries.length);
 }
 
 class PdfReportBuilder {
@@ -247,6 +255,7 @@ class PdfReportBuilder {
               'Score',
               '%',
               'X',
+              'Timer',
             ],
             data: data.seriesRows
                 .map(
@@ -260,6 +269,7 @@ class PdfReportBuilder {
                     '${item.totalScore}/${item.maximumPossibleScore}',
                     item.percentage.toStringAsFixed(1),
                     '${item.innerTenCount}',
+                    '${item.timerRunCount}',
                   ],
                 )
                 .toList(),
@@ -274,6 +284,7 @@ class PdfReportBuilder {
               6: pw.FixedColumnWidth(66),
               7: pw.FixedColumnWidth(42),
               8: pw.FixedColumnWidth(32),
+              9: pw.FixedColumnWidth(36),
             },
             cellStyle: const pw.TextStyle(fontSize: 9),
             cellPadding: const pw.EdgeInsets.symmetric(
@@ -285,6 +296,29 @@ class PdfReportBuilder {
               fontWeight: pw.FontWeight.bold,
             ),
           ),
+          if (data.includedTimerRunCount > 0) ...[
+            pw.SizedBox(height: 18),
+            pw.Header(
+              level: 1,
+              child: pw.Text(
+                'Gekoppelde timerresultaten',
+                style: pw.TextStyle(
+                  fontSize: 14,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ),
+            for (final row in data.seriesRows)
+              if (row.timerSummaries.isNotEmpty)
+                pw.Padding(
+                  padding: const pw.EdgeInsets.only(bottom: 6),
+                  child: pw.Text(
+                    'Reeks ${row.sequenceNumber}: '
+                    '${row.timerSummaries.join(' | ')}',
+                    style: const pw.TextStyle(fontSize: 9),
+                  ),
+                ),
+          ],
           if (data.includedPhotoCount > 0) ...[
             pw.NewPage(),
             pw.Header(
@@ -387,6 +421,142 @@ class ExportService {
     );
   }
 
+  Future<File> createTimerRunsCsv() async {
+    final rows = await database
+        .customSelect(
+          '''
+        SELECT
+          activity.id,
+          activity.kind,
+          activity.status,
+          activity.session_id,
+          activity.started_at_utc,
+          activity.completed_at_utc,
+          activity.summary_json,
+          activity.detector_version,
+          activity.notes,
+          GROUP_CONCAT(DISTINCT link.series_id) AS series_ids,
+          COUNT(DISTINCT CASE WHEN event.disposition = 'counted'
+            THEN event.id END) AS counted_events,
+          COUNT(DISTINCT CASE WHEN event.disposition = 'excluded'
+            THEN event.id END) AS excluded_events
+        FROM training_activities AS activity
+        LEFT JOIN training_activity_series_links AS link
+          ON link.activity_id = activity.id
+        LEFT JOIN shot_timer_events AS event
+          ON event.activity_id = activity.id
+        WHERE activity.kind IN
+          ('acousticLiveFire', 'par', 'cadence', 'externalManual')
+        GROUP BY activity.id
+        ORDER BY activity.started_at_utc
+      ''',
+          readsFrom: {
+            database.trainingActivities,
+            database.trainingActivitySeriesLinks,
+            database.shotTimerEvents,
+          },
+        )
+        .get();
+    final lines = <String>[
+      'activity_id,modus,status,gestart_utc,voltooid_utc,session_id,'
+          'series_ids,schoten_tellend,detecties_uitgesloten,eerste_schot_s,'
+          'totale_tijd_s,gemiddelde_split_s,detectorversie,notitie',
+      for (final row in rows)
+        [
+          row.read<String>('id'),
+          row.read<String>('kind'),
+          row.read<String>('status'),
+          row.read<DateTime>('started_at_utc').toUtc().toIso8601String(),
+          row
+                  .readNullable<DateTime>('completed_at_utc')
+                  ?.toUtc()
+                  .toIso8601String() ??
+              '',
+          row.readNullable<String>('session_id') ?? '',
+          row.readNullable<String>('series_ids') ?? '',
+          _exportCountedEventCount(
+            row.read<String>('kind'),
+            row.read<String>('summary_json'),
+            row.read<int>('counted_events'),
+          ),
+          '${row.read<int>('excluded_events')}',
+          _summarySeconds(
+            row.read<String>('summary_json'),
+            'firstShotTimeMicros',
+          ),
+          _summarySeconds(row.read<String>('summary_json'), 'totalTimeMicros'),
+          _summarySeconds(
+            row.read<String>('summary_json'),
+            'averageSplitMicros',
+          ),
+          row.readNullable<String>('detector_version') ?? '',
+          row.readNullable<String>('notes') ?? '',
+        ].map(ExportFormatter._csv).join(','),
+    ];
+    return _writeCsvFile(
+      'shooting-companion-timer-runs-${_stamp()}.csv',
+      lines,
+    );
+  }
+
+  Future<File> createTimerEventsCsv() async {
+    final rows = await database
+        .customSelect(
+          '''
+        SELECT
+          event.id,
+          event.activity_id,
+          activity.kind,
+          activity.started_at_utc,
+          link.series_id,
+          event.sequence_number,
+          event.elapsed_microseconds,
+          event.split_microseconds,
+          event.source,
+          event.disposition,
+          event.normalized_peak,
+          event.detection_quality,
+          event.exclusion_reason
+        FROM shot_timer_events AS event
+        INNER JOIN training_activities AS activity
+          ON activity.id = event.activity_id
+        LEFT JOIN training_activity_series_links AS link
+          ON link.activity_id = activity.id
+        ORDER BY activity.started_at_utc, event.sequence_number
+      ''',
+          readsFrom: {
+            database.trainingActivities,
+            database.trainingActivitySeriesLinks,
+            database.shotTimerEvents,
+          },
+        )
+        .get();
+    final lines = <String>[
+      'event_id,activity_id,modus,gestart_utc,series_id,volgnummer,'
+          'tijd_s,split_s,bron,status,piek,detectiekwaliteit,uitsluitreden',
+      for (final row in rows)
+        [
+          row.read<String>('id'),
+          row.read<String>('activity_id'),
+          row.read<String>('kind'),
+          row.read<DateTime>('started_at_utc').toUtc().toIso8601String(),
+          row.readNullable<String>('series_id') ?? '',
+          '${row.read<int>('sequence_number')}',
+          _microsecondsAsSeconds(row.read<int>('elapsed_microseconds')),
+          _microsecondsAsSeconds(row.read<int>('split_microseconds')),
+          row.read<String>('source'),
+          row.read<String>('disposition'),
+          row.readNullable<double>('normalized_peak')?.toString() ?? '',
+          row.readNullable<String>('detection_quality') ?? '',
+          row.readNullable<String>('exclusion_reason') ?? '',
+        ].map(ExportFormatter._csv).join(','),
+    ];
+    return _writeCsvFile(
+      'shooting-companion-timer-events-${_stamp()}.csv',
+      lines,
+    );
+  }
+
   Future<File> createPdfReport() async {
     final rows = await _reportRows(includePdfPhotos: true);
     final bytes = await PdfReportBuilder.build(
@@ -402,12 +572,20 @@ class ExportService {
       .instance
       .share(ShareParams(files: [XFile(file.path)], text: label));
 
+  Future<File> _writeCsvFile(String name, List<String> lines) async {
+    final file = await _exportFile(name);
+    return file.writeAsString(lines.join('\r\n'), encoding: utf8, flush: true);
+  }
+
   Future<List<ExportSeriesRow>> _reportRows({
     bool includePdfPhotos = false,
   }) async {
     final photosBySeries = includePdfPhotos
         ? await _loadPdfPhotosBySeries()
         : const <String, List<PdfReportPhoto>>{};
+    final timerSummariesBySeries = includePdfPhotos
+        ? await _loadTimerSummariesBySeries()
+        : const <String, List<String>>{};
     final queryRows = await database
         .customSelect(
           '''
@@ -429,7 +607,8 @@ class ExportService {
           series.notes,
           firearm.name AS firearm_name,
           ammo.display_name AS ammo_lot_name,
-          COUNT(image.id) AS photo_count
+          COUNT(DISTINCT image.id) AS photo_count,
+          COUNT(DISTINCT timer_activity.id) AS timer_run_count
         FROM shooting_series AS series
         INNER JOIN training_sessions AS session
           ON session.id = series.session_id
@@ -439,6 +618,13 @@ class ExportService {
           ON firearm.id = series.firearm_id
         LEFT JOIN ammo_lots AS ammo
           ON ammo.id = series.ammo_lot_id
+        LEFT JOIN training_activity_series_links AS timer_link
+          ON timer_link.series_id = series.id
+        LEFT JOIN training_activities AS timer_activity
+          ON timer_activity.id = timer_link.activity_id
+          AND timer_activity.status = 'completed'
+          AND timer_activity.kind IN
+            ('acousticLiveFire', 'par', 'cadence', 'externalManual')
         WHERE series.status = 'confirmed'
         GROUP BY series.id
         ORDER BY session.started_at_utc, series.sequence_number
@@ -449,6 +635,8 @@ class ExportService {
             database.imageAssets,
             database.firearms,
             database.ammoLots,
+            database.trainingActivities,
+            database.trainingActivitySeriesLinks,
           },
         )
         .get();
@@ -472,12 +660,53 @@ class ExportService {
           missCount: row.read<int>('miss_count'),
           projectileDiameterMm: row.read<double>('projectile_diameter_mm'),
           photoCount: row.read<int>('photo_count'),
+          timerRunCount: row.read<int>('timer_run_count'),
           firearmName: row.readNullable<String>('firearm_name'),
           ammoLotName: row.readNullable<String>('ammo_lot_name'),
           notes: row.readNullable<String>('notes'),
           photos: photosBySeries[row.read<String>('series_id')] ?? const [],
+          timerSummaries:
+              timerSummariesBySeries[row.read<String>('series_id')] ?? const [],
         ),
     ];
+  }
+
+  Future<Map<String, List<String>>> _loadTimerSummariesBySeries() async {
+    final rows = await database
+        .customSelect(
+          '''
+        SELECT link.series_id, activity.kind, activity.summary_json
+        FROM training_activity_series_links AS link
+        INNER JOIN training_activities AS activity
+          ON activity.id = link.activity_id
+        WHERE activity.status = 'completed'
+          AND activity.kind IN
+            ('acousticLiveFire', 'par', 'cadence', 'externalManual')
+        ORDER BY activity.started_at_utc
+      ''',
+          readsFrom: {
+            database.trainingActivities,
+            database.trainingActivitySeriesLinks,
+          },
+        )
+        .get();
+    final result = <String, List<String>>{};
+    for (final row in rows) {
+      final seriesId = row.read<String>('series_id');
+      final kind = row.read<String>('kind');
+      final summaryJson = row.read<String>('summary_json');
+      final shots = _summaryInteger(summaryJson, 'countedShotCount');
+      final total = _summarySeconds(summaryJson, 'totalTimeMicros');
+      final average = _summarySeconds(summaryJson, 'averageSplitMicros');
+      final parts = <String>[
+        _exportTimerKindLabel(kind),
+        if (shots != null) '$shots schoten',
+        if (total.isNotEmpty) '$total s totaal',
+        if (average.isNotEmpty) '$average s gem. split',
+      ];
+      result.putIfAbsent(seriesId, () => []).add(parts.join(' · '));
+    }
+    return result;
   }
 
   Future<Map<String, List<PdfReportPhoto>>> _loadPdfPhotosBySeries() async {
@@ -547,6 +776,50 @@ Uint8List? _preparePdfPhoto(Uint8List originalBytes) {
   }
   return image_lib.encodeJpg(decoded, quality: 85);
 }
+
+String _summarySeconds(String summaryJson, String key) {
+  try {
+    final value = (jsonDecode(summaryJson) as Map)[key] as num?;
+    return value == null ? '' : _microsecondsAsSeconds(value.toInt());
+  } catch (_) {
+    return '';
+  }
+}
+
+int? _summaryInteger(String summaryJson, String key) {
+  try {
+    return ((jsonDecode(summaryJson) as Map)[key] as num?)?.toInt();
+  } catch (_) {
+    return null;
+  }
+}
+
+String _exportCountedEventCount(
+  String kind,
+  String summaryJson,
+  int countedEvents,
+) {
+  if (kind == 'externalManual') {
+    try {
+      final summary = jsonDecode(summaryJson) as Map;
+      if (summary['externalTimingCompleteness'] == 'summaryOnly') return '';
+    } catch (_) {
+      // A malformed summary is exported from the authoritative event rows.
+    }
+  }
+  return '$countedEvents';
+}
+
+String _exportTimerKindLabel(String kind) => switch (kind) {
+  'acousticLiveFire' => 'Shot timer',
+  'par' => 'Par timer',
+  'cadence' => 'Cadans',
+  'externalManual' => 'Extern gemeten',
+  _ => kind,
+};
+
+String _microsecondsAsSeconds(int value) =>
+    (value / 1000000).toStringAsFixed(3);
 
 String? _nullIfBlank(String? value) {
   final trimmed = value?.trim();

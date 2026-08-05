@@ -175,6 +175,40 @@ void main() {
     expect(tester.takeException(), isNull);
     await _disposeTestTree(tester);
   });
+
+  testWidgets('potential score works from the Analyse tab', (tester) async {
+    await _createConfirmedSession(repository);
+
+    _setSurfaceSize(tester, const Size(412, 915));
+    await tester.pumpWidget(
+      _testApp(database: database, child: const ProgressScreen()),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Vergelijken'));
+    await tester.pumpAndSettle();
+    await tester.dragUntilVisible(
+      find.text('Potential score berekenen'),
+      find.byType(Scrollable).first,
+      const Offset(0, -300),
+    );
+    await tester.ensureVisible(find.text('Potential score berekenen'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Potential score berekenen'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Potential score'), findsOneWidget);
+    expect(
+      find.textContaining('Beste score met hetzelfde trefbeeld'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('object is unsendable'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await _disposeTestTree(tester);
+  });
 }
 
 Future<void> _setSessionDate(

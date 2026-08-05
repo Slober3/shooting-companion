@@ -38,6 +38,20 @@ void main() {
         contains('veranderen nooit'),
       );
     });
+
+    test(
+      'ellipse definition and direction labels prevent boundary confusion',
+      () {
+        expect(
+          MetricDefinitions.covarianceEllipse.limitations.join(' '),
+          contains('geen buitenrand'),
+        );
+        expect(formatEllipseDirection(0), 'vrij horizontaal');
+        expect(formatEllipseDirection(90), 'vrij verticaal');
+        expect(formatEllipseDirection(-45), 'linksonder naar rechtsboven');
+        expect(formatEllipseDirection(45), 'linksboven naar rechtsonder');
+      },
+    );
   });
 
   group('analysis evidence', () {

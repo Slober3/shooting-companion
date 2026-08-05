@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:isolate';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +21,7 @@ import 'goal_editor_sheet.dart';
 import 'group_analysis_widgets.dart';
 import 'metric_definitions.dart';
 import 'metric_explanation_sheet.dart';
+import 'potential_score_compute_service.dart';
 import 'series_analysis_screen.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
@@ -230,35 +230,55 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
   Future<void> _showPotentialScore(AnalyzedSeriesView item) async {
     AppMessenger.info(context, 'Mogelijke centreerwinst berekenen…');
-    final result = await Isolate.run(
-      () => PotentialScoreAnalyzer.analyze(
-        target: item.target,
-        impacts: item.impacts,
-        projectileDiameterMm: item.source.series.projectileDiameterMm,
-      ),
-    );
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Potential score'),
-        content: Text(
-          'Huidig: ${result.currentScore}/${result.maximumPossible}\n'
-          'Beste score met hetzelfde trefbeeld: ${result.bestScore}/${result.maximumPossible}\n'
-          'Centreerwinst: +${result.groupCenteringGain}\n'
-          'Verschuiving: ${_signedMm(result.translationXMm)} horizontaal, '
-          '${_signedMm(result.translationYMm)} verticaal\n\n'
-          'Dit is een reproduceerbare what-ifanalyse, geen automatisch '
-          'vizieradvies.',
+    try {
+      final response = await potentialScoreComputeService.calculate(
+        PotentialScoreComputeRequest(
+          seriesId: item.source.series.id,
+          seriesUpdatedAtUtc: item.source.series.updatedAtUtc,
+          target: item.target,
+          impacts: item.impacts,
+          projectileDiameterMm: item.source.series.projectileDiameterMm,
         ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Sluiten'),
+      );
+      if (!mounted) return;
+      final current = ref
+          .read(analysisDatasetProvider)
+          .valueOrNull
+          ?.where((data) => data.series.id == item.source.series.id)
+          .firstOrNull;
+      if (current?.series.updatedAtUtc != item.source.series.updatedAtUtc) {
+        return;
+      }
+      final result = response.result;
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Potential score'),
+          content: Text(
+            'Huidig: ${result.currentScore}/${result.maximumPossible}\n'
+            'Beste score met hetzelfde trefbeeld: ${result.bestScore}/${result.maximumPossible}\n'
+            'Centreerwinst: +${result.groupCenteringGain}\n'
+            'Verschuiving: ${_signedMm(result.translationXMm)} horizontaal, '
+            '${_signedMm(result.translationYMm)} verticaal\n\n'
+            'Dit is een reproduceerbare what-ifanalyse, geen automatisch '
+            'vizieradvies.',
           ),
-        ],
-      ),
-    );
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Sluiten'),
+            ),
+          ],
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        AppMessenger.error(
+          context,
+          'Potential score kon niet worden berekend. Probeer opnieuw.',
+        );
+      }
+    }
   }
 
   Future<void> _saveCoachFeedback(
@@ -732,7 +752,10 @@ class _GroupAnalysisSectionState extends State<_GroupAnalysisSection> {
                   '${metrics.positionedShotCount} positionele schoten',
                 ),
                 const SizedBox(height: 16),
-                _GroupPlot(analysis: item.analysis, showDensity: _showDensity),
+                GroupAnalysisPlot(
+                  analysis: item.analysis,
+                  showDensity: _showDensity,
+                ),
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerRight,
@@ -940,186 +963,6 @@ class _GroupAnalysisSectionState extends State<_GroupAnalysisSection> {
     if (!mounted || result == null) return;
     setState(() => _comparisonSeriesIds = result);
   }
-}
-
-class _GroupPlot extends StatelessWidget {
-  const _GroupPlot({required this.analysis, required this.showDensity});
-
-  final SeriesAnalysis analysis;
-  final bool showDensity;
-
-  @override
-  Widget build(BuildContext context) {
-    final metrics = analysis.metrics;
-    final summary = metrics.positionedShotCount < 3
-        ? 'Trefbeeld met ${metrics.positionedShotCount} positionele schoten. '
-              'Er zijn nog te weinig treffers voor groepsmaten.'
-        : 'Trefbeeld met ${metrics.positionedShotCount} positionele schoten. '
-              'Groepscentrum ${_signedMm(metrics.horizontalBiasMm)} horizontaal en '
-              '${_signedMm(metrics.verticalBiasMm)} verticaal. '
-              'Mean radius ${metrics.meanRadiusMm.toStringAsFixed(1)} millimeter.';
-    return Semantics(
-      image: true,
-      label: summary,
-      child: AspectRatio(
-        aspectRatio: 1.35,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerLowest,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(11),
-            child: CustomPaint(
-              painter: _GroupPlotPainter(
-                analysis: analysis,
-                showDensity: showDensity,
-                colorScheme: Theme.of(context).colorScheme,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GroupPlotPainter extends CustomPainter {
-  const _GroupPlotPainter({
-    required this.analysis,
-    required this.showDensity,
-    required this.colorScheme,
-  });
-
-  final SeriesAnalysis analysis;
-  final bool showDensity;
-  final ColorScheme colorScheme;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final positions = analysis.positions;
-    if (positions.isEmpty || size.isEmpty) return;
-    final metrics = analysis.metrics;
-    var extent = math.max(
-      metrics.empiricalR90Mm,
-      math.max(metrics.centroidXMm.abs(), metrics.centroidYMm.abs()),
-    );
-    for (final point in positions) {
-      extent = math.max(extent, math.max(point.xMm.abs(), point.yMm.abs()));
-    }
-    extent = math.max(1, extent * 1.25);
-    final plotRect = Rect.fromLTWH(18, 12, size.width - 36, size.height - 24);
-    final scale = math.min(plotRect.width, plotRect.height) / (extent * 2);
-    final center = plotRect.center;
-    Offset project(double x, double y) => center + Offset(x * scale, y * scale);
-
-    final gridPaint = Paint()
-      ..color = colorScheme.outlineVariant.withValues(alpha: 0.7)
-      ..strokeWidth = 1;
-    canvas.drawLine(
-      Offset(plotRect.left, center.dy),
-      Offset(plotRect.right, center.dy),
-      gridPaint,
-    );
-    canvas.drawLine(
-      Offset(center.dx, plotRect.top),
-      Offset(center.dx, plotRect.bottom),
-      gridPaint,
-    );
-    for (final fraction in const [0.25, 0.5, 0.75, 1.0]) {
-      canvas.drawCircle(
-        center,
-        extent * fraction * scale,
-        Paint()
-          ..color = colorScheme.outlineVariant.withValues(alpha: 0.45)
-          ..style = PaintingStyle.stroke,
-      );
-    }
-
-    if (showDensity) {
-      for (final point in positions) {
-        final location = project(point.xMm, point.yMm);
-        final radius = math.max(12.0, 6 + point.multiplicity * 2.0);
-        canvas.drawCircle(
-          location,
-          radius,
-          Paint()
-            ..shader = RadialGradient(
-              colors: [
-                colorScheme.tertiary.withValues(alpha: 0.42),
-                colorScheme.tertiary.withValues(alpha: 0),
-              ],
-            ).createShader(Rect.fromCircle(center: location, radius: radius)),
-        );
-      }
-    }
-
-    final ellipse = metrics.covarianceEllipse;
-    final ellipseCenter = project(metrics.centroidXMm, metrics.centroidYMm);
-    if (positions.length >= 3) {
-      canvas.save();
-      canvas.translate(ellipseCenter.dx, ellipseCenter.dy);
-      canvas.rotate(ellipse.angleDegrees * math.pi / 180);
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset.zero,
-          width: math.max(2, ellipse.semiMajorAxisMm * 2 * scale),
-          height: math.max(2, ellipse.semiMinorAxisMm * 2 * scale),
-        ),
-        Paint()
-          ..color = colorScheme.primary
-          ..strokeWidth = 2
-          ..style = PaintingStyle.stroke,
-      );
-      canvas.restore();
-    }
-
-    for (final point in positions) {
-      final location = project(point.xMm, point.yMm);
-      canvas.drawCircle(
-        location,
-        4.5,
-        Paint()
-          ..color = point.isPositionUncertain
-              ? colorScheme.error
-              : colorScheme.primary
-          ..style = PaintingStyle.fill,
-      );
-      canvas.drawCircle(
-        location,
-        4.5,
-        Paint()
-          ..color = colorScheme.onPrimary
-          ..strokeWidth = 1
-          ..style = PaintingStyle.stroke,
-      );
-    }
-
-    if (positions.length >= 3) {
-      final centroidPaint = Paint()
-        ..color = colorScheme.secondary
-        ..strokeWidth = 2.5;
-      canvas.drawLine(
-        ellipseCenter + const Offset(-8, 0),
-        ellipseCenter + const Offset(8, 0),
-        centroidPaint,
-      );
-      canvas.drawLine(
-        ellipseCenter + const Offset(0, -8),
-        ellipseCenter + const Offset(0, 8),
-        centroidPaint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _GroupPlotPainter oldDelegate) =>
-      oldDelegate.analysis != analysis ||
-      oldDelegate.showDensity != showDensity ||
-      oldDelegate.colorScheme != colorScheme;
 }
 
 class _CoachSection extends StatelessWidget {

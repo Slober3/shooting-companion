@@ -265,6 +265,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   }
 
   Future<void> _delete(SessionDetail detail) async {
+    final trainingCount = await ref
+        .read(repositoryProvider)
+        .countSessionTrainingActivities(widget.sessionId);
+    if (!mounted) return;
     final date = DateFormat(
       'dd/MM/yyyy HH:mm',
       'nl_BE',
@@ -274,7 +278,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Sessie verwijderen?'),
         content: Text(
-          '$date\n${detail.seriesCount} reeksen · ${detail.photoCount} foto’s\n\n'
+          '$date\n${detail.seriesCount} reeksen · ${detail.photoCount} foto’s'
+          '${trainingCount == 0 ? '' : ' · $trainingCount trainingsactiviteiten'}\n\n'
           'Alle gekoppelde punten, uitlijningen en bestanden verdwijnen.',
         ),
         actions: [

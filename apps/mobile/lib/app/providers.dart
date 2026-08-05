@@ -109,6 +109,38 @@ final coachFeedbackProvider = StreamProvider<List<CoachFeedbackRecord>>(
   (ref) => ref.watch(repositoryProvider).watchCoachFeedback(),
 );
 
+final trainingActivitiesProvider = StreamProvider<List<TrainingActivityRecord>>(
+  (ref) => ref.watch(repositoryProvider).watchTrainingActivities(),
+);
+
+final trainingActivityProvider =
+    StreamProvider.family<TrainingActivityDetail?, String>(
+      (ref, activityId) =>
+          ref.watch(repositoryProvider).watchTrainingActivity(activityId),
+    );
+
+final seriesTrainingActivitiesProvider =
+    StreamProvider.family<List<TrainingActivityRecord>, String>(
+      (ref, seriesId) =>
+          ref.watch(repositoryProvider).watchSeriesTrainingActivities(seriesId),
+    );
+
+final sessionTrainingActivitiesProvider =
+    StreamProvider.family<List<TrainingActivityRecord>, String>(
+      (ref, sessionId) => ref
+          .watch(repositoryProvider)
+          .watchSessionTrainingActivities(sessionId),
+    );
+
+final timerPresetsProvider = StreamProvider<List<TimerPresetRecord>>(
+  (ref) => ref.watch(repositoryProvider).watchTimerPresets(),
+);
+
+final acousticCalibrationProfilesProvider =
+    StreamProvider<List<AcousticCalibrationProfileRecord>>(
+      (ref) => ref.watch(repositoryProvider).watchAcousticCalibrationProfiles(),
+    );
+
 final seriesDetailProvider = StreamProvider.family<SeriesDetail?, String>(
   (ref, seriesId) => ref.watch(repositoryProvider).watchSeriesDetail(seriesId),
 );

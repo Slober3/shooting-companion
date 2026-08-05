@@ -152,6 +152,85 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
   });
 
+  testWidgets('contextual potential score uses the sendable worker', (
+    tester,
+  ) async {
+    final fixture = await _createIssfFixture();
+    addTearDown(fixture.database.close);
+
+    await _pumpDatabaseScreen(
+      tester,
+      database: fixture.database,
+      home: SeriesAnalysisScreen(seriesId: fixture.firstSeriesId),
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('Potential score berekenen'),
+      320,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(find.text('Potential score berekenen'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Potential score berekenen'));
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('→'), findsOneWidget);
+    expect(find.textContaining('object is unsendable'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
+  testWidgets('group plot explains inclusion and exposes display controls', (
+    tester,
+  ) async {
+    final analysis = GroupAnalyzer.analyze(
+      seriesId: 'explained-group',
+      targetProfile: IssfTargetProfiles.precision25m50m,
+      distanceMeters: 25,
+      impacts: const [
+        ShotImpact(id: 'a', xMm: -5, yMm: 0),
+        ShotImpact(id: 'b', xMm: 0, yMm: 1, multiplicity: 2),
+        ShotImpact(id: 'c', xMm: 6, yMm: -1),
+        ShotImpact(id: 'far', xMm: 50, yMm: 10),
+        ShotImpact(id: 'miss', xMm: 0, yMm: 0, isMiss: true),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: GroupAnalysisPlot(analysis: analysis),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Weergave'), findsOneWidget);
+    expect(find.text('1σ-ellips'), findsOneWidget);
+    expect(find.text('Extreme spreiding'), findsOneWidget);
+    expect(find.textContaining('treffers erbuiten tellen mee'), findsOneWidget);
+    expect(find.textContaining('markerposities'), findsOneWidget);
+
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('group-data-summary')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('group-data-summary')));
+    await tester.pumpAndSettle();
+    expect(find.text('Gebruikte gegevens'), findsOneWidget);
+    expect(find.textContaining('niet automatisch als outlier'), findsOneWidget);
+    expect(find.text('Missers zonder positie'), findsOneWidget);
+    expect(find.text('1'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('multi-bull data basis explains local bull normalization', (
     tester,
   ) async {
@@ -212,6 +291,11 @@ void main() {
       ),
     );
 
+    await tester.scrollUntilVisible(
+      find.textContaining('Multi-bullnormalisatie'),
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.textContaining('Multi-bullnormalisatie'), findsOneWidget);
     expect(
       find.bySemanticsLabel(RegExp('Trefbeeld met 2 positionele schoten')),

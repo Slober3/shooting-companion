@@ -33,7 +33,7 @@ class MoreScreen extends StatelessWidget {
           _MoreTile(
             icon: Icons.fitness_center_outlined,
             title: 'Trainingstools',
-            subtitle: 'Drills, A/B-experimenten en viziercalculator',
+            subtitle: 'Shot timer, par, cadans, drills en viziercalculator',
             onTap: () => _open(context, const TrainingToolsScreen()),
           ),
           const Divider(indent: 72),

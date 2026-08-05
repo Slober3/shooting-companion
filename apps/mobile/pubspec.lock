@@ -872,6 +872,13 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  shooting_companion_shot_timer:
+    dependency: "direct main"
+    description:
+      path: "../../packages/shot_timer"
+      relative: true
+    source: path
+    version: "0.1.0"
   shooting_companion_target_profiles:
     dependency: "direct main"
     description:

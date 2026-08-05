@@ -39,6 +39,7 @@ void main() {
     ]);
 
     expect(csv, contains('geregistreerde_schoten'));
+    expect(csv, contains('timer_run_count'));
     expect(csv, isNot(contains('verwachte_schoten')));
     expect(
       csv,
@@ -121,6 +122,74 @@ void main() {
         caption: 'Opstelling é – stabiele steun',
       ),
     );
+    await repository.saveCompletedTimerActivity(
+      id: 'export-timer',
+      kind: StoredTrainingActivityKind.acousticLiveFire,
+      seriesId: quick.draftSeriesId,
+      configuration: const {'mode': 'acousticLiveFire'},
+      summary: const {
+        'countedShotCount': 1,
+        'firstShotTimeMicros': 1100000,
+        'totalTimeMicros': 1100000,
+      },
+      events: const [
+        NewShotTimerEvent(
+          id: 'export-timer-event',
+          elapsedMicroseconds: 1100000,
+          splitMicroseconds: 1100000,
+          source: StoredTimerEventSource.acoustic,
+        ),
+      ],
+      startedAtUtc: DateTime.utc(2026, 8, 3, 23),
+      localUtcOffsetMinutes: 120,
+      completedAtUtc: DateTime.utc(2026, 8, 3, 23, 0, 2),
+    );
+    await repository.saveCompletedTimerActivity(
+      id: 'export-external-summary',
+      kind: StoredTrainingActivityKind.externalManual,
+      seriesId: quick.draftSeriesId,
+      configuration: const {'mode': 'externalManual'},
+      summary: const {
+        'countedShotCount': null,
+        'firstShotTimeMicros': 1140000,
+        'lastShotTimeMicros': 4720000,
+        'totalTimeMicros': 4720000,
+        'externalTimingCompleteness': 'summaryOnly',
+        'shotCountKnown': false,
+        'userEdited': true,
+      },
+      events: const [],
+      startedAtUtc: DateTime.utc(2026, 8, 3, 23, 1),
+      localUtcOffsetMinutes: 120,
+      completedAtUtc: DateTime.utc(2026, 8, 3, 23, 1, 5),
+    );
+    final completedDrillId = await repository.createTrainingActivity(
+      id: 'completed-drill',
+      kind: StoredTrainingActivityKind.drill,
+      status: StoredTrainingActivityStatus.completed,
+      sessionId: quick.sessionId,
+      summary: const {'countedShotCount': 99, 'totalTimeMicros': 99000000},
+      startedAtUtc: DateTime.utc(2026, 8, 3, 22),
+      localUtcOffsetMinutes: 120,
+      completedAtUtc: DateTime.utc(2026, 8, 3, 22, 10),
+    );
+    await repository.linkTrainingActivityToSeries(
+      completedDrillId,
+      quick.draftSeriesId,
+    );
+    final draftTimerId = await repository.createTrainingActivity(
+      id: 'draft-timer',
+      kind: StoredTrainingActivityKind.par,
+      status: StoredTrainingActivityStatus.draft,
+      sessionId: quick.sessionId,
+      summary: const {'countedShotCount': 0, 'totalTimeMicros': 5000000},
+      startedAtUtc: DateTime.utc(2026, 8, 3, 22, 30),
+      localUtcOffsetMinutes: 120,
+    );
+    await repository.linkTrainingActivityToSeries(
+      draftTimerId,
+      quick.draftSeriesId,
+    );
     final service = ExportService(
       database,
       temporaryDirectory: () async => output,
@@ -128,11 +197,29 @@ void main() {
     );
 
     final csv = await (await service.createCsv()).readAsString();
+    final timerRuns = await (await service.createTimerRunsCsv()).readAsString();
+    final timerEvents = await (await service.createTimerEventsCsv())
+        .readAsString();
     final pdf = await service.createPdfReport();
 
     expect(csv, contains('ISSF 25 m Precision / 50 m Pistol'));
     expect(csv, contains('Unicode é – klaar'));
     expect(csv, contains('"1"'));
+    expect(csv, contains('timer_run_count'));
+    expect(csv.trim().split('\r\n').last, endsWith(',"2"'));
+    expect(timerRuns, contains('"export-timer"'));
+    expect(timerRuns, contains('"1.100"'));
+    final summaryOnlyRun = timerRuns
+        .split('\r\n')
+        .singleWhere((line) => line.contains('"export-external-summary"'));
+    final summaryOnlyCells = summaryOnlyRun.split(',');
+    expect(summaryOnlyCells[7], '""');
+    expect(summaryOnlyCells[8], '"0"');
+    expect(summaryOnlyCells[9], '"1.140"');
+    expect(summaryOnlyCells[10], '"4.720"');
+    expect(timerEvents, contains('"export-timer-event"'));
+    expect(timerEvents, isNot(contains('"export-external-summary"')));
+    expect(timerEvents, contains('"1.100"'));
     expect(await pdf.length(), greaterThan(photoBytes.length));
     expect(await photoFile.readAsBytes(), photoBytes);
   });
