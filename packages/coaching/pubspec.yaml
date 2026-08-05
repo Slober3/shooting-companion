@@ -1,0 +1,11 @@
+name: shooting_companion_coaching
+description: Explainable, deterministic and platform-independent coaching rules.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.26.0

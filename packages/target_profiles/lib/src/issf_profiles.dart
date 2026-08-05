@@ -31,6 +31,8 @@ abstract final class IssfTargetProfiles {
     lineThicknessMm: 0.5,
     lineBreakingRule: LineBreakingRule.bulletEdgeTouchesHigherRing,
     validationStatus: ValidationStatus.official,
+    defaultDistanceMeters: 25,
+    supportedDistancesMeters: const [25, 50],
   );
 
   static final rapidFire25m = TargetProfile(
@@ -55,6 +57,8 @@ abstract final class IssfTargetProfiles {
     lineThicknessMm: 1,
     lineBreakingRule: LineBreakingRule.bulletEdgeTouchesHigherRing,
     validationStatus: ValidationStatus.official,
+    defaultDistanceMeters: 25,
+    supportedDistancesMeters: const [25],
   );
 
   static final all = [precision25m50m, rapidFire25m];

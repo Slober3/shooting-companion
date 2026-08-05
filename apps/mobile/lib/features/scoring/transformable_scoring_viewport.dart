@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/gestures.dart' show kTouchSlop;
+import 'package:flutter/gestures.dart' show kLongPressTimeout, kTouchSlop;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
 enum CanvasAccessMode { editable, readOnly }
 
@@ -36,6 +38,7 @@ class ScoringViewportController extends ChangeNotifier {
   Rect _contentRect = Rect.zero;
   Map<String, Offset> _impactPositions = const {};
   VoidCallback? _cancelInteraction;
+  bool _suppressTransformNotification = false;
 
   double get scale => transformationController.value.getMaxScaleOnAxis();
   Size get viewportSize => _viewportSize;
@@ -47,12 +50,49 @@ class ScoringViewportController extends ChangeNotifier {
     Iterable<ScoringViewportMarker> markers = const [],
     VoidCallback? cancelInteraction,
   }) {
+    final geometryChanged =
+        _viewportSize != Size.zero &&
+        (_viewportSize != viewportSize || _contentRect != contentRect);
+    final preservedScale = scale;
+    final preservedCenter = geometryChanged
+        ? _viewportCenterNormalizedClamped()
+        : null;
     _viewportSize = viewportSize;
     _contentRect = contentRect;
     _impactPositions = {
       for (final marker in markers) marker.id: marker.normalizedPosition,
     };
     _cancelInteraction = cancelInteraction;
+    if (geometryChanged) {
+      if (preservedScale <= 1.000001 || preservedCenter == null) {
+        _setTransformSilently(Matrix4.identity());
+      } else {
+        final sceneFocus = Offset(
+          _contentRect.left + preservedCenter.dx * _contentRect.width,
+          _contentRect.top + preservedCenter.dy * _contentRect.height,
+        );
+        _setTransformSilently(
+          _matrixFor(
+            scale: preservedScale,
+            sceneFocus: sceneFocus,
+            viewportFocus: _viewportSize.center(Offset.zero),
+          ),
+        );
+      }
+    }
+  }
+
+  Offset? _viewportCenterNormalizedClamped() {
+    if (_viewportSize.isEmpty || _contentRect.isEmpty) return null;
+    final scene = viewportToScene(_viewportSize.center(Offset.zero));
+    return Offset(
+      ((scene.dx - _contentRect.left) / _contentRect.width)
+          .clamp(0.0, 1.0)
+          .toDouble(),
+      ((scene.dy - _contentRect.top) / _contentRect.height)
+          .clamp(0.0, 1.0)
+          .toDouble(),
+    );
   }
 
   /// Stops an in-progress marker gesture before lifecycle or persistence work.
@@ -167,15 +207,32 @@ class ScoringViewportController extends ChangeNotifier {
     required Offset sceneFocus,
     required Offset viewportFocus,
   }) {
-    final matrix = Matrix4.identity()
-      ..setEntry(0, 0, scale)
-      ..setEntry(1, 1, scale)
-      ..setEntry(0, 3, viewportFocus.dx - sceneFocus.dx * scale)
-      ..setEntry(1, 3, viewportFocus.dy - sceneFocus.dy * scale);
-    transformationController.value = matrix;
+    transformationController.value = _matrixFor(
+      scale: scale,
+      sceneFocus: sceneFocus,
+      viewportFocus: viewportFocus,
+    );
   }
 
-  void _notifyTransformChanged() => notifyListeners();
+  Matrix4 _matrixFor({
+    required double scale,
+    required Offset sceneFocus,
+    required Offset viewportFocus,
+  }) => Matrix4.identity()
+    ..setEntry(0, 0, scale)
+    ..setEntry(1, 1, scale)
+    ..setEntry(0, 3, viewportFocus.dx - sceneFocus.dx * scale)
+    ..setEntry(1, 3, viewportFocus.dy - sceneFocus.dy * scale);
+
+  void _setTransformSilently(Matrix4 matrix) {
+    _suppressTransformNotification = true;
+    transformationController.value = matrix;
+    _suppressTransformNotification = false;
+  }
+
+  void _notifyTransformChanged() {
+    if (!_suppressTransformNotification) notifyListeners();
+  }
 
   @override
   void dispose() {
@@ -198,6 +255,7 @@ class TransformableScoringViewport extends StatefulWidget {
     this.controller,
     this.onBackgroundTap,
     this.onMarkerSelected,
+    this.onMarkerLongPressed,
     this.onMarkerDragStart,
     this.onMarkerMoved,
     this.onMarkerDragEnd,
@@ -216,6 +274,7 @@ class TransformableScoringViewport extends StatefulWidget {
   final ScoringViewportController? controller;
   final ValueChanged<Offset>? onBackgroundTap;
   final ValueChanged<String>? onMarkerSelected;
+  final ValueChanged<String>? onMarkerLongPressed;
   final ValueChanged<String>? onMarkerDragStart;
   final void Function(String id, Offset normalizedPosition)? onMarkerMoved;
   final ValueChanged<String>? onMarkerDragEnd;
@@ -244,6 +303,11 @@ class _TransformableScoringViewportState
   Offset? _scenePanDownPosition;
   Offset? _scenePanLastPosition;
   bool _scenePanStarted = false;
+  Timer? _markerLongPressTimer;
+  int? _markerLongPressPointer;
+  Offset? _markerLongPressDownPosition;
+  ScoringViewportMarker? _markerLongPressCandidate;
+  bool _markerLongPressRecognized = false;
 
   ScoringViewportController get _controller =>
       widget.controller ?? (_ownedController ??= ScoringViewportController());
@@ -258,10 +322,15 @@ class _TransformableScoringViewportState
       _ownedController?.dispose();
       _ownedController = null;
     }
+    if (oldWidget.tool != widget.tool ||
+        oldWidget.accessMode != widget.accessMode) {
+      _cancelMarkerLongPress();
+    }
   }
 
   @override
   void dispose() {
+    _markerLongPressTimer?.cancel();
     widget.controller?.detachInteraction(_cancelPointerInteraction);
     _ownedController?.dispose();
     super.dispose();
@@ -370,6 +439,9 @@ class _TransformableScoringViewportState
     final interactive =
         widget.accessMode == CanvasAccessMode.editable &&
         widget.tool == ScoringTool.edit;
+    final longPressInteractive =
+        widget.accessMode == CanvasAccessMode.editable &&
+        widget.onMarkerLongPressed != null;
     return Positioned(
       key: ValueKey('scoring-marker-${marker.id}'),
       left: position.dx - 24,
@@ -380,9 +452,12 @@ class _TransformableScoringViewportState
         scale: 1 / _controller.scale,
         child: Semantics(
           label: marker.semanticsLabel,
-          button: interactive,
+          button: interactive || longPressInteractive,
           onTap: interactive
               ? () => widget.onMarkerSelected?.call(marker.id)
+              : null,
+          onLongPress: longPressInteractive
+              ? () => _recognizeMarkerLongPress(marker)
               : null,
           child: IgnorePointer(
             child: _CircularMarkerHitRegion(child: Center(child: marker.child)),
@@ -441,10 +516,12 @@ class _TransformableScoringViewportState
   void _cancelPointerInteraction() {
     final hadInteraction =
         _markerDragPointer != null ||
+        _markerLongPressPointer != null ||
         _scenePanPointer != null ||
         _activePointers.isNotEmpty ||
         _multiTouchActive;
     _cancelActiveMarkerDrag();
+    _cancelMarkerLongPress();
     _clearScenePan();
     _activePointers.clear();
     _multiTouchActive = false;
@@ -457,12 +534,19 @@ class _TransformableScoringViewportState
     if (_activePointers.length > 1) {
       _multiTouchActive = true;
       _cancelActiveMarkerDrag();
+      _cancelMarkerLongPress();
       _clearScenePan();
       if (mounted) setState(() {});
       return;
     }
-    if (widget.accessMode != CanvasAccessMode.editable ||
-        widget.tool != ScoringTool.edit) {
+    if (widget.accessMode != CanvasAccessMode.editable) {
+      return;
+    }
+    if (widget.tool == ScoringTool.place) {
+      final marker = _nearestMarkerAtViewport(event.localPosition);
+      if (marker != null && widget.onMarkerLongPressed != null) {
+        _startMarkerLongPress(event, marker);
+      }
       return;
     }
     final marker = _nearestMarkerAtViewport(event.localPosition);
@@ -484,6 +568,13 @@ class _TransformableScoringViewportState
 
   void _handlePointerMove(PointerMoveEvent event) {
     if (_multiTouchActive) return;
+    if (event.pointer == _markerLongPressPointer) {
+      final downPosition = _markerLongPressDownPosition;
+      if (downPosition != null &&
+          (event.localPosition - downPosition).distance >= kTouchSlop) {
+        _cancelMarkerLongPress();
+      }
+    }
     if (event.pointer == _scenePanPointer) {
       final downPosition = _scenePanDownPosition;
       final lastPosition = _scenePanLastPosition;
@@ -521,7 +612,12 @@ class _TransformableScoringViewportState
 
   void _handlePointerEnded(PointerEvent event) {
     final wasMarkerPointer = event.pointer == _markerDragPointer;
+    final wasLongPressPointer = event.pointer == _markerLongPressPointer;
     _activePointers.remove(event.pointer);
+    if (wasLongPressPointer) {
+      final preserveSuppression = _markerLongPressRecognized;
+      _cancelMarkerLongPress(preserveSuppression: preserveSuppression);
+    }
     if (wasMarkerPointer && !_multiTouchActive) {
       if (_markerDragStarted) {
         _finishMarkerDrag();
@@ -540,6 +636,7 @@ class _TransformableScoringViewportState
 
   void _handlePointerCanceled(PointerEvent event) {
     if (event.pointer == _markerDragPointer) _cancelActiveMarkerDrag();
+    if (event.pointer == _markerLongPressPointer) _cancelMarkerLongPress();
     if (event.pointer == _scenePanPointer) _clearScenePan();
     _handlePointerEnded(event);
   }
@@ -549,6 +646,42 @@ class _TransformableScoringViewportState
     _scenePanDownPosition = null;
     _scenePanLastPosition = null;
     _scenePanStarted = false;
+  }
+
+  void _startMarkerLongPress(
+    PointerDownEvent event,
+    ScoringViewportMarker marker,
+  ) {
+    _cancelMarkerLongPress();
+    _markerLongPressPointer = event.pointer;
+    _markerLongPressDownPosition = event.localPosition;
+    _markerLongPressCandidate = marker;
+    _markerLongPressTimer = Timer(kLongPressTimeout, () {
+      if (!mounted ||
+          _multiTouchActive ||
+          !_activePointers.contains(event.pointer) ||
+          _markerLongPressCandidate?.id != marker.id) {
+        return;
+      }
+      _markerLongPressRecognized = true;
+      _suppressNextBackgroundTap = true;
+      _recognizeMarkerLongPress(marker);
+    });
+  }
+
+  void _recognizeMarkerLongPress(ScoringViewportMarker marker) {
+    HapticFeedback.selectionClick();
+    widget.onMarkerLongPressed?.call(marker.id);
+  }
+
+  void _cancelMarkerLongPress({bool preserveSuppression = false}) {
+    _markerLongPressTimer?.cancel();
+    _markerLongPressTimer = null;
+    _markerLongPressPointer = null;
+    _markerLongPressDownPosition = null;
+    _markerLongPressCandidate = null;
+    _markerLongPressRecognized = false;
+    if (!preserveSuppression) _suppressNextBackgroundTap = false;
   }
 
   void _handleBackgroundTap(Offset localPosition) {

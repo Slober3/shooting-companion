@@ -104,6 +104,123 @@ void main() {
     },
   );
 
+  testWidgets(
+    'long press in place mode selects newest overlap without adding or moving',
+    (tester) async {
+      var tool = ScoringTool.place;
+      String? selected;
+      var impacts = const [
+        ShotImpact(id: 'older', xMm: 0, yMm: 0),
+        ShotImpact(id: 'newer', xMm: 0, yMm: 0),
+      ];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox.square(
+              dimension: 400,
+              child: StatefulBuilder(
+                builder: (context, setState) => TargetCanvas(
+                  target: IssfTargetProfiles.precision25m50m,
+                  impacts: impacts,
+                  projectileDiameterMm: 5.6,
+                  tool: tool,
+                  onChanged: (value) => setState(() => impacts = value),
+                  onImpactSelected: (id) => selected = id,
+                  onImpactLongPressed: (id) => setState(() {
+                    selected = id;
+                    tool = ScoringTool.edit;
+                  }),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.longPressAt(const Offset(200, 200));
+      await tester.pump();
+
+      expect(selected, 'newer');
+      expect(tool, ScoringTool.edit);
+      expect(impacts, hasLength(2));
+      expect(impacts[0].xMm, 0);
+      expect(impacts[1].xMm, 0);
+    },
+  );
+
+  testWidgets('movement cancels marker long press in place mode', (
+    tester,
+  ) async {
+    String? selected;
+    var impacts = const [ShotImpact(id: 'center', xMm: 0, yMm: 0)];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox.square(
+            dimension: 400,
+            child: StatefulBuilder(
+              builder: (context, setState) => TargetCanvas(
+                target: IssfTargetProfiles.precision25m50m,
+                impacts: impacts,
+                projectileDiameterMm: 5.6,
+                tool: ScoringTool.place,
+                onChanged: (value) => setState(() => impacts = value),
+                onImpactLongPressed: (id) => selected = id,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final gesture = await tester.startGesture(const Offset(200, 200));
+    await gesture.moveBy(const Offset(40, 0));
+    await tester.pump(const Duration(milliseconds: 700));
+    await gesture.up();
+    await tester.pump();
+
+    expect(selected, isNull);
+    expect(impacts, hasLength(1));
+  });
+
+  testWidgets('pinch cancels marker long press in place mode', (tester) async {
+    String? selected;
+    final controller = ScoringViewportController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox.square(
+            dimension: 400,
+            child: TargetCanvas(
+              target: IssfTargetProfiles.precision25m50m,
+              impacts: const [ShotImpact(id: 'center', xMm: 0, yMm: 0)],
+              projectileDiameterMm: 5.6,
+              tool: ScoringTool.place,
+              viewportController: controller,
+              onChanged: (_) {},
+              onImpactLongPressed: (id) => selected = id,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final first = await tester.createGesture(pointer: 1);
+    final second = await tester.createGesture(pointer: 2);
+    await first.down(const Offset(200, 200));
+    await second.down(const Offset(270, 200));
+    await first.moveTo(const Offset(165, 200));
+    await second.moveTo(const Offset(305, 200));
+    await tester.pump(const Duration(milliseconds: 700));
+    await first.up();
+    await second.up();
+    await tester.pump();
+
+    expect(selected, isNull);
+    expect(controller.scale, greaterThan(1));
+  });
+
   testWidgets('zoomed viewport maps the same scene point identically', (
     tester,
   ) async {
@@ -254,6 +371,59 @@ void main() {
     expect(bottomRight, isNotNull);
     expect(bottomRight!.dx, 1);
     expect(bottomRight.dy, 1);
+  });
+
+  testWidgets('viewport resize preserves zoom and normalized center', (
+    tester,
+  ) async {
+    final controller = ScoringViewportController();
+    addTearDown(controller.dispose);
+    var viewportSize = const Size(400, 400);
+    late StateSetter updateHost;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              updateHost = setState;
+              return Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox.fromSize(
+                  size: viewportSize,
+                  child: TransformableScoringViewport(
+                    aspectRatio: 1,
+                    markers: const [],
+                    accessMode: CanvasAccessMode.readOnly,
+                    tool: ScoringTool.place,
+                    controller: controller,
+                    contentBuilder: (_, _, _) =>
+                        const ColoredBox(color: Colors.white),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    controller.focusNormalized(const Offset(.67, .38), minimumScale: 3);
+    await tester.pump();
+    final centerBefore = controller.viewportCenterNormalized!;
+    final scaleBefore = controller.scale;
+
+    updateHost(() => viewportSize = const Size(360, 300));
+    await tester.pump();
+
+    expect(controller.scale, closeTo(scaleBefore, .001));
+    expect(
+      controller.viewportCenterNormalized!.dx,
+      closeTo(centerBefore.dx, .001),
+    );
+    expect(
+      controller.viewportCenterNormalized!.dy,
+      closeTo(centerBefore.dy, .001),
+    );
   });
 
   testWidgets('drag keeps its marker identity after selection reorders it', (

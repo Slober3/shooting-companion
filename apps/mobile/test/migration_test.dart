@@ -7,6 +7,9 @@ import 'package:shooting_companion_target_profiles/target_profiles.dart';
 
 import 'generated/schema/schema.dart';
 import 'generated/schema/schema_v1.dart' as v1;
+import 'generated/schema/schema_v2.dart' as v2;
+import 'generated/schema/schema_v3.dart' as v3;
+import 'generated/schema/schema_v4.dart' as v4;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -16,17 +19,17 @@ void main() {
     verifier = SchemaVerifier(GeneratedHelper());
   });
 
-  test('empty v1 schema migrates exactly to v2', () async {
+  test('empty v1 schema migrates exactly to v5', () async {
     final schema = await verifier.schemaAt(1);
     final database = AppDatabase.forTesting(schema.newConnection());
 
-    await verifier.migrateAndValidate(database, 2);
+    await verifier.migrateAndValidate(database, 5);
 
     await database.close();
     schema.close();
   });
 
-  test('v1 sessions, impacts and photos survive the v2 migration', () async {
+  test('v1 sessions, impacts and photos survive the v5 migration', () async {
     final schema = await verifier.schemaAt(1);
     final old = v1.DatabaseAtV1(schema.newConnection());
     final timestamp =
@@ -134,7 +137,7 @@ void main() {
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 2);
+    await verifier.migrateAndValidate(database, 5);
 
     final session = await database
         .select(database.trainingSessions)
@@ -161,6 +164,14 @@ void main() {
     expect(series.cartridgeId, CartridgePresets.twentyTwoLr.id);
     expect(impacts, hasLength(2));
     expect(impacts.every((impact) => impact.sourceImageId == null), isTrue);
+    expect(
+      impacts.every((impact) => impact.rawScoreValue == impact.scoreValue),
+      isTrue,
+    );
+    expect(
+      impacts.every((impact) => impact.scoreDisposition == 'counted'),
+      isTrue,
+    );
     expect(
       images.singleWhere((image) => image.id == 'after-image').role,
       'primaryScoringPhoto',
@@ -227,7 +238,7 @@ void main() {
       await old.close();
 
       final database = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(database, 2);
+      await verifier.migrateAndValidate(database, 5);
 
       final migrated = await database
           .select(database.shootingSeries)
@@ -240,4 +251,158 @@ void main() {
       schema.close();
     },
   );
+
+  test('v2 library data migrates to active built-ins in v4', () async {
+    final schema = await verifier.schemaAt(2);
+    final old = v2.DatabaseAtV2(schema.newConnection());
+
+    await old
+        .into(old.cartridges)
+        .insert(
+          v2.CartridgesCompanion.insert(
+            id: 'legacy-cartridge',
+            name: 'Legacy kaliber',
+            projectileDiameterMm: 5.6,
+          ),
+        );
+    await old
+        .into(old.ammoLots)
+        .insert(
+          v2.AmmoLotsCompanion.insert(
+            id: 'legacy-ammo',
+            cartridgeId: 'legacy-cartridge',
+            displayName: 'Legacy munitie',
+          ),
+        );
+    await old
+        .into(old.ranges)
+        .insert(
+          v2.RangesCompanion.insert(id: 'legacy-range', name: 'Legacy stand'),
+        );
+    await old.close();
+
+    final database = AppDatabase.forTesting(schema.newConnection());
+    await verifier.migrateAndValidate(database, 5);
+
+    final cartridge = await database.select(database.cartridges).getSingle();
+    final ammo = await database.select(database.ammoLots).getSingle();
+    final range = await database.select(database.ranges).getSingle();
+    expect(cartridge.builtIn, isTrue);
+    expect(cartridge.archived, isFalse);
+    expect(ammo.archived, isFalse);
+    expect(range.archived, isFalse);
+    expect(
+      await database.customSelect('PRAGMA foreign_key_check').get(),
+      isEmpty,
+    );
+
+    await database.close();
+    schema.close();
+  });
+
+  test('v3 score records migrate to v5 without recalculation', () async {
+    final schema = await verifier.schemaAt(3);
+    final old = v3.DatabaseAtV3(schema.newConnection());
+    final timestamp =
+        DateTime.utc(2026, 8, 4, 16).millisecondsSinceEpoch ~/ 1000;
+    final target = IssfTargetProfiles.precision25m50m;
+
+    await old
+        .into(old.trainingSessions)
+        .insert(
+          v3.TrainingSessionsCompanion.insert(
+            id: 'v3-session',
+            status: 'completed',
+            startedAtUtc: timestamp,
+            localUtcOffsetMinutes: 120,
+            updatedAtUtc: timestamp,
+          ),
+        );
+    await old
+        .into(old.shootingSeries)
+        .insert(
+          v3.ShootingSeriesCompanion.insert(
+            id: 'v3-series',
+            sessionId: 'v3-session',
+            sequenceNumber: 1,
+            status: 'confirmed',
+            targetProfileVersionedId: target.versionedId,
+            targetProfileJson: target.toJsonString(),
+            distanceMeters: 25,
+            projectileDiameterMm: 5.6,
+            shotCount: const Value(1),
+            maximumPossibleScore: const Value(10),
+            totalScore: const Value(7),
+            createdAtUtc: timestamp,
+            updatedAtUtc: timestamp,
+          ),
+        );
+    await old
+        .into(old.shotImpacts)
+        .insert(
+          v3.ShotImpactsCompanion.insert(
+            id: 'v3-impact',
+            seriesId: 'v3-series',
+            xMm: 40,
+            yMm: 0,
+            scoreValue: 7,
+          ),
+        );
+    await old.close();
+
+    final database = AppDatabase.forTesting(schema.newConnection());
+    await verifier.migrateAndValidate(database, 5);
+    final series = await database.select(database.shootingSeries).getSingle();
+    final impact = await database.select(database.shotImpacts).getSingle();
+
+    expect(series.totalScore, 7);
+    expect(series.maximumPossibleScore, 10);
+    expect(series.scorePenalty, 0);
+    expect(series.scoredBullCount, null);
+    expect(impact.scoreValue, 7);
+    expect(impact.rawScoreValue, 7);
+    expect(impact.targetBullId, null);
+    expect(impact.scoreDisposition, 'counted');
+    expect(
+      await database.customSelect('PRAGMA foreign_key_check').get(),
+      isEmpty,
+    );
+
+    await database.close();
+    schema.close();
+  });
+
+  test('v4 percentage goals migrate to typed v5 goals', () async {
+    final schema = await verifier.schemaAt(4);
+    final old = v4.DatabaseAtV4(schema.newConnection());
+
+    // Schema-v4 verification code intentionally exposes table metadata only,
+    // so seed the legacy row through SQL instead of a generated companion.
+    await old.customStatement(
+      'INSERT INTO goals '
+      '(id, target_profile_versioned_id, distance_meters, '
+      'target_percentage, active) VALUES (?, ?, ?, ?, ?)',
+      ['legacy-goal', 'target@1', 25.0, 82.5, 1],
+    );
+    await old.close();
+
+    final database = AppDatabase.forTesting(schema.newConnection());
+    await verifier.migrateAndValidate(database, 5);
+
+    final goal = await database.select(database.goals).getSingle();
+    expect(goal.id, 'legacy-goal');
+    expect(goal.metric, 'scorePercentage');
+    expect(goal.targetValue, 82.5);
+    expect(goal.comparison, 'atLeast');
+    expect(goal.active, isTrue);
+    expect(await database.select(database.seriesReflections).get(), isEmpty);
+    expect(await database.select(database.coachFeedback).get(), isEmpty);
+    expect(
+      await database.customSelect('PRAGMA foreign_key_check').get(),
+      isEmpty,
+    );
+
+    await database.close();
+    schema.close();
+  });
 }

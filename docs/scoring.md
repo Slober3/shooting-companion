@@ -20,5 +20,14 @@ No expected-shot field participates in scoring or validation. Automatically
 detected impacts do not exist: every impact is placed, moved, multiplied or
 marked as a miss by the user.
 
+For a multi-bull BR50 profile, each record bull contributes exactly one value.
+When multiple shots fall on the same bull, the lowest ring value counts; at an
+equal value a non-X ten is lower than an X. Empty record bulls contribute zero.
+The maximum remains 250 and every record shot beyond 25 subtracts one point,
+without allowing a negative total. Multiplicity is processed as repeated shots
+on that bull. Sighter bulls and positions between valid record bounds are not
+accepted as record impacts.
+
 The implementation is in `packages/scoring` and includes boundary, monotonicity,
-miss, X-count, multiplicity and spread tests.
+miss, X-count, multiplicity, duplicate-bull, fixed-maximum, penalty and spread
+tests.

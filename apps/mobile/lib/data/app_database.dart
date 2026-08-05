@@ -26,6 +26,8 @@ class Cartridges extends Table {
   TextColumn get name => text()();
   RealColumn get projectileDiameterMm => real()();
   TextColumn get notes => text().nullable()();
+  BoolColumn get builtIn => boolean().withDefault(const Constant(false))();
+  BoolColumn get archived => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -42,6 +44,7 @@ class AmmoLots extends Table {
   RealColumn get bulletWeightGrains => real().nullable()();
   TextColumn get projectileType => text().nullable()();
   TextColumn get notes => text().nullable()();
+  BoolColumn get archived => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -56,6 +59,7 @@ class Ranges extends Table {
   TextColumn get availableDistancesJson =>
       text().withDefault(const Constant('[]'))();
   TextColumn get notes => text().nullable()();
+  BoolColumn get archived => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -100,6 +104,8 @@ class ShootingSeries extends Table {
   IntColumn get totalScore => integer().withDefault(const Constant(0))();
   IntColumn get innerTenCount => integer().withDefault(const Constant(0))();
   IntColumn get missCount => integer().withDefault(const Constant(0))();
+  IntColumn get scorePenalty => integer().withDefault(const Constant(0))();
+  IntColumn get scoredBullCount => integer().nullable()();
   BoolColumn get hasBoundaryWarnings =>
       boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAtUtc => dateTime()();
@@ -152,7 +158,11 @@ class ShotImpacts extends Table {
   BoolColumn get isMiss => boolean().withDefault(const Constant(false))();
   BoolColumn get isPositionUncertain =>
       boolean().withDefault(const Constant(false))();
+  TextColumn get targetBullId => text().nullable()();
   IntColumn get scoreValue => integer()();
+  IntColumn get rawScoreValue => integer().withDefault(const Constant(0))();
+  TextColumn get scoreDisposition =>
+      text().withDefault(const Constant('counted'))();
   BoolColumn get isInnerTen => boolean().withDefault(const Constant(false))();
   BoolColumn get isBoundaryUncertain =>
       boolean().withDefault(const Constant(false))();
@@ -181,11 +191,40 @@ class Goals extends Table {
   RealColumn get distanceMeters => real()();
   TextColumn get firearmId => text().nullable().references(Firearms, #id)();
   TextColumn get ammoLotId => text().nullable().references(AmmoLots, #id)();
-  RealColumn get targetPercentage => real()();
+  TextColumn get metric => text()();
+  RealColumn get targetValue => real()();
+  TextColumn get comparison => text()();
   BoolColumn get active => boolean().withDefault(const Constant(true))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
+}
+
+@DataClassName('SeriesReflectionRecord')
+class SeriesReflections extends Table {
+  TextColumn get seriesId =>
+      text().references(ShootingSeries, #id, onDelete: KeyAction.cascade)();
+  TextColumn get perceivedQuality => text()();
+  TextColumn get contextTagsJson => text().withDefault(const Constant('[]'))();
+  TextColumn get note => text().nullable()();
+  DateTimeColumn get createdAtUtc => dateTime()();
+  DateTimeColumn get updatedAtUtc => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {seriesId};
+}
+
+@DataClassName('CoachFeedbackRecord')
+class CoachFeedback extends Table {
+  TextColumn get insightFingerprint => text()();
+  TextColumn get ruleId => text()();
+  IntColumn get ruleVersion => integer()();
+  TextColumn get response => text()();
+  DateTimeColumn get snoozedUntilUtc => dateTime().nullable()();
+  DateTimeColumn get updatedAtUtc => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {insightFingerprint};
 }
 
 @DataClassName('PreferenceRecord')
@@ -206,6 +245,7 @@ class TargetProfiles extends Table {
   TextColumn get validationStatus => text()();
   TextColumn get profileJson => text()();
   BoolColumn get builtIn => boolean().withDefault(const Constant(false))();
+  BoolColumn get archived => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAtUtc => dateTime()();
 
   @override
@@ -224,6 +264,8 @@ class TargetProfiles extends Table {
     ShotImpacts,
     PhotoAlignments,
     Goals,
+    SeriesReflections,
+    CoachFeedback,
     Preferences,
     TargetProfiles,
   ],
@@ -234,7 +276,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -245,6 +287,17 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (migrator, from, to) async {
       if (from == 1 && to >= 2) {
         await _migrateFromV1(migrator);
+      }
+      if (from <= 2 && to >= 3) {
+        await _migrateToV3(migrator);
+      }
+      // The v1 rebuild creates the current series and impact tables directly,
+      // so their v4 columns already exist after _migrateFromV1.
+      if (from >= 2 && from <= 3 && to >= 4) {
+        await _migrateToV4(migrator);
+      }
+      if (from <= 4 && to >= 5) {
+        await _migrateToV5(migrator);
       }
     },
     beforeOpen: (details) async {
@@ -287,6 +340,94 @@ class AppDatabase extends _$AppDatabase {
       CREATE INDEX IF NOT EXISTS images_by_series
       ON image_assets(series_id)
     ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS active_firearms_by_name
+      ON firearms(archived, name)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS active_cartridges_by_name
+      ON cartridges(archived, name)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS active_ammo_by_name
+      ON ammo_lots(archived, display_name)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS active_ranges_by_name
+      ON ranges(archived, name)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS active_targets_by_name
+      ON target_profiles(archived, display_name)
+    ''');
+    await customStatement('''
+      CREATE UNIQUE INDEX IF NOT EXISTS target_profile_versions
+      ON target_profiles(profile_id, profile_version)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS active_goals_by_cohort
+      ON goals(active, target_profile_versioned_id, distance_meters)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS reflections_by_updated
+      ON series_reflections(updated_at_utc DESC)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS coach_feedback_by_rule
+      ON coach_feedback(rule_id, rule_version)
+    ''');
+  }
+
+  Future<void> _migrateToV3(Migrator migrator) async {
+    await migrator.addColumn(cartridges, cartridges.builtIn);
+    await migrator.addColumn(cartridges, cartridges.archived);
+    await migrator.addColumn(ammoLots, ammoLots.archived);
+    await migrator.addColumn(ranges, ranges.archived);
+    await migrator.addColumn(targetProfiles, targetProfiles.archived);
+    await customStatement('UPDATE cartridges SET built_in = 1');
+  }
+
+  Future<void> _migrateToV4(Migrator migrator) async {
+    await migrator.addColumn(shootingSeries, shootingSeries.scorePenalty);
+    await migrator.addColumn(shootingSeries, shootingSeries.scoredBullCount);
+    await migrator.addColumn(shotImpacts, shotImpacts.targetBullId);
+    await migrator.addColumn(shotImpacts, shotImpacts.rawScoreValue);
+    await migrator.addColumn(shotImpacts, shotImpacts.scoreDisposition);
+    await customStatement(
+      'UPDATE shot_impacts SET raw_score_value = score_value',
+    );
+  }
+
+  Future<void> _migrateToV5(Migrator migrator) async {
+    await customStatement('ALTER TABLE goals RENAME TO goals_v4');
+    await migrator.createTable(goals);
+    await customStatement('''
+      INSERT INTO goals (
+        id,
+        target_profile_versioned_id,
+        distance_meters,
+        firearm_id,
+        ammo_lot_id,
+        metric,
+        target_value,
+        comparison,
+        active
+      )
+      SELECT
+        id,
+        target_profile_versioned_id,
+        distance_meters,
+        firearm_id,
+        ammo_lot_id,
+        'scorePercentage',
+        target_percentage,
+        'atLeast',
+        active
+      FROM goals_v4
+    ''');
+    await customStatement('DROP TABLE goals_v4');
+    await migrator.createTable(seriesReflections);
+    await migrator.createTable(coachFeedback);
   }
 
   Future<void> _migrateFromV1(Migrator migrator) async {
@@ -474,6 +615,7 @@ class AppDatabase extends _$AppDatabase {
             (data['is_position_uncertain']! as int) != 0,
           ),
           scoreValue: data['score_value']! as int,
+          rawScoreValue: Value(data['score_value']! as int),
           isInnerTen: Value((data['is_inner_ten']! as int) != 0),
           isBoundaryUncertain: Value(
             (data['is_boundary_uncertain']! as int) != 0,
@@ -488,7 +630,6 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('DROP TABLE image_assets_v1');
     await customStatement('DROP TABLE shooting_series_v1');
     await customStatement('DROP TABLE training_sessions_v1');
-    await _createInvariantIndexes();
   }
 
   static DateTime _readRequiredDateTime(Object? value) => _readDateTime(value)!;
@@ -548,24 +689,56 @@ class AppDatabase extends _$AppDatabase {
             ..orderBy([(row) => OrderingTerm.desc(row.createdAtUtc)]))
           .watch();
 
+  Stream<ImageAssetRecord?> watchImage(String imageId) => (select(
+    imageAssets,
+  )..where((row) => row.id.equals(imageId))).watchSingleOrNull();
+
   Stream<List<FirearmRecord>> watchFirearms() =>
       (select(firearms)
             ..where((row) => row.archived.equals(false))
             ..orderBy([(row) => OrderingTerm.asc(row.name)]))
           .watch();
 
-  Stream<List<CartridgeRecord>> watchCartridges() => (select(
+  Stream<List<FirearmRecord>> watchAllFirearms() => (select(
+    firearms,
+  )..orderBy([(row) => OrderingTerm.asc(row.name)])).watch();
+
+  Stream<List<CartridgeRecord>> watchCartridges() =>
+      (select(cartridges)
+            ..where((row) => row.archived.equals(false))
+            ..orderBy([(row) => OrderingTerm.asc(row.name)]))
+          .watch();
+
+  Stream<List<CartridgeRecord>> watchAllCartridges() => (select(
     cartridges,
   )..orderBy([(row) => OrderingTerm.asc(row.name)])).watch();
 
-  Stream<List<AmmoLotRecord>> watchAmmoLots() => (select(
+  Stream<List<AmmoLotRecord>> watchAmmoLots() =>
+      (select(ammoLots)
+            ..where((row) => row.archived.equals(false))
+            ..orderBy([(row) => OrderingTerm.asc(row.displayName)]))
+          .watch();
+
+  Stream<List<AmmoLotRecord>> watchAllAmmoLots() => (select(
     ammoLots,
   )..orderBy([(row) => OrderingTerm.asc(row.displayName)])).watch();
 
   Stream<List<RangeRecord>> watchRanges() =>
+      (select(ranges)
+            ..where((row) => row.archived.equals(false))
+            ..orderBy([(row) => OrderingTerm.asc(row.name)]))
+          .watch();
+
+  Stream<List<RangeRecord>> watchAllRanges() =>
       (select(ranges)..orderBy([(row) => OrderingTerm.asc(row.name)])).watch();
 
-  Stream<List<TargetProfileRecord>> watchTargetProfiles() => (select(
+  Stream<List<TargetProfileRecord>> watchTargetProfiles() =>
+      (select(targetProfiles)
+            ..where((row) => row.archived.equals(false))
+            ..orderBy([(row) => OrderingTerm.asc(row.displayName)]))
+          .watch();
+
+  Stream<List<TargetProfileRecord>> watchAllTargetProfiles() => (select(
     targetProfiles,
   )..orderBy([(row) => OrderingTerm.asc(row.displayName)])).watch();
 }

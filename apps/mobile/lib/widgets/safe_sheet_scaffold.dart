@@ -2,17 +2,24 @@ import 'package:flutter/material.dart';
 
 import 'safe_bottom_action_bar.dart';
 
+enum SafeSheetPresentation { compact, adaptive, fullScreen }
+
 /// Opens an input sheet with the app's standard safe, keyboard-aware layout.
 Future<T?> showSafeModalSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   bool isDismissible = true,
   bool enableDrag = true,
+  SafeSheetPresentation presentation = SafeSheetPresentation.adaptive,
 }) {
   final media = MediaQuery.of(context);
-  final useFullScreen =
+  final useFullScreen = switch (presentation) {
+    SafeSheetPresentation.compact => false,
+    SafeSheetPresentation.fullScreen => true,
+    SafeSheetPresentation.adaptive =>
       media.size.height - media.viewPadding.vertical < 600 ||
-      media.textScaler.scale(1) >= 1.5;
+          media.textScaler.scale(1) >= 1.5,
+  };
   if (useFullScreen) {
     return Navigator.of(context).push<T>(
       MaterialPageRoute(
@@ -51,6 +58,7 @@ class SafeSheetScaffold extends StatelessWidget {
     this.bodyPadding = const EdgeInsets.fromLTRB(16, 8, 16, 16),
     this.maxContentWidth = 640,
     this.scrollController,
+    this.contentSized = false,
     super.key,
   });
 
@@ -61,6 +69,7 @@ class SafeSheetScaffold extends StatelessWidget {
   final EdgeInsets bodyPadding;
   final double maxContentWidth;
   final ScrollController? scrollController;
+  final bool contentSized;
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +91,7 @@ class SafeSheetScaffold extends StatelessWidget {
       curve: Curves.easeOutCubic,
       padding: EdgeInsets.only(bottom: keyboardInset),
       child: Material(
+        key: const ValueKey('safe-sheet-surface'),
         color: colors.surface,
         clipBehavior: Clip.antiAlias,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -116,7 +126,10 @@ class SafeSheetScaffold extends StatelessWidget {
               ),
             ),
             Flexible(
-              child: Center(
+              fit: FlexFit.loose,
+              child: Align(
+                alignment: Alignment.topCenter,
+                heightFactor: contentSized ? 1 : null,
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: maxContentWidth),
                   child: SingleChildScrollView(
@@ -129,7 +142,9 @@ class SafeSheetScaffold extends StatelessWidget {
                 ),
               ),
             ),
-            SafeBottomActionBar(actions: actions),
+            if (actions.isNotEmpty) SafeBottomActionBar(actions: actions),
+            if (actions.isEmpty)
+              const SafeArea(top: false, child: SizedBox(height: 12)),
           ],
         ),
       ),
@@ -142,7 +157,7 @@ class SafeSheetScaffold extends StatelessWidget {
 class AdaptiveFormRow extends StatelessWidget {
   const AdaptiveFormRow({
     required this.children,
-    this.spacing = 12,
+    this.spacing = 16,
     this.minimumChildWidth = 180,
     super.key,
   });

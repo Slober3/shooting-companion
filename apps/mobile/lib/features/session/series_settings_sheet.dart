@@ -3,6 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:shooting_companion_domain/domain.dart';
 
 import '../../data/app_database.dart';
+import '../../widgets/app_expandable_section.dart';
+import '../../widgets/app_form_scaffold.dart';
+import '../../widgets/app_form_group.dart';
+import '../../widgets/app_multiline_field.dart';
+import '../../widgets/app_select_field.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
 
 class SeriesSettingsValues {
@@ -30,14 +35,16 @@ Future<SeriesSettingsValues?> showSeriesSettingsSheet({
   required List<CartridgeRecord> cartridges,
   required List<FirearmRecord> firearms,
   required List<AmmoLotRecord> ammoLots,
-}) => showSafeModalSheet<SeriesSettingsValues>(
-  context: context,
-  builder: (_) => _SeriesSettingsSheet(
-    initial: initial,
-    targets: targets,
-    cartridges: cartridges,
-    firearms: firearms,
-    ammoLots: ammoLots,
+}) => Navigator.of(context).push<SeriesSettingsValues>(
+  MaterialPageRoute(
+    fullscreenDialog: true,
+    builder: (_) => _SeriesSettingsSheet(
+      initial: initial,
+      targets: targets,
+      cartridges: cartridges,
+      firearms: firearms,
+      ammoLots: ammoLots,
+    ),
   ),
 );
 
@@ -68,6 +75,8 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
   late String? _ammoLotId;
   late final TextEditingController _distance;
   late final TextEditingController _notes;
+  var _materialExpanded = false;
+  var _submitted = false;
 
   @override
   void initState() {
@@ -75,13 +84,61 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
     _target = widget.initial.target;
     _cartridgeId = widget.initial.cartridgeId;
     _firearmId = widget.initial.firearmId;
-    _ammoLotId = widget.initial.ammoLotId;
+    _ammoLotId = _validAmmoLotId(
+      widget.initial.ammoLotId,
+      widget.initial.cartridgeId,
+    );
     _distance = TextEditingController(
       text: widget.initial.distanceMeters.toStringAsFixed(
         widget.initial.distanceMeters % 1 == 0 ? 0 : 1,
       ),
     );
     _notes = TextEditingController(text: widget.initial.notes);
+    _distance.addListener(_changed);
+    _notes.addListener(_changed);
+  }
+
+  void _changed() => setState(() {});
+
+  @override
+  void didUpdateWidget(covariant _SeriesSettingsSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _ammoLotId = _validAmmoLotId(_ammoLotId, _cartridgeId);
+  }
+
+  String? _validAmmoLotId(String? candidate, String cartridgeId) {
+    if (candidate == null) return null;
+    return widget.ammoLots.any(
+          (lot) => lot.id == candidate && lot.cartridgeId == cartridgeId,
+        )
+        ? candidate
+        : null;
+  }
+
+  bool get _dirty =>
+      _target.versionedId != widget.initial.target.versionedId ||
+      _cartridgeId != widget.initial.cartridgeId ||
+      _firearmId != widget.initial.firearmId ||
+      _ammoLotId != widget.initial.ammoLotId ||
+      double.tryParse(_distance.text.replaceAll(',', '.')) !=
+          widget.initial.distanceMeters ||
+      _nullable(_notes.text) != widget.initial.notes;
+
+  bool get _distanceLocked => _target.supportedDistancesMeters.length == 1;
+
+  void _changeTarget(String id, List<TargetProfile> targets) {
+    final selected = targets.firstWhere((target) => target.versionedId == id);
+    setState(() {
+      _target = selected;
+      final fixedDistance = selected.supportedDistancesMeters.length == 1
+          ? selected.supportedDistancesMeters.single
+          : selected.defaultDistanceMeters;
+      if (fixedDistance != null) {
+        _distance.text = fixedDistance.toStringAsFixed(
+          fixedDistance % 1 == 0 ? 0 : 1,
+        );
+      }
+    });
   }
 
   @override
@@ -99,68 +156,51 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
     final filteredLots = widget.ammoLots
         .where((lot) => lot.cartridgeId == _cartridgeId)
         .toList();
-    if (_ammoLotId != null &&
-        !filteredLots.any((lot) => lot.id == _ammoLotId)) {
-      _ammoLotId = null;
-    }
-
-    return Form(
-      key: _formKey,
-      child: SafeSheetScaffold(
-        title: 'Reeksinstellingen',
-        actions: [
-          FilledButton(onPressed: _submit, child: const Text('Toepassen')),
-        ],
-        body: Column(
+    return AppFormScaffold(
+      title: 'Reeksinstellingen',
+      dirty: _dirty && !_submitted,
+      actions: [
+        FilledButton(onPressed: _submit, child: const Text('Toepassen')),
+      ],
+      body: Form(
+        key: _formKey,
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            DropdownButtonFormField<String>(
+            AppSelectField<String>(
+              label: 'Doelkaart',
               initialValue: _target.versionedId,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Doelkaart'),
-              items: targetProfiles
+              options: targetProfiles
                   .map(
-                    (target) => DropdownMenuItem(
+                    (target) => AppSelectOption(
                       value: target.versionedId,
-                      child: Text(
-                        target.displayName,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      label: target.displayName,
                     ),
                   )
                   .toList(),
-              onChanged: (id) => setState(() {
-                _target = targetProfiles.firstWhere(
-                  (target) => target.versionedId == id,
-                );
-              }),
+              onChanged: (id) => _changeTarget(id, targetProfiles),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppFormSpacing.field),
             AdaptiveFormRow(
               minimumChildWidth: 160,
               children: [
-                DropdownButtonFormField<String>(
+                AppSelectField<String>(
+                  label: 'Kaliber',
                   initialValue: _cartridgeId,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Kaliber'),
-                  items: widget.cartridges
+                  options: widget.cartridges
                       .map(
-                        (item) => DropdownMenuItem(
-                          value: item.id,
-                          child: Text(
-                            item.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+                        (item) =>
+                            AppSelectOption(value: item.id, label: item.name),
                       )
                       .toList(),
                   onChanged: (id) => setState(() {
-                    _cartridgeId = id!;
+                    _cartridgeId = id;
                     _ammoLotId = null;
                   }),
                 ),
                 TextFormField(
                   controller: _distance,
+                  enabled: !_distanceLocked,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
@@ -184,62 +224,59 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String?>(
-              initialValue: _firearmId,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Wapen (optioneel)'),
-              items: [
-                const DropdownMenuItem<String?>(
-                  value: null,
-                  child: Text('Niet opgegeven'),
-                ),
-                ...widget.firearms.map(
-                  (item) => DropdownMenuItem<String?>(
-                    value: item.id,
-                    child: Text(item.name, overflow: TextOverflow.ellipsis),
-                  ),
-                ),
-              ],
-              onChanged: (value) => setState(() => _firearmId = value),
-            ),
-            if (filteredLots.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String?>(
-                initialValue: _ammoLotId,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Munitielot (optioneel)',
-                ),
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('Niet opgegeven'),
-                  ),
-                  ...filteredLots.map(
-                    (lot) => DropdownMenuItem<String?>(
-                      value: lot.id,
-                      child: Text(
-                        lot.displayName,
-                        overflow: TextOverflow.ellipsis,
+            const SizedBox(height: 24),
+            AppExpandableSection(
+              title: 'Materiaal en notitie',
+              initiallyExpanded: _materialExpanded,
+              onExpansionChanged: (value) => _materialExpanded = value,
+              children: [
+                AppSelectField<String?>(
+                  label: 'Wapen (optioneel)',
+                  initialValue: _firearmId,
+                  options: [
+                    const AppSelectOption<String?>(
+                      value: null,
+                      label: 'Niet opgegeven',
+                    ),
+                    ...widget.firearms.map(
+                      (item) => AppSelectOption<String?>(
+                        value: item.id,
+                        label: item.name,
                       ),
                     ),
+                  ],
+                  onChanged: (value) => setState(() => _firearmId = value),
+                ),
+                if (filteredLots.isNotEmpty) ...[
+                  const SizedBox(height: AppFormSpacing.field),
+                  AppSelectField<String?>(
+                    label: 'Munitieprofiel (optioneel)',
+                    initialValue: _ammoLotId,
+                    options: [
+                      const AppSelectOption<String?>(
+                        value: null,
+                        label: 'Niet opgegeven',
+                      ),
+                      ...filteredLots.map(
+                        (lot) => AppSelectOption<String?>(
+                          value: lot.id,
+                          label: lot.displayName,
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) => setState(() => _ammoLotId = value),
                   ),
                 ],
-                onChanged: (value) => setState(() => _ammoLotId = value),
-              ),
-            ],
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _notes,
-              minLines: 2,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                labelText: 'Reeksnotitie (optioneel)',
-              ),
-              validator: (value) => (value?.trim().length ?? 0) > 1000
-                  ? 'Gebruik maximaal 1000 tekens'
-                  : null,
+                const SizedBox(height: AppFormSpacing.field),
+                AppMultilineField(
+                  controller: _notes,
+                  label: 'Reeksnotitie (optioneel)',
+                  hint: 'Bijvoorbeeld houding, vizier of aandachtspunt',
+                  validator: (value) => (value?.trim().length ?? 0) > 1000
+                      ? 'Gebruik maximaal 1000 tekens'
+                      : null,
+                ),
+              ],
             ),
           ],
         ),
@@ -247,8 +284,11 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    setState(() => _submitted = true);
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
     Navigator.pop(
       context,
       SeriesSettingsValues(

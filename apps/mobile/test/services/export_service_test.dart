@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as image_lib;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shooting_companion/data/app_database.dart';
 import 'package:shooting_companion/data/shooting_repository.dart';
@@ -30,6 +32,8 @@ void main() {
         missCount: 1,
         projectileDiameterMm: 5.6,
         photoCount: 2,
+        firearmName: 'Walther GSP',
+        ammoLotName: 'Eley Club',
         notes: 'Rustig, "vaste" houding',
       ),
     ]);
@@ -40,7 +44,7 @@ void main() {
       csv,
       contains(
         '"3","14","21","66.67","0","1","5.6",'
-        '"Rustig, ""vaste"" houding","2"',
+        '"Walther GSP","Eley Club","Rustig, ""vaste"" houding","2"',
       ),
     );
   });
@@ -99,20 +103,24 @@ void main() {
       notes: 'Unicode é – klaar',
     );
     await repository.confirmSeries(quick.draftSeriesId);
+    final output = Directory('build/test-output')..createSync(recursive: true);
+    final photoFile = File('${output.path}/export-photo.jpg');
+    final photoBytes = _syntheticPhotoBytes();
+    await photoFile.writeAsBytes(photoBytes, flush: true);
     await repository.attachImage(
       NewImageAsset(
         id: 'export-photo',
         sessionId: quick.sessionId,
         seriesId: quick.draftSeriesId,
         role: ImageRole.attachment,
-        path: 'export-photo.jpg',
+        path: photoFile.path,
         sha256: 'export-photo-hash',
-        width: 1200,
-        height: 900,
-        sizeBytes: 10,
+        width: 64,
+        height: 48,
+        sizeBytes: photoBytes.length,
+        caption: 'Opstelling é – stabiele steun',
       ),
     );
-    final output = Directory('build/test-output')..createSync(recursive: true);
     final service = ExportService(
       database,
       temporaryDirectory: () async => output,
@@ -120,10 +128,13 @@ void main() {
     );
 
     final csv = await (await service.createCsv()).readAsString();
+    final pdf = await service.createPdfReport();
 
     expect(csv, contains('ISSF 25 m Precision / 50 m Pistol'));
     expect(csv, contains('Unicode é – klaar'));
     expect(csv, contains('"1"'));
+    expect(await pdf.length(), greaterThan(photoBytes.length));
+    expect(await photoFile.readAsBytes(), photoBytes);
   });
 
   test(
@@ -146,6 +157,16 @@ void main() {
             missCount: 0,
             projectileDiameterMm: 5.6,
             photoCount: 1,
+            photos: index == 0
+                ? [
+                    PdfReportPhoto(
+                      id: 'photo-with-caption',
+                      bytes: _syntheticPhotoBytes(),
+                      roleLabel: 'Scorefoto',
+                      caption: 'Opstelling é – onderschrift bij de foto',
+                    ),
+                  ]
+                : const [],
           ),
       ];
       final data = PdfReportData(
@@ -161,6 +182,7 @@ void main() {
       expect(bytes.length, greaterThan(10000));
       expect(data.sessionCount, 11);
       expect(data.seriesCount, 55);
+      expect(data.includedPhotoCount, 1);
 
       final output = Directory('build/test-output')
         ..createSync(recursive: true);
@@ -169,4 +191,17 @@ void main() {
       ).writeAsBytes(bytes, flush: true);
     },
   );
+}
+
+Uint8List _syntheticPhotoBytes() {
+  final image = image_lib.Image(width: 64, height: 48);
+  image_lib.fill(image, color: image_lib.ColorRgb8(235, 230, 210));
+  image_lib.fillCircle(
+    image,
+    x: 32,
+    y: 24,
+    radius: 12,
+    color: image_lib.ColorRgb8(30, 30, 30),
+  );
+  return image_lib.encodeJpg(image, quality: 90);
 }

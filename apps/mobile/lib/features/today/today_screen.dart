@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../app/providers.dart';
 import '../../data/shooting_repository.dart';
 import '../../widgets/compact_page_scaffold.dart';
+import '../../widgets/app_notice.dart';
 import '../session/active_session_screen.dart';
 import '../session/manual_series_screen.dart';
 import '../session/session_completion_flow.dart';
@@ -141,9 +142,7 @@ class TodayScreen extends ConsumerWidget {
       );
     } on ActiveSessionExistsException {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Er is al een actieve sessie.')),
-      );
+      AppMessenger.info(context, 'Er is al een actieve sessie.');
     }
   }
 
@@ -445,7 +444,7 @@ class _ActiveSessionPanel extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: onEndSession,
           icon: const Icon(Icons.flag_outlined),
-          label: const Text('Sessie beëindigen'),
+          label: const Text('Beëindigen', maxLines: 1),
         ),
         const SizedBox(height: 4),
         TextButton.icon(

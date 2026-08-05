@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/providers.dart';
 import '../../data/appearance_repository.dart';
+import '../../widgets/app_notice.dart';
 import '../../widgets/compact_page_scaffold.dart';
 import 'appearance_providers.dart';
 import 'appearance_settings_screen.dart';
@@ -46,6 +48,9 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           ),
+          const SizedBox(height: 20),
+          const _SectionLabel('Coaching'),
+          const _CoachModeTile(),
           const SizedBox(height: 20),
           const _SectionLabel('Opslag'),
           ListTile(
@@ -102,4 +107,48 @@ class _SectionLabel extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _CoachModeTile extends ConsumerStatefulWidget {
+  const _CoachModeTile();
+
+  @override
+  ConsumerState<_CoachModeTile> createState() => _CoachModeTileState();
+}
+
+class _CoachModeTileState extends ConsumerState<_CoachModeTile> {
+  bool? _pendingValue;
+
+  @override
+  Widget build(BuildContext context) {
+    final mode = ref.watch(coachModeEnabledProvider);
+    final storedValue = mode.valueOrNull ?? false;
+    final displayedValue = _pendingValue ?? storedValue;
+    return SwitchListTile.adaptive(
+      key: const ValueKey('coach-mode-toggle'),
+      secondary: const Icon(Icons.psychology_alt_outlined),
+      title: const Text('Coachmodus'),
+      subtitle: const Text(
+        'Vraag na een reeks optioneel hoe ze voelde. '
+        'De snelle scoreflow blijft ongewijzigd.',
+      ),
+      value: displayedValue,
+      onChanged: _pendingValue != null || mode.isLoading
+          ? null
+          : (value) => _setCoachMode(value),
+    );
+  }
+
+  Future<void> _setCoachMode(bool value) async {
+    setState(() => _pendingValue = value);
+    try {
+      await ref.read(coachingPreferencesRepositoryProvider).setCoachMode(value);
+    } catch (_) {
+      if (mounted) {
+        AppMessenger.error(context, 'Coachmodus kon niet worden aangepast.');
+      }
+    } finally {
+      if (mounted) setState(() => _pendingValue = null);
+    }
+  }
 }

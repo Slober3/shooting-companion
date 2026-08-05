@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/compact_page_scaffold.dart';
 import '../library/library_screen.dart';
 import '../settings/settings_screen.dart';
+import '../training_tools/training_tools.dart';
 import 'about_screen.dart';
 import 'data_transfer_screen.dart';
 
@@ -27,6 +28,13 @@ class MoreScreen extends StatelessWidget {
             title: 'Bibliotheek',
             subtitle: 'Wapens, munitie, standen en kaarten',
             onTap: () => _open(context, const LibraryScreen()),
+          ),
+          const Divider(indent: 72),
+          _MoreTile(
+            icon: Icons.fitness_center_outlined,
+            title: 'Trainingstools',
+            subtitle: 'Drills, A/B-experimenten en viziercalculator',
+            onTap: () => _open(context, const TrainingToolsScreen()),
           ),
           const Divider(indent: 72),
           _MoreTile(

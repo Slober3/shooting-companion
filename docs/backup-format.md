@@ -10,11 +10,18 @@ The key is derived with Argon2id using 19 MiB, two iterations, parallelism one
 and a 32-byte result. Ciphertext is an AES-256-GCM encrypted ZIP containing
 `manifest.json`, `database.json` and `media/<asset-id>.<extension>`.
 
-Manifest version 2 contains sessions, confirmed and draft series, manual
+Manifest version 5 contains sessions, confirmed and draft series, manual
 impacts, media metadata, photo alignments and preferences. Every file has a
-SHA-256 hash and byte size. Thumbnails and other derived caches are omitted.
+SHA-256 hash and byte size. It also stores `builtIn` and `archived` library
+states, target-bull identifiers, raw ring values, counting dispositions,
+multi-bull penalties and scored-bull counts. Version 5 additionally stores typed
+goals, optional series reflections and local coach-feedback preferences.
+Derived analysis/coaching output, caches, drill assets and temporary vision
+results are omitted.
 
-Manifest version 1 stays importable. Its `expectedShots` value is used only
+Manifest versions 1, 2, 3 and 4 stay importable. A v2 adapter marks existing
+cartridges as built-in and initializes the new archive flags as false. The v1
+`expectedShots` value is used only
 when no impact rows exist; scan and scan-edit records are ignored. Existing
 after-images become primary scoring photos and baseline-images become ordinary
 attachments when their parent series can be resolved.
@@ -23,3 +30,5 @@ Creation, authenticated inspection and restore are implemented. Restoration
 stages and hashes every image, creates a safety backup, replaces records in one
 database transaction and deletes staged files on failure. Current local images
 are removed only after the replacement transaction succeeds.
+Cartridge/ammunition dependencies, bull references and v5 goal/reflection/
+feedback relationships are validated before any replacement begins.

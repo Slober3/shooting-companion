@@ -10,7 +10,7 @@ import 'package:shooting_companion/data/app_database.dart';
 import 'package:shooting_companion/services/backup_service.dart';
 
 void main() {
-  group('BackupPayloadAdapter v1 -> v2', () {
+  group('BackupPayloadAdapter v1-v4 -> v5', () {
     test('uses impact multiplicity for actual count and ignores scans', () {
       final data = _v1Data(
         expectedShots: 99,
@@ -49,6 +49,8 @@ void main() {
       expect((impacts.first as Map).containsKey('origin'), isFalse);
       expect((impacts.first as Map).containsKey('confidence'), isFalse);
       expect((impacts.first as Map)['sourceImageId'], isNull);
+      expect((impacts.first as Map)['targetBullId'], isNull);
+      expect((impacts.first as Map)['scoreDisposition'], 'counted');
 
       final images = payload.data['images']! as List;
       expect((images.first as Map)['role'], 'primaryScoringPhoto');
@@ -74,7 +76,7 @@ void main() {
     test('rejects future versions and inconsistent record counts', () {
       expect(
         () => BackupPayloadAdapter.normalize(
-          manifest: _manifest(version: 3),
+          manifest: _manifest(version: 6),
           data: _v1Data(expectedShots: 1),
         ),
         throwsFormatException,
@@ -83,6 +85,109 @@ void main() {
         () => BackupPayloadAdapter.normalize(
           manifest: {..._manifest(version: 1), 'seriesCount': 2},
           data: _v1Data(expectedShots: 1),
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('rejects a v4 impact with an unknown target bull', () {
+      final legacy = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 1),
+        data: _v1Data(
+          expectedShots: 1,
+          impacts: const [
+            {
+              'id': 'impact-1',
+              'seriesId': 'series-1',
+              'multiplicity': 1,
+              'scoreValue': 7,
+            },
+          ],
+        ),
+      );
+      final data = <String, dynamic>{
+        for (final entry in legacy.data.entries) entry.key: entry.value,
+      };
+      data['impacts'] = [
+        for (final value in data['impacts']! as List)
+          Map<String, dynamic>.from(value as Map)
+            ..['targetBullId'] = 'unknown-bull',
+      ];
+
+      expect(
+        () => BackupPayloadAdapter.normalize(
+          manifest: _manifest(version: 4),
+          data: data,
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('rejects orphan goals and malformed coaching records in v5', () {
+      final valid = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 1),
+        data: _v1Data(expectedShots: 1),
+      ).data;
+
+      expect(
+        () => BackupPayloadAdapter.normalize(
+          manifest: _manifest(version: 5),
+          data: {
+            ...valid,
+            'goals': [
+              {
+                'id': 'orphan-goal',
+                'targetProfileVersionedId': 'missing@1',
+                'distanceMeters': 25.0,
+                'firearmId': null,
+                'ammoLotId': null,
+                'metric': 'scorePercentage',
+                'targetValue': 80.0,
+                'comparison': 'atLeast',
+                'active': true,
+              },
+            ],
+          },
+        ),
+        throwsFormatException,
+      );
+
+      expect(
+        () => BackupPayloadAdapter.normalize(
+          manifest: _manifest(version: 5),
+          data: {
+            ...valid,
+            'seriesReflections': [
+              {
+                'seriesId': 'series-1',
+                'perceivedQuality': 'good',
+                'contextTagsJson': '["unknown-tag"]',
+                'note': null,
+                'createdAtUtc': '2026-01-01T11:00:00.000Z',
+                'updatedAtUtc': '2026-01-01T11:00:00.000Z',
+              },
+            ],
+          },
+        ),
+        throwsFormatException,
+      );
+
+      expect(
+        () => BackupPayloadAdapter.normalize(
+          manifest: _manifest(version: 5),
+          data: {
+            ...valid,
+            'coachFeedback': [
+              {
+                'insightFingerprint': 'insight-1',
+                'ruleId': 'bias.persistent',
+                'ruleVersion': 1,
+                'response': 'future-response',
+                'snoozedUntilUtc': null,
+                'updatedAtUtc': '2026-01-01T11:00:00.000Z',
+              },
+            ],
+          },
         ),
         throwsFormatException,
       );
@@ -126,7 +231,7 @@ void main() {
   });
 
   test(
-    'SCB1 v2 roundtrip preserves draft, media, alignment and settings',
+    'SCB1 v5 roundtrip preserves insights, draft, media and settings',
     () async {
       final workspace = await Directory.systemTemp.createTemp(
         'shooting-companion-backup-test-',
@@ -156,6 +261,8 @@ void main() {
               id: Value('cartridge-1'),
               name: Value('.22 test'),
               projectileDiameterMm: Value(5.6),
+              builtIn: Value(false),
+              archived: Value(true),
             ),
           );
       await database
@@ -168,6 +275,7 @@ void main() {
               displayName: 'Synthetische zevenring',
               validationStatus: 'experimental',
               profileJson: targetJson,
+              archived: const Value(true),
               createdAtUtc: now,
             ),
           );
@@ -262,6 +370,49 @@ void main() {
               value: Value('dark'),
             ),
           );
+      await database
+          .into(database.preferences)
+          .insert(
+            const PreferencesCompanion(
+              key: Value('coaching.mode.enabled'),
+              value: Value('true'),
+            ),
+          );
+      await database
+          .into(database.goals)
+          .insert(
+            const GoalsCompanion(
+              id: Value('goal-1'),
+              targetProfileVersionedId: Value('target@1'),
+              distanceMeters: Value(25),
+              metric: Value('meanRadiusMm'),
+              targetValue: Value(18),
+              comparison: Value('atMost'),
+            ),
+          );
+      await database
+          .into(database.seriesReflections)
+          .insert(
+            SeriesReflectionsCompanion.insert(
+              seriesId: 'series-1',
+              perceivedQuality: 'good',
+              contextTagsJson: const Value('["followThrough"]'),
+              note: const Value('Rustig uitgevoerd'),
+              createdAtUtc: now,
+              updatedAtUtc: now,
+            ),
+          );
+      await database
+          .into(database.coachFeedback)
+          .insert(
+            CoachFeedbackCompanion.insert(
+              insightFingerprint: 'insight-1',
+              ruleId: 'persistent-bias',
+              ruleVersion: 1,
+              response: 'useful',
+              updatedAtUtc: now,
+            ),
+          );
 
       final service = BackupService(
         database,
@@ -273,7 +424,7 @@ void main() {
         backup,
         'test-password-123',
       );
-      expect(inspected.formatVersion, 2);
+      expect(inspected.formatVersion, 5);
       expect(inspected.sessionCount, 1);
       expect(inspected.seriesCount, 1);
       expect(inspected.imageCount, 1);
@@ -286,7 +437,7 @@ void main() {
         backup,
         'test-password-123',
       );
-      expect(restored.summary.formatVersion, 2);
+      expect(restored.summary.formatVersion, 5);
       expect(
         await database.select(database.trainingSessions).get(),
         hasLength(1),
@@ -309,9 +460,31 @@ void main() {
             .algorithmVersion,
         'manual-homography-v1',
       );
+      final restoredPreferences = {
+        for (final item in await database.select(database.preferences).get())
+          item.key: item.value,
+      };
+      expect(restoredPreferences['theme'], 'dark');
+      expect(restoredPreferences['coaching.mode.enabled'], 'true');
+      final restoredCartridge =
+          (await database.select(database.cartridges).get()).single;
+      expect(restoredCartridge.builtIn, isFalse);
+      expect(restoredCartridge.archived, isTrue);
       expect(
-        (await database.select(database.preferences).get()).single.value,
-        'dark',
+        (await database.select(database.targetProfiles).get()).single.archived,
+        isTrue,
+      );
+      final restoredGoal = (await database.select(database.goals).get()).single;
+      expect(restoredGoal.metric, 'meanRadiusMm');
+      expect(restoredGoal.targetValue, 18);
+      expect(restoredGoal.comparison, 'atMost');
+      final restoredReflection =
+          (await database.select(database.seriesReflections).get()).single;
+      expect(restoredReflection.perceivedQuality, 'good');
+      expect(restoredReflection.note, 'Rustig uitgevoerd');
+      expect(
+        (await database.select(database.coachFeedback).get()).single.response,
+        'useful',
       );
     },
   );

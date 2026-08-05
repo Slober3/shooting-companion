@@ -13,6 +13,7 @@ class TargetCanvas extends StatelessWidget {
     required this.projectileDiameterMm,
     this.onChanged,
     this.onImpactSelected,
+    this.onImpactLongPressed,
     this.onImpactMoveStart,
     this.onImpactMoveEnd,
     this.onImpactMoveCancel,
@@ -31,6 +32,7 @@ class TargetCanvas extends StatelessWidget {
   final double projectileDiameterMm;
   final ValueChanged<List<ShotImpact>>? onChanged;
   final ValueChanged<String?>? onImpactSelected;
+  final ValueChanged<String>? onImpactLongPressed;
   final ValueChanged<String>? onImpactMoveStart;
   final ValueChanged<String>? onImpactMoveEnd;
   final ValueChanged<String>? onImpactMoveCancel;
@@ -73,24 +75,46 @@ class TargetCanvas extends StatelessWidget {
             return;
           }
           final point = _toMillimeters(normalized);
+          final bull = target.targetKind == TargetKind.multiBullConcentric
+              ? target.bullAt(point.dx, point.dy)
+              : null;
+          if (target.targetKind == TargetKind.multiBullConcentric &&
+              (bull == null || bull.role != TargetBullRole.record)) {
+            onInvalidPosition?.call();
+            return;
+          }
           final impact = ShotImpact(
             id: 'impact-${DateTime.now().microsecondsSinceEpoch}',
             xMm: point.dx,
             yMm: point.dy,
+            targetBullId: bull?.id,
           );
           onChanged?.call([...impacts, impact]);
           onImpactSelected?.call(impact.id);
         },
         onMarkerSelected: (id) => onImpactSelected?.call(id),
+        onMarkerLongPressed: onImpactLongPressed,
         onMarkerDragStart: onImpactMoveStart,
         onMarkerDragEnd: onImpactMoveEnd,
         onMarkerDragCancel: onImpactMoveCancel,
         onMarkerMoved: (id, normalized) {
           final point = _toMillimeters(normalized);
+          final bull = target.targetKind == TargetKind.multiBullConcentric
+              ? target.bullAt(point.dx, point.dy, recordOnly: true)
+              : null;
+          if (target.targetKind == TargetKind.multiBullConcentric &&
+              bull == null) {
+            onInvalidPosition?.call();
+            return;
+          }
           onChanged?.call([
             for (final impact in impacts)
               if (impact.id == id)
-                impact.copyWith(xMm: point.dx, yMm: point.dy)
+                impact.copyWith(
+                  xMm: point.dx,
+                  yMm: point.dy,
+                  targetBullId: bull?.id,
+                )
               else
                 impact,
           ]);
@@ -222,6 +246,38 @@ class TargetPainter extends CustomPainter {
       Paint()..color = const Color(0xFFF2EEE3),
     );
 
+    if (target.targetKind == TargetKind.multiBullConcentric) {
+      _paintMultiBull(canvas, size, scale, center);
+    } else {
+      _paintSingleBull(canvas, scale, center);
+    }
+
+    for (final impact in impacts) {
+      if (impact.isMiss) continue;
+      final point = Offset(
+        center.dx + impact.xMm * scale,
+        center.dy + impact.yMm * scale,
+      );
+      canvas.drawCircle(
+        point,
+        projectileDiameterMm / 2 * scale,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = math.max(1, 0.5 * scale)
+          ..color = colorScheme.tertiary.withValues(alpha: 0.6),
+      );
+    }
+
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = colorScheme.outline,
+    );
+  }
+
+  void _paintSingleBull(Canvas canvas, double scale, Offset center) {
     final blackDiameter = target.blackOuterDiameterMm;
     if (blackDiameter != null) {
       canvas.drawCircle(
@@ -244,29 +300,86 @@ class TargetPainter extends CustomPainter {
       );
     }
 
-    for (final impact in impacts) {
-      if (impact.isMiss) continue;
-      final point = Offset(
-        center.dx + impact.xMm * scale,
-        center.dy + impact.yMm * scale,
+    canvas.drawCircle(center, 2, Paint()..color = colorScheme.error);
+  }
+
+  void _paintMultiBull(
+    Canvas canvas,
+    Size size,
+    double scale,
+    Offset cardCenter,
+  ) {
+    final recordColor = const Color(0xFF205F88);
+    final sighterColor = colorScheme.onSurfaceVariant.withValues(alpha: 0.55);
+    final labelStyle = TextStyle(
+      color: colorScheme.onSurface,
+      fontSize: math.max(5, 3.2 * scale),
+      fontWeight: FontWeight.w700,
+    );
+    for (final bull in target.bulls) {
+      final bullCenter = Offset(
+        cardCenter.dx + bull.centerXMm * scale,
+        cardCenter.dy + bull.centerYMm * scale,
       );
-      canvas.drawCircle(
-        point,
-        projectileDiameterMm / 2 * scale,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = math.max(1, 0.5 * scale)
-          ..color = colorScheme.tertiary.withValues(alpha: 0.6),
+      final color = bull.role == TargetBullRole.record
+          ? recordColor
+          : sighterColor;
+      if (bull.role == TargetBullRole.record) {
+        canvas.drawRect(
+          Rect.fromCenter(
+            center: bullCenter,
+            width: bull.scoringWidthMm * scale,
+            height: bull.scoringHeightMm * scale,
+          ),
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = math.max(0.7, 0.2 * scale)
+            ..color = color.withValues(alpha: 0.45),
+        );
+      }
+      for (final ring in target.rings.reversed) {
+        canvas.drawCircle(
+          bullCenter,
+          ring.outerDiameterMm / 2 * scale,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = math.max(0.7, target.lineThicknessMm * scale)
+            ..color = color,
+        );
+      }
+      final innerTen = target.innerTenDiameterMm;
+      if (innerTen != null) {
+        canvas.drawCircle(
+          bullCenter,
+          math.max(0.8, innerTen / 2 * scale),
+          Paint()..color = color,
+        );
+      }
+      final painter = TextPainter(
+        text: TextSpan(text: bull.label, style: labelStyle),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      painter.paint(
+        canvas,
+        Offset(
+          bullCenter.dx - bull.scoringWidthMm / 2 * scale + 2 * scale,
+          bullCenter.dy - bull.scoringHeightMm / 2 * scale + 1.5 * scale,
+        ),
       );
     }
-
-    canvas.drawCircle(center, 2, Paint()..color = colorScheme.error);
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = colorScheme.outline,
+    final trainingLabel = TextPainter(
+      text: TextSpan(
+        text: 'Trainingsweergave - geen officiële printkaart',
+        style: TextStyle(
+          color: colorScheme.onSurfaceVariant,
+          fontSize: math.max(5, 3 * scale),
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: size.width - 12);
+    trainingLabel.paint(
+      canvas,
+      Offset(6, math.max(2, size.height - trainingLabel.height - 4)),
     );
   }
 

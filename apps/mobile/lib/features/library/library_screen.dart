@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,13 @@ import 'package:shooting_companion_domain/domain.dart' as domain;
 
 import '../../app/providers.dart';
 import '../../data/app_database.dart';
+import '../../data/shooting_repository.dart';
+import '../../widgets/app_action_dock.dart';
+import '../../widgets/app_decision_dialog.dart';
+import '../../widgets/app_form_scaffold.dart';
+import '../../widgets/app_multiline_field.dart';
+import '../../widgets/app_notice.dart';
+import '../../widgets/app_select_field.dart';
 import '../../widgets/compact_page_scaffold.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
 
@@ -66,9 +74,11 @@ class LibraryScreen extends ConsumerWidget {
   }
 
   static Future<void> _addFirearm(BuildContext context, WidgetRef ref) async {
-    final draft = await showSafeModalSheet<_FirearmDraft>(
-      context: context,
-      builder: (_) => const _FirearmDialog(),
+    final draft = await Navigator.of(context).push<_FirearmDraft>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => const _FirearmDialog(),
+      ),
     );
     if (draft == null) return;
     await ref
@@ -84,9 +94,11 @@ class LibraryScreen extends ConsumerWidget {
   }
 
   static Future<void> _addAmmo(BuildContext context, WidgetRef ref) async {
-    final draft = await showSafeModalSheet<_AmmoDraft>(
-      context: context,
-      builder: (_) => const _AmmoDialog(),
+    final draft = await Navigator.of(context).push<_AmmoDraft>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => const _AmmoDialog(),
+      ),
     );
     if (draft == null) return;
     await ref
@@ -99,13 +111,33 @@ class LibraryScreen extends ConsumerWidget {
           lotNumber: draft.lotNumber,
           bulletWeightGrains: draft.weight,
           projectileType: draft.projectileType,
+          notes: draft.notes,
+        );
+  }
+
+  static Future<void> _addCartridge(BuildContext context, WidgetRef ref) async {
+    final draft = await Navigator.of(context).push<_CartridgeDraft>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => const _CartridgeDialog(),
+      ),
+    );
+    if (draft == null) return;
+    await ref
+        .read(repositoryProvider)
+        .addCustomCartridge(
+          name: draft.name,
+          projectileDiameterMm: draft.diameter,
+          notes: draft.notes,
         );
   }
 
   static Future<void> _addRange(BuildContext context, WidgetRef ref) async {
-    final draft = await showSafeModalSheet<_RangeDraft>(
-      context: context,
-      builder: (_) => const _RangeDialog(),
+    final draft = await Navigator.of(context).push<_RangeDraft>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => const _RangeDialog(),
+      ),
     );
     if (draft == null) return;
     await ref
@@ -120,9 +152,11 @@ class LibraryScreen extends ConsumerWidget {
   }
 
   static Future<void> _addTarget(BuildContext context, WidgetRef ref) async {
-    final profile = await showSafeModalSheet<domain.TargetProfile>(
-      context: context,
-      builder: (_) => const _TargetDialog(),
+    final profile = await Navigator.of(context).push<domain.TargetProfile>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => const _TargetDialog(),
+      ),
     );
     if (profile == null) return;
     await ref.read(repositoryProvider).addCustomTargetProfile(profile);
@@ -151,6 +185,24 @@ class _LibraryCategoryScreen extends ConsumerWidget {
     return CompactPageScaffold(
       title: category.label,
       actions: [
+        PopupMenuButton<_CategoryAction>(
+          tooltip: 'Meer bibliotheekacties',
+          onSelected: (action) {
+            if (action == _CategoryAction.archived) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => _ArchivedLibraryScreen(category: category),
+                ),
+              );
+            }
+          },
+          itemBuilder: (_) => const [
+            PopupMenuItem(
+              value: _CategoryAction.archived,
+              child: Text('Gearchiveerde items'),
+            ),
+          ],
+        ),
         IconButton(
           onPressed: () => _add(context, ref),
           tooltip: '${category.label} toevoegen',
@@ -175,12 +227,44 @@ class _LibraryCategoryScreen extends ConsumerWidget {
   Future<void> _add(BuildContext context, WidgetRef ref) {
     return switch (category) {
       _LibraryCategory.firearms => LibraryScreen._addFirearm(context, ref),
-      _LibraryCategory.ammunition => LibraryScreen._addAmmo(context, ref),
+      _LibraryCategory.ammunition => _chooseAmmunitionKind(context, ref),
       _LibraryCategory.ranges => LibraryScreen._addRange(context, ref),
       _LibraryCategory.targets => LibraryScreen._addTarget(context, ref),
     };
   }
+
+  Future<void> _chooseAmmunitionKind(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final choice = await showAppDecisionDialog<_AmmunitionAddKind>(
+      context: context,
+      title: 'Munitie toevoegen',
+      content: const Text('Wat wil je aan de bibliotheek toevoegen?'),
+      actions: const [
+        AppDecisionAction(
+          label: 'Munitieprofiel',
+          value: _AmmunitionAddKind.ammo,
+          kind: AppDecisionActionKind.primary,
+        ),
+        AppDecisionAction(
+          label: 'Eigen kaliber',
+          value: _AmmunitionAddKind.cartridge,
+        ),
+      ],
+    );
+    if (!context.mounted || choice == null) return;
+    if (choice == _AmmunitionAddKind.cartridge) {
+      await LibraryScreen._addCartridge(context, ref);
+    } else {
+      await LibraryScreen._addAmmo(context, ref);
+    }
+  }
 }
+
+enum _CategoryAction { archived }
+
+enum _AmmunitionAddKind { cartridge, ammo }
 
 class _LibraryListBody extends StatelessWidget {
   const _LibraryListBody({required this.children});
@@ -231,6 +315,17 @@ class _FirearmList extends ConsumerWidget {
                             item.type,
                           ].whereType<String>().join(' • '),
                         ),
+                        onTap: () => _openFirearmDetail(context, ref, item),
+                        trailing: _LibraryItemMenu(
+                          onEdit: () => _editFirearm(context, ref, item),
+                          onDelete: () => _removeLibraryItem(
+                            context,
+                            ref,
+                            kind: LibraryItemKind.firearm,
+                            id: item.id,
+                            label: item.name,
+                          ),
+                        ),
                       ),
                     )
                     .toList(),
@@ -263,13 +358,44 @@ class _AmmoList extends ConsumerWidget {
     }
     return _LibraryListBody(
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Text(
+            'Kalibers',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
         ...cartridges.map(
           (item) => ListTile(
             leading: const Icon(Icons.circle, size: 14),
             title: Text(item.name),
             subtitle: Text(
-              '${item.projectileDiameterMm.toStringAsFixed(2)} mm scorediameter',
+              '${item.projectileDiameterMm.toStringAsFixed(2)} mm scorediameter'
+              '${item.builtIn ? ' • Ingebouwd' : ''}',
             ),
+            onTap: () => _openCartridgeDetail(context, ref, item),
+            trailing: _LibraryItemMenu(
+              onEdit: item.builtIn
+                  ? null
+                  : () => _editCartridge(context, ref, item),
+              onDuplicate: () => _duplicateCartridge(context, ref, item),
+              onDelete: item.builtIn
+                  ? null
+                  : () => _removeLibraryItem(
+                      context,
+                      ref,
+                      kind: LibraryItemKind.cartridge,
+                      id: item.id,
+                      label: item.name,
+                    ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Text(
+            'Munitieprofielen',
+            style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
         ...ammo.map(
@@ -282,6 +408,17 @@ class _AmmoList extends ConsumerWidget {
                 item.productName,
                 item.lotNumber,
               ].whereType<String>().join(' • '),
+            ),
+            onTap: () => _openAmmoDetail(context, ref, item),
+            trailing: _LibraryItemMenu(
+              onEdit: () => _editAmmo(context, ref, item),
+              onDelete: () => _removeLibraryItem(
+                context,
+                ref,
+                kind: LibraryItemKind.ammoLot,
+                id: item.id,
+                label: item.displayName,
+              ),
             ),
           ),
         ),
@@ -315,6 +452,17 @@ class _RangeList extends ConsumerWidget {
                           item.locationDescription ??
                               (item.isIndoor ? 'Binnenstand' : 'Buitenstand'),
                         ),
+                        onTap: () => _openRangeDetail(context, ref, item),
+                        trailing: _LibraryItemMenu(
+                          onEdit: () => _editRange(context, ref, item),
+                          onDelete: () => _removeLibraryItem(
+                            context,
+                            ref,
+                            kind: LibraryItemKind.range,
+                            id: item.id,
+                            label: item.name,
+                          ),
+                        ),
                       ),
                     )
                     .toList(),
@@ -344,15 +492,24 @@ class _TargetList extends ConsumerWidget {
                         subtitle: Text(
                           item.builtIn
                               ? 'ISSF 2026 • officieel profiel'
-                              : 'Eigen profiel • experimenteel',
+                              : 'Eigen profiel',
                         ),
-                        trailing: Icon(
-                          item.builtIn
-                              ? Icons.verified_outlined
-                              : Icons.science_outlined,
-                          semanticLabel: item.builtIn
-                              ? 'Officieel profiel'
-                              : 'Experimenteel profiel',
+                        onTap: () => _openTargetDetail(context, ref, item),
+                        trailing: _LibraryItemMenu(
+                          onEdit: item.builtIn
+                              ? null
+                              : () => _editTarget(context, ref, item),
+                          onDuplicate: () =>
+                              _duplicateTarget(context, ref, item),
+                          onDelete: item.builtIn
+                              ? null
+                              : () => _removeLibraryItem(
+                                  context,
+                                  ref,
+                                  kind: LibraryItemKind.targetProfile,
+                                  id: item.versionedId,
+                                  label: item.displayName,
+                                ),
                         ),
                       ),
                     )
@@ -377,7 +534,7 @@ class _Empty extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(Icons.inbox_outlined, size: 44),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(text, textAlign: TextAlign.center),
           const SizedBox(height: 16),
           FilledButton.icon(
@@ -405,6 +562,702 @@ class _ErrorBody extends StatelessWidget {
   );
 }
 
+enum _LibraryMenuAction { edit, duplicate, delete }
+
+class _LibraryItemMenu extends StatelessWidget {
+  const _LibraryItemMenu({this.onEdit, this.onDuplicate, this.onDelete});
+
+  final VoidCallback? onEdit;
+  final VoidCallback? onDuplicate;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<_LibraryMenuAction>(
+    tooltip: 'Acties',
+    onSelected: (action) => switch (action) {
+      _LibraryMenuAction.edit => onEdit?.call(),
+      _LibraryMenuAction.duplicate => onDuplicate?.call(),
+      _LibraryMenuAction.delete => onDelete?.call(),
+    },
+    itemBuilder: (_) => [
+      if (onEdit != null)
+        const PopupMenuItem(
+          value: _LibraryMenuAction.edit,
+          child: Text('Bewerken'),
+        ),
+      if (onDuplicate != null)
+        const PopupMenuItem(
+          value: _LibraryMenuAction.duplicate,
+          child: Text('Dupliceren'),
+        ),
+      if (onDelete != null)
+        const PopupMenuItem(
+          value: _LibraryMenuAction.delete,
+          child: Text('Verwijderen'),
+        ),
+    ],
+  );
+}
+
+class _LibraryDetailPage extends StatelessWidget {
+  const _LibraryDetailPage({
+    required this.title,
+    required this.fields,
+    required this.actions,
+  });
+
+  final String title;
+  final List<(String, String)> fields;
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(title)),
+    body: ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      itemCount: fields.length,
+      separatorBuilder: (_, _) => const Divider(height: 24),
+      itemBuilder: (_, index) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(fields[index].$1, style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 4),
+          Text(fields[index].$2.isEmpty ? 'Niet opgegeven' : fields[index].$2),
+        ],
+      ),
+    ),
+    bottomNavigationBar: actions.isEmpty
+        ? null
+        : AppActionDock(actions: actions),
+  );
+}
+
+Future<void> _openFirearmDetail(
+  BuildContext context,
+  WidgetRef ref,
+  FirearmRecord item,
+) => Navigator.of(context).push(
+  MaterialPageRoute(
+    builder: (_) => _LibraryDetailPage(
+      title: item.name,
+      fields: [
+        ('Type', item.type),
+        ('Fabrikant', item.manufacturer ?? ''),
+        ('Model', item.model ?? ''),
+        ('Vizier en notities', item.sightNotes ?? ''),
+      ],
+      actions: [
+        FilledButton(
+          onPressed: () async {
+            Navigator.pop(context);
+            await _editFirearm(context, ref, item);
+          },
+          child: const Text('Bewerken'),
+        ),
+      ],
+    ),
+  ),
+);
+
+Future<void> _openCartridgeDetail(
+  BuildContext context,
+  WidgetRef ref,
+  CartridgeRecord item,
+) => Navigator.of(context).push(
+  MaterialPageRoute(
+    builder: (_) => _LibraryDetailPage(
+      title: item.name,
+      fields: [
+        ('Type', item.builtIn ? 'Ingebouwd' : 'Eigen kaliber'),
+        ('Projectieldiameter', '${item.projectileDiameterMm} mm'),
+        ('Notities', item.notes ?? ''),
+      ],
+      actions: [
+        if (!item.builtIn)
+          OutlinedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _editCartridge(context, ref, item);
+            },
+            child: const Text('Bewerken'),
+          ),
+        FilledButton(
+          onPressed: () async {
+            Navigator.pop(context);
+            await _duplicateCartridge(context, ref, item);
+          },
+          child: const Text('Dupliceren'),
+        ),
+      ],
+    ),
+  ),
+);
+
+Future<void> _openAmmoDetail(
+  BuildContext context,
+  WidgetRef ref,
+  AmmoLotRecord item,
+) => Navigator.of(context).push(
+  MaterialPageRoute(
+    builder: (_) => _LibraryDetailPage(
+      title: item.displayName,
+      fields: [
+        ('Fabrikant', item.manufacturer ?? ''),
+        ('Product', item.productName ?? ''),
+        ('Lotnummer', item.lotNumber ?? ''),
+        ('Kogelgewicht', item.bulletWeightGrains?.toString() ?? ''),
+        ('Projectieltype', item.projectileType ?? ''),
+        ('Notities', item.notes ?? ''),
+      ],
+      actions: [
+        FilledButton(
+          onPressed: () async {
+            Navigator.pop(context);
+            await _editAmmo(context, ref, item);
+          },
+          child: const Text('Bewerken'),
+        ),
+      ],
+    ),
+  ),
+);
+
+Future<void> _openRangeDetail(
+  BuildContext context,
+  WidgetRef ref,
+  RangeRecord item,
+) => Navigator.of(context).push(
+  MaterialPageRoute(
+    builder: (_) => _LibraryDetailPage(
+      title: item.name,
+      fields: [
+        ('Type', item.isIndoor ? 'Binnenstand' : 'Buitenstand'),
+        ('Locatie', item.locationDescription ?? ''),
+        (
+          'Afstanden',
+          (jsonDecode(item.availableDistancesJson) as List).join(' m, '),
+        ),
+        ('Notities', item.notes ?? ''),
+      ],
+      actions: [
+        FilledButton(
+          onPressed: () async {
+            Navigator.pop(context);
+            await _editRange(context, ref, item);
+          },
+          child: const Text('Bewerken'),
+        ),
+      ],
+    ),
+  ),
+);
+
+Future<void> _openTargetDetail(
+  BuildContext context,
+  WidgetRef ref,
+  TargetProfileRecord item,
+) {
+  final profile = domain.TargetProfile.fromJsonString(item.profileJson);
+  return Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => _LibraryDetailPage(
+        title: item.displayName,
+        fields: [
+          (
+            'Type',
+            item.builtIn ? 'Ingebouwd officieel profiel' : 'Eigen profiel',
+          ),
+          ('Versie', profile.profileVersion.toString()),
+          (
+            'Kaartmaat',
+            '${profile.physicalCardWidthMm} × ${profile.physicalCardHeightMm} mm',
+          ),
+          ('Maximumscore', profile.maximumScore.toString()),
+          ('Scoringsringen', profile.rings.length.toString()),
+        ],
+        actions: [
+          if (!item.builtIn)
+            OutlinedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _editTarget(context, ref, item);
+              },
+              child: const Text('Bewerken'),
+            ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _duplicateTarget(context, ref, item);
+            },
+            child: const Text('Dupliceren'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Future<void> _editFirearm(
+  BuildContext context,
+  WidgetRef ref,
+  FirearmRecord item,
+) async {
+  final draft = await Navigator.of(context).push<_FirearmDraft>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => _FirearmDialog(initial: item),
+    ),
+  );
+  if (draft == null) return;
+  await ref
+      .read(repositoryProvider)
+      .updateFirearm(
+        id: item.id,
+        name: draft.name,
+        type: draft.type,
+        manufacturer: draft.manufacturer,
+        model: draft.model,
+        defaultCartridgeId: draft.cartridgeId,
+        sightNotes: draft.notes,
+      );
+}
+
+Future<void> _editAmmo(
+  BuildContext context,
+  WidgetRef ref,
+  AmmoLotRecord item,
+) async {
+  final draft = await Navigator.of(context).push<_AmmoDraft>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => _AmmoDialog(initial: item),
+    ),
+  );
+  if (draft == null) return;
+  await ref
+      .read(repositoryProvider)
+      .updateAmmoLot(
+        id: item.id,
+        cartridgeId: draft.cartridgeId,
+        displayName: draft.displayName,
+        manufacturer: draft.manufacturer,
+        productName: draft.productName,
+        lotNumber: draft.lotNumber,
+        bulletWeightGrains: draft.weight,
+        projectileType: draft.projectileType,
+        notes: draft.notes,
+      );
+}
+
+Future<void> _editRange(
+  BuildContext context,
+  WidgetRef ref,
+  RangeRecord item,
+) async {
+  final draft = await Navigator.of(context).push<_RangeDraft>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => _RangeDialog(initial: item),
+    ),
+  );
+  if (draft == null) return;
+  await ref
+      .read(repositoryProvider)
+      .updateRange(
+        id: item.id,
+        name: draft.name,
+        isIndoor: draft.isIndoor,
+        locationDescription: draft.location,
+        availableDistances: draft.distances,
+        notes: draft.notes,
+      );
+}
+
+Future<void> _editCartridge(
+  BuildContext context,
+  WidgetRef ref,
+  CartridgeRecord item,
+) async {
+  final draft = await Navigator.of(context).push<_CartridgeDraft>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => _CartridgeDialog(initial: item),
+    ),
+  );
+  if (draft == null) return;
+  await ref
+      .read(repositoryProvider)
+      .updateCustomCartridge(
+        id: item.id,
+        name: draft.name,
+        projectileDiameterMm: draft.diameter,
+        notes: draft.notes,
+      );
+}
+
+Future<void> _editTarget(
+  BuildContext context,
+  WidgetRef ref,
+  TargetProfileRecord item,
+) async {
+  final original = domain.TargetProfile.fromJsonString(item.profileJson);
+  final edited = await Navigator.of(context).push<domain.TargetProfile>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => _TargetDialog(initial: original),
+    ),
+  );
+  if (edited == null) return;
+  await ref
+      .read(repositoryProvider)
+      .saveCustomTargetEdit(item.versionedId, edited);
+}
+
+Future<void> _duplicateCartridge(
+  BuildContext context,
+  WidgetRef ref,
+  CartridgeRecord item,
+) async {
+  await ref.read(repositoryProvider).duplicateCartridge(item.id);
+  if (context.mounted) {
+    AppMessenger.show(
+      context,
+      kind: AppNoticeKind.success,
+      message: 'Bewerkbare kopie gemaakt',
+    );
+  }
+}
+
+Future<void> _duplicateTarget(
+  BuildContext context,
+  WidgetRef ref,
+  TargetProfileRecord item,
+) async {
+  await ref.read(repositoryProvider).duplicateTargetProfile(item.versionedId);
+  if (context.mounted) {
+    AppMessenger.show(
+      context,
+      kind: AppNoticeKind.success,
+      message: 'Bewerkbare kopie gemaakt',
+    );
+  }
+}
+
+Future<void> _removeLibraryItem(
+  BuildContext context,
+  WidgetRef ref, {
+  required LibraryItemKind kind,
+  required String id,
+  required String label,
+}) async {
+  final repository = ref.read(repositoryProvider);
+  final usage = await repository.getLibraryUsage(kind, id);
+  if (!context.mounted) return;
+  final confirmed = await showAppDecisionDialog<bool>(
+    context: context,
+    title: '$label verwijderen?',
+    content: Text(
+      usage.isInUse
+          ? 'Dit item wordt gebruikt en daarom veilig gearchiveerd. Historische gegevens blijven behouden.'
+          : 'Dit item wordt definitief verwijderd omdat het nergens gebruikt wordt.',
+    ),
+    actions: const [
+      AppDecisionAction(
+        label: 'Verwijderen',
+        value: true,
+        kind: AppDecisionActionKind.destructive,
+      ),
+      AppDecisionAction(
+        label: 'Annuleren',
+        value: false,
+        kind: AppDecisionActionKind.text,
+      ),
+    ],
+  );
+  if (confirmed != true) return;
+  LibraryRemovalResult result;
+  switch (kind) {
+    case LibraryItemKind.firearm:
+      result = await repository.removeFirearm(id);
+    case LibraryItemKind.cartridge:
+      result = await repository.removeCartridge(
+        id,
+        archiveDependents: usage.dependentAmmoLotCount > 0,
+      );
+    case LibraryItemKind.ammoLot:
+      result = await repository.removeAmmoLot(id);
+    case LibraryItemKind.range:
+      result = await repository.removeRange(id);
+    case LibraryItemKind.targetProfile:
+      result = await repository.removeTargetProfile(id);
+  }
+  if (!context.mounted) return;
+  final message = switch (result) {
+    LibraryRemovalResult.deleted => 'Definitief verwijderd',
+    LibraryRemovalResult.archived =>
+      'Gearchiveerd omdat dit profiel gebruikt wordt',
+    LibraryRemovalResult.blockedBuiltIn =>
+      'Ingebouwde items kunnen niet verwijderd worden',
+    LibraryRemovalResult.blockedDependency =>
+      'Verwijdering geblokkeerd door afhankelijke profielen',
+  };
+  final noticeKind = switch (result) {
+    LibraryRemovalResult.deleted ||
+    LibraryRemovalResult.archived => AppNoticeKind.success,
+    _ => AppNoticeKind.warning,
+  };
+  AppMessenger.show(context, kind: noticeKind, message: message);
+}
+
+class _ArchivedLibraryScreen extends ConsumerWidget {
+  const _ArchivedLibraryScreen({required this.category});
+
+  final _LibraryCategory category;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entries = switch (category) {
+      _LibraryCategory.firearms =>
+        (ref.watch(allFirearmsProvider).valueOrNull ?? const <FirearmRecord>[])
+            .where((item) => item.archived)
+            .map(
+              (item) =>
+                  _ArchivedEntry(item.name, LibraryItemKind.firearm, item.id),
+            ),
+      _LibraryCategory.ammunition => [
+        ...(ref.watch(allCartridgesProvider).valueOrNull ??
+                const <CartridgeRecord>[])
+            .where((item) => item.archived)
+            .map(
+              (item) =>
+                  _ArchivedEntry(item.name, LibraryItemKind.cartridge, item.id),
+            ),
+        ...(ref.watch(allAmmoLotsProvider).valueOrNull ??
+                const <AmmoLotRecord>[])
+            .where((item) => item.archived)
+            .map(
+              (item) => _ArchivedEntry(
+                item.displayName,
+                LibraryItemKind.ammoLot,
+                item.id,
+              ),
+            ),
+      ],
+      _LibraryCategory.ranges =>
+        (ref.watch(allRangesProvider).valueOrNull ?? const <RangeRecord>[])
+            .where((item) => item.archived)
+            .map(
+              (item) =>
+                  _ArchivedEntry(item.name, LibraryItemKind.range, item.id),
+            ),
+      _LibraryCategory.targets =>
+        (ref.watch(allTargetProfilesProvider).valueOrNull ??
+                const <TargetProfileRecord>[])
+            .where((item) => item.archived)
+            .map(
+              (item) => _ArchivedEntry(
+                item.displayName,
+                LibraryItemKind.targetProfile,
+                item.versionedId,
+              ),
+            ),
+    };
+    final items = entries.toList();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Gearchiveerde items')),
+      body: items.isEmpty
+          ? const Center(child: Text('Geen gearchiveerde items'))
+          : ListView.separated(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: items.length,
+              separatorBuilder: (_, _) => const Divider(indent: 16),
+              itemBuilder: (context, index) {
+                final item = items[index];
+                return FutureBuilder<LibraryUsageSummary>(
+                  future: ref
+                      .read(repositoryProvider)
+                      .getLibraryUsage(item.kind, item.id),
+                  builder: (context, snapshot) {
+                    final usage = snapshot.data;
+                    final count =
+                        (usage?.sessionCount ?? 0) +
+                        (usage?.seriesCount ?? 0) +
+                        (usage?.goalCount ?? 0);
+                    return ListTile(
+                      title: Text(item.label),
+                      subtitle: Text(
+                        count == 0
+                            ? 'Niet meer in gebruik'
+                            : 'Bewaard voor $count historische verwijzingen',
+                      ),
+                      trailing: PopupMenuButton<_ArchivedAction>(
+                        onSelected: (action) =>
+                            action == _ArchivedAction.restore
+                            ? _restoreArchived(context, ref, item)
+                            : _removeLibraryItem(
+                                context,
+                                ref,
+                                kind: item.kind,
+                                id: item.id,
+                                label: item.label,
+                              ),
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: _ArchivedAction.restore,
+                            child: Text('Herstellen'),
+                          ),
+                          if (usage != null && !usage.isInUse)
+                            const PopupMenuItem(
+                              value: _ArchivedAction.delete,
+                              child: Text('Definitief verwijderen'),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+    );
+  }
+}
+
+class _ArchivedEntry {
+  const _ArchivedEntry(this.label, this.kind, this.id);
+  final String label;
+  final LibraryItemKind kind;
+  final String id;
+}
+
+enum _ArchivedAction { restore, delete }
+
+Future<void> _restoreArchived(
+  BuildContext context,
+  WidgetRef ref,
+  _ArchivedEntry item,
+) async {
+  final repository = ref.read(repositoryProvider);
+  try {
+    switch (item.kind) {
+      case LibraryItemKind.firearm:
+        await repository.restoreFirearm(item.id);
+      case LibraryItemKind.cartridge:
+        await repository.restoreCartridge(item.id);
+      case LibraryItemKind.ammoLot:
+        await repository.restoreAmmoLot(item.id);
+      case LibraryItemKind.range:
+        await repository.restoreRange(item.id);
+      case LibraryItemKind.targetProfile:
+        await repository.restoreTargetProfile(item.id);
+    }
+    if (context.mounted) {
+      AppMessenger.show(
+        context,
+        kind: AppNoticeKind.success,
+        message: 'Item hersteld',
+      );
+    }
+  } on StateError catch (error) {
+    if (context.mounted) {
+      AppMessenger.show(
+        context,
+        kind: AppNoticeKind.error,
+        message: error.message,
+      );
+    }
+  }
+}
+
+class _CartridgeDraft {
+  const _CartridgeDraft(this.name, this.diameter, this.notes);
+  final String name;
+  final double diameter;
+  final String notes;
+}
+
+class _CartridgeDialog extends StatefulWidget {
+  const _CartridgeDialog({this.initial});
+  final CartridgeRecord? initial;
+
+  @override
+  State<_CartridgeDialog> createState() => _CartridgeDialogState();
+}
+
+class _CartridgeDialogState extends State<_CartridgeDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _name;
+  late final TextEditingController _diameter;
+  late final TextEditingController _notes;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.initial?.name);
+    _diameter = TextEditingController(
+      text: widget.initial?.projectileDiameterMm.toString() ?? '',
+    );
+    _notes = TextEditingController(text: widget.initial?.notes);
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _diameter.dispose();
+    _notes.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AppFormScaffold(
+    title: widget.initial == null ? 'Kaliber toevoegen' : 'Kaliber bewerken',
+    actions: [FilledButton(onPressed: _submit, child: const Text('Bewaren'))],
+    body: Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextFormField(
+            controller: _name,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Naam *'),
+            validator: (value) => _requiredText(value, 'Vul een naam in'),
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _diameter,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [_decimalInputFormatter()],
+            decoration: const InputDecoration(
+              labelText: 'Projectieldiameter *',
+              suffixText: 'mm',
+            ),
+            validator: (value) => _positiveNumberError(value, 'diameter'),
+          ),
+          const SizedBox(height: 16),
+          AppMultilineField(
+            controller: _notes,
+            label: 'Notities',
+            minLines: 3,
+            maxLines: 5,
+          ),
+        ],
+      ),
+    ),
+  );
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    Navigator.pop(
+      context,
+      _CartridgeDraft(
+        _name.text.trim(),
+        _parseDecimal(_diameter.text)!,
+        _notes.text.trim(),
+      ),
+    );
+  }
+}
+
 class _FirearmDraft {
   const _FirearmDraft(
     this.name,
@@ -423,19 +1276,34 @@ class _FirearmDraft {
 }
 
 class _FirearmDialog extends ConsumerStatefulWidget {
-  const _FirearmDialog();
+  const _FirearmDialog({this.initial});
+  final FirearmRecord? initial;
   @override
   ConsumerState<_FirearmDialog> createState() => _FirearmDialogState();
 }
 
 class _FirearmDialogState extends ConsumerState<_FirearmDialog> {
   final formKey = GlobalKey<FormState>();
-  final name = TextEditingController();
-  final manufacturer = TextEditingController();
-  final model = TextEditingController();
-  final notes = TextEditingController();
-  var type = domain.FirearmType.pistol;
+  late final TextEditingController name;
+  late final TextEditingController manufacturer;
+  late final TextEditingController model;
+  late final TextEditingController notes;
+  late domain.FirearmType type;
   String? cartridgeId;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial;
+    name = TextEditingController(text: initial?.name);
+    manufacturer = TextEditingController(text: initial?.manufacturer);
+    model = TextEditingController(text: initial?.model);
+    notes = TextEditingController(text: initial?.sightNotes);
+    type = initial == null
+        ? domain.FirearmType.pistol
+        : domain.FirearmType.values.byName(initial.type);
+    cartridgeId = initial?.defaultCartridgeId;
+  }
 
   @override
   void dispose() {
@@ -450,14 +1318,12 @@ class _FirearmDialogState extends ConsumerState<_FirearmDialog> {
   Widget build(BuildContext context) {
     final cartridges =
         ref.watch(cartridgesProvider).valueOrNull ?? const <CartridgeRecord>[];
-    return Form(
-      key: formKey,
-      child: SafeSheetScaffold(
-        title: 'Wapenprofiel',
-        actions: [
-          FilledButton(onPressed: _submit, child: const Text('Bewaren')),
-        ],
-        body: Column(
+    return AppFormScaffold(
+      title: widget.initial == null ? 'Wapen toevoegen' : 'Wapen bewerken',
+      actions: [FilledButton(onPressed: _submit, child: const Text('Bewaren'))],
+      body: Form(
+        key: formKey,
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextFormField(
@@ -467,68 +1333,68 @@ class _FirearmDialogState extends ConsumerState<_FirearmDialog> {
               decoration: const InputDecoration(labelText: 'Naam *'),
               validator: (value) => _requiredText(value, 'Vul een naam in'),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: manufacturer,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Fabrikant'),
               validator: _optionalTextLength,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: model,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Model'),
               validator: _optionalTextLength,
             ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<domain.FirearmType>(
+            const SizedBox(height: 16),
+            AppSelectField<domain.FirearmType>(
+              label: 'Type',
               initialValue: type,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Type'),
-              items: const [
-                DropdownMenuItem(
+              options: const [
+                AppSelectOption(
                   value: domain.FirearmType.pistol,
-                  child: Text('Pistool', overflow: TextOverflow.ellipsis),
+                  label: 'Pistool',
                 ),
-                DropdownMenuItem(
+                AppSelectOption(
                   value: domain.FirearmType.revolver,
-                  child: Text('Revolver', overflow: TextOverflow.ellipsis),
+                  label: 'Revolver',
                 ),
-                DropdownMenuItem(
+                AppSelectOption(
+                  value: domain.FirearmType.rifle,
+                  label: 'Geweer',
+                ),
+                AppSelectOption(
                   value: domain.FirearmType.other,
-                  child: Text('Anders', overflow: TextOverflow.ellipsis),
+                  label: 'Anders',
                 ),
               ],
-              onChanged: (value) => setState(() => type = value!),
+              onChanged: (value) => setState(() => type = value),
             ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String?>(
+            const SizedBox(height: 16),
+            AppSelectField<String?>(
+              label: 'Standaardkaliber',
               initialValue: cartridgeId,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Standaardkaliber'),
-              items: [
-                const DropdownMenuItem(
+              options: [
+                const AppSelectOption<String?>(
                   value: null,
-                  child: Text(
-                    'Niet opgegeven',
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  label: 'Niet opgegeven',
                 ),
                 ...cartridges.map(
-                  (item) => DropdownMenuItem(
+                  (item) => AppSelectOption<String?>(
                     value: item.id,
-                    child: Text(item.name, overflow: TextOverflow.ellipsis),
+                    label: item.name,
                   ),
                 ),
               ],
               onChanged: (value) => setState(() => cartridgeId = value),
             ),
-            const SizedBox(height: 10),
-            TextFormField(
+            const SizedBox(height: 16),
+            AppMultilineField(
               controller: notes,
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Vizier/notities'),
+              label: 'Vizier en notities',
+              minLines: 3,
+              maxLines: 5,
               validator: (value) => _optionalTextLength(value, maximum: 500),
             ),
           ],
@@ -562,6 +1428,7 @@ class _AmmoDraft {
     this.lotNumber,
     this.weight,
     this.projectileType,
+    this.notes,
   );
   final String cartridgeId;
   final String displayName;
@@ -570,23 +1437,42 @@ class _AmmoDraft {
   final String lotNumber;
   final double? weight;
   final String projectileType;
+  final String notes;
 }
 
 class _AmmoDialog extends ConsumerStatefulWidget {
-  const _AmmoDialog();
+  const _AmmoDialog({this.initial});
+  final AmmoLotRecord? initial;
   @override
   ConsumerState<_AmmoDialog> createState() => _AmmoDialogState();
 }
 
 class _AmmoDialogState extends ConsumerState<_AmmoDialog> {
   final formKey = GlobalKey<FormState>();
-  final name = TextEditingController();
-  final manufacturer = TextEditingController();
-  final product = TextEditingController();
-  final lot = TextEditingController();
-  final weight = TextEditingController();
-  final projectile = TextEditingController();
+  late final TextEditingController name;
+  late final TextEditingController manufacturer;
+  late final TextEditingController product;
+  late final TextEditingController lot;
+  late final TextEditingController weight;
+  late final TextEditingController projectile;
+  late final TextEditingController notes;
   String? cartridgeId;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial;
+    name = TextEditingController(text: initial?.displayName);
+    manufacturer = TextEditingController(text: initial?.manufacturer);
+    product = TextEditingController(text: initial?.productName);
+    lot = TextEditingController(text: initial?.lotNumber);
+    weight = TextEditingController(
+      text: initial?.bulletWeightGrains?.toString(),
+    );
+    projectile = TextEditingController(text: initial?.projectileType);
+    notes = TextEditingController(text: initial?.notes);
+    cartridgeId = initial?.cartridgeId;
+  }
 
   @override
   void dispose() {
@@ -596,6 +1482,7 @@ class _AmmoDialogState extends ConsumerState<_AmmoDialog> {
     lot.dispose();
     weight.dispose();
     projectile.dispose();
+    notes.dispose();
     super.dispose();
   }
 
@@ -603,33 +1490,32 @@ class _AmmoDialogState extends ConsumerState<_AmmoDialog> {
   Widget build(BuildContext context) {
     final cartridges =
         ref.watch(cartridgesProvider).valueOrNull ?? const <CartridgeRecord>[];
-    cartridgeId ??= cartridges.firstOrNull?.id;
-    return Form(
-      key: formKey,
-      child: SafeSheetScaffold(
-        title: 'Munitieprofiel',
-        actions: [
-          FilledButton(onPressed: _submit, child: const Text('Bewaren')),
-        ],
-        body: Column(
+    final selectedCartridge = cartridgeId ?? cartridges.firstOrNull?.id;
+    return AppFormScaffold(
+      title: widget.initial == null
+          ? 'Munitieprofiel toevoegen'
+          : 'Munitieprofiel bewerken',
+      actions: [FilledButton(onPressed: _submit, child: const Text('Bewaren'))],
+      body: Form(
+        key: formKey,
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            DropdownButtonFormField<String>(
-              initialValue: cartridgeId,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Kaliber *'),
-              items: cartridges
+            AppSelectField<String?>(
+              label: 'Kaliber *',
+              initialValue: selectedCartridge,
+              options: cartridges
                   .map(
-                    (item) => DropdownMenuItem(
+                    (item) => AppSelectOption<String?>(
                       value: item.id,
-                      child: Text(item.name, overflow: TextOverflow.ellipsis),
+                      label: item.name,
                     ),
                   )
                   .toList(),
               onChanged: (value) => setState(() => cartridgeId = value),
-              validator: (value) => value == null ? 'Kies een kaliber' : null,
+              validation: (value) => value == null ? 'Kies een kaliber' : null,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: name,
               textInputAction: TextInputAction.next,
@@ -637,28 +1523,28 @@ class _AmmoDialogState extends ConsumerState<_AmmoDialog> {
               validator: (value) =>
                   _requiredText(value, 'Vul een weergavenaam in'),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: manufacturer,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Fabrikant'),
               validator: _optionalTextLength,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: product,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Product'),
               validator: _optionalTextLength,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: lot,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Lotnummer'),
               validator: _optionalTextLength,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: weight,
               keyboardType: const TextInputType.numberWithOptions(
@@ -676,11 +1562,19 @@ class _AmmoDialogState extends ConsumerState<_AmmoDialog> {
                     : null;
               },
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             TextFormField(
               controller: projectile,
               decoration: const InputDecoration(labelText: 'Projectieltype'),
               validator: _optionalTextLength,
+            ),
+            const SizedBox(height: 16),
+            AppMultilineField(
+              controller: notes,
+              label: 'Notities',
+              minLines: 3,
+              maxLines: 5,
+              validator: (value) => _optionalTextLength(value, maximum: 500),
             ),
           ],
         ),
@@ -693,13 +1587,15 @@ class _AmmoDialogState extends ConsumerState<_AmmoDialog> {
     Navigator.pop(
       context,
       _AmmoDraft(
-        cartridgeId!,
+        cartridgeId ??
+            (ref.read(cartridgesProvider).valueOrNull?.firstOrNull?.id ?? ''),
         name.text.trim(),
         manufacturer.text.trim(),
         product.text.trim(),
         lot.text.trim(),
         double.tryParse(weight.text.replaceAll(',', '.')),
         projectile.text.trim(),
+        notes.text.trim(),
       ),
     );
   }
@@ -721,22 +1617,37 @@ class _RangeDraft {
 }
 
 class _RangeDialog extends StatefulWidget {
-  const _RangeDialog();
+  const _RangeDialog({this.initial});
+  final RangeRecord? initial;
   @override
   State<_RangeDialog> createState() => _RangeDialogState();
 }
 
 class _RangeDialogState extends State<_RangeDialog> {
   final formKey = GlobalKey<FormState>();
-  final name = TextEditingController();
-  final location = TextEditingController();
-  final distanceRows = <TextEditingController>[
-    TextEditingController(text: '25'),
-    TextEditingController(text: '50'),
-  ];
-  final notes = TextEditingController();
-  var indoor = true;
+  late final TextEditingController name;
+  late final TextEditingController location;
+  late final List<TextEditingController> distanceRows;
+  late final TextEditingController notes;
+  late bool indoor;
   String? distanceListError;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial;
+    name = TextEditingController(text: initial?.name);
+    location = TextEditingController(text: initial?.locationDescription);
+    final distances = initial == null
+        ? const <num>[25, 50]
+        : (jsonDecode(initial.availableDistancesJson) as List).cast<num>();
+    distanceRows = distances
+        .map((value) => TextEditingController(text: value.toString()))
+        .toList();
+    if (distanceRows.isEmpty) distanceRows.add(TextEditingController());
+    notes = TextEditingController(text: initial?.notes);
+    indoor = initial?.isIndoor ?? true;
+  }
 
   @override
   void dispose() {
@@ -750,12 +1661,14 @@ class _RangeDialogState extends State<_RangeDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => Form(
-    key: formKey,
-    child: SafeSheetScaffold(
-      title: 'Schietstand',
-      actions: [FilledButton(onPressed: _submit, child: const Text('Bewaren'))],
-      body: Column(
+  Widget build(BuildContext context) => AppFormScaffold(
+    title: widget.initial == null
+        ? 'Schietstand toevoegen'
+        : 'Schietstand bewerken',
+    actions: [FilledButton(onPressed: _submit, child: const Text('Bewaren'))],
+    body: Form(
+      key: formKey,
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextFormField(
@@ -765,20 +1678,20 @@ class _RangeDialogState extends State<_RangeDialog> {
             decoration: const InputDecoration(labelText: 'Naam *'),
             validator: (value) => _requiredText(value, 'Vul een naam in'),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           TextFormField(
             controller: location,
             textInputAction: TextInputAction.next,
             decoration: const InputDecoration(labelText: 'Locatiebeschrijving'),
             validator: _optionalTextLength,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           SwitchListTile(
             value: indoor,
             onChanged: (value) => setState(() => indoor = value),
             title: Text(indoor ? 'Binnenstand' : 'Buitenstand'),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           Text('Afstanden', style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 8),
           for (var index = 0; index < distanceRows.length; index++) ...[
@@ -832,12 +1745,12 @@ class _RangeDialogState extends State<_RangeDialog> {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ],
-          const SizedBox(height: 10),
-          TextFormField(
+          const SizedBox(height: 16),
+          AppMultilineField(
             controller: notes,
-            minLines: 2,
+            label: 'Notities',
+            minLines: 3,
             maxLines: 4,
-            decoration: const InputDecoration(labelText: 'Notities'),
             validator: (value) => _optionalTextLength(value, maximum: 500),
           ),
         ],
@@ -883,28 +1796,58 @@ class _RangeDialogState extends State<_RangeDialog> {
 }
 
 class _TargetDialog extends StatefulWidget {
-  const _TargetDialog();
+  const _TargetDialog({this.initial});
+  final domain.TargetProfile? initial;
   @override
   State<_TargetDialog> createState() => _TargetDialogState();
 }
 
 class _TargetDialogState extends State<_TargetDialog> {
   final _basicsFormKey = GlobalKey<FormState>();
-  final name = TextEditingController();
-  final width = TextEditingController(text: '550');
-  final height = TextEditingController(text: '550');
-  final innerTen = TextEditingController();
-  final black = TextEditingController(text: '200');
-  final ringRows = <_RingInput>[
-    _RingInput(score: '10', diameter: '50'),
-    _RingInput(score: '9', diameter: '100'),
-    _RingInput(score: '8', diameter: '150'),
-    _RingInput(score: '7', diameter: '200'),
-    _RingInput(score: '6', diameter: '250'),
-    _RingInput(score: '5', diameter: '300'),
-  ];
+  late final TextEditingController name;
+  late final TextEditingController width;
+  late final TextEditingController height;
+  late final TextEditingController innerTen;
+  late final TextEditingController black;
+  late final List<_RingInput> ringRows;
   var step = 0;
   String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial;
+    name = TextEditingController(text: initial?.displayName);
+    width = TextEditingController(
+      text: initial?.physicalCardWidthMm.toString() ?? '550',
+    );
+    height = TextEditingController(
+      text: initial?.physicalCardHeightMm.toString() ?? '550',
+    );
+    innerTen = TextEditingController(
+      text: initial?.innerTenDiameterMm?.toString() ?? '',
+    );
+    black = TextEditingController(
+      text: initial?.blackOuterDiameterMm?.toString() ?? '200',
+    );
+    ringRows = initial == null
+        ? [
+            _RingInput(score: '10', diameter: '50'),
+            _RingInput(score: '9', diameter: '100'),
+            _RingInput(score: '8', diameter: '150'),
+            _RingInput(score: '7', diameter: '200'),
+            _RingInput(score: '6', diameter: '250'),
+            _RingInput(score: '5', diameter: '300'),
+          ]
+        : initial.rings
+              .map(
+                (ring) => _RingInput(
+                  score: ring.value.toString(),
+                  diameter: ring.outerDiameterMm.toString(),
+                ),
+              )
+              .toList();
+  }
 
   @override
   void dispose() {
@@ -922,8 +1865,8 @@ class _TargetDialogState extends State<_TargetDialog> {
   @override
   Widget build(BuildContext context) {
     final labels = ['Basis', 'Scoringsringen', 'Voorbeeld'];
-    return SafeSheetScaffold(
-      title: 'Eigen ringkaart',
+    return AppFormScaffold(
+      title: widget.initial == null ? 'Eigen ringkaart' : 'Doelkaart bewerken',
       actions: switch (step) {
         0 => [
           FilledButton(
@@ -940,7 +1883,7 @@ class _TargetDialogState extends State<_TargetDialog> {
         ],
         _ => [
           TextButton(onPressed: _back, child: const Text('Terug')),
-          FilledButton(onPressed: _save, child: const Text('Profiel maken')),
+          FilledButton(onPressed: _save, child: const Text('Profiel bewaren')),
         ],
       },
       body: Column(
@@ -987,7 +1930,7 @@ class _TargetDialogState extends State<_TargetDialog> {
           validator: (value) =>
               _requiredText(value, 'Vul een naam in', maximum: 120),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         AdaptiveFormRow(
           minimumChildWidth: 150,
           children: [
@@ -1039,7 +1982,7 @@ class _TargetDialogState extends State<_TargetDialog> {
             error = null;
           }),
         ),
-        if (index != ringRows.length - 1) const SizedBox(height: 10),
+        if (index != ringRows.length - 1) const SizedBox(height: 16),
       ],
       const SizedBox(height: 12),
       OutlinedButton.icon(

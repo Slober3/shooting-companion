@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../data/shooting_repository.dart';
+import '../../widgets/app_decision_dialog.dart';
+import '../../widgets/app_notice.dart';
 
 enum SessionEndDecision {
   cancel,
@@ -35,9 +37,7 @@ class SessionCompletionCoordinator {
   }) async {
     if (!_inFlightSessionIds.add(sessionId)) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Deze sessie wordt al beëindigd.')),
-        );
+        AppMessenger.info(context, 'Deze sessie wordt al beëindigd.');
       }
       return SessionCompletionUiOutcome.busy;
     }
@@ -87,17 +87,13 @@ class SessionCompletionCoordinator {
           _ => null,
         };
         if (message != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(message)));
+          AppMessenger.success(context, message);
         }
       }
       return outcome;
     } catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sessie beëindigen mislukt: $error')),
-        );
+        AppMessenger.error(context, 'Sessie beëindigen mislukt: $error');
       }
       return SessionCompletionUiOutcome.failed;
     } finally {
@@ -142,43 +138,72 @@ Future<SessionEndDecision> showSessionEndDialog({
   required BuildContext context,
   required SessionEndPromptData data,
 }) async {
-  final decision = await showDialog<SessionEndDecision>(
+  final decision = await showAppDecisionDialog<SessionEndDecision>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Sessie beëindigen?'),
-      content: Text(_message(data)),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, SessionEndDecision.cancel),
-          child: const Text('Annuleren'),
-        ),
-        if (data.hasMeaningfulDraft) ...[
-          TextButton(
-            onPressed: () =>
-                Navigator.pop(context, SessionEndDecision.openDraft),
-            child: const Text('Reeks openen'),
-          ),
-          OutlinedButton(
-            onPressed: () =>
-                Navigator.pop(context, SessionEndDecision.discardDraft),
-            child: const Text('Concept verwijderen'),
-          ),
-          if (data.draftShotCount > 0)
-            FilledButton(
-              onPressed: () =>
-                  Navigator.pop(context, SessionEndDecision.confirmDraft),
-              child: const Text('Reeks bewaren en beëindigen'),
+    title: 'Sessie beëindigen?',
+    content: Text(_message(data)),
+    actions: data.hasMeaningfulDraft
+        ? [
+            if (data.draftShotCount > 0)
+              const AppDecisionAction(
+                label: 'Reeks bewaren en beëindigen',
+                value: SessionEndDecision.confirmDraft,
+                kind: AppDecisionActionKind.primary,
+              ),
+            const AppDecisionAction(
+              label: 'Reeks openen',
+              value: SessionEndDecision.openDraft,
+              kind: AppDecisionActionKind.secondary,
             ),
-        ] else
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(context, SessionEndDecision.complete),
-            child: const Text('Beëindigen'),
-          ),
-      ],
-    ),
+            const AppDecisionAction(
+              label: 'Concept verwijderen',
+              value: SessionEndDecision.discardDraft,
+              kind: AppDecisionActionKind.destructive,
+            ),
+            const AppDecisionAction(
+              label: 'Annuleren',
+              value: SessionEndDecision.cancel,
+              kind: AppDecisionActionKind.text,
+            ),
+          ]
+        : const [
+            AppDecisionAction(
+              label: 'Sessie beëindigen',
+              value: SessionEndDecision.complete,
+              kind: AppDecisionActionKind.primary,
+            ),
+            AppDecisionAction(
+              label: 'Annuleren',
+              value: SessionEndDecision.cancel,
+              kind: AppDecisionActionKind.text,
+            ),
+          ],
   );
-  return decision ?? SessionEndDecision.cancel;
+  if (decision != SessionEndDecision.discardDraft || !context.mounted) {
+    return decision ?? SessionEndDecision.cancel;
+  }
+  final confirmed = await showAppDecisionDialog<bool>(
+    context: context,
+    title: 'Concept definitief verwijderen?',
+    content: const Text(
+      'De punten, foto’s en notitie van deze conceptreeks gaan verloren.',
+    ),
+    actions: const [
+      AppDecisionAction(
+        label: 'Concept verwijderen',
+        value: true,
+        kind: AppDecisionActionKind.destructive,
+      ),
+      AppDecisionAction(
+        label: 'Terug',
+        value: false,
+        kind: AppDecisionActionKind.text,
+      ),
+    ],
+  );
+  return confirmed == true
+      ? SessionEndDecision.discardDraft
+      : SessionEndDecision.cancel;
 }
 
 String _message(SessionEndPromptData data) {

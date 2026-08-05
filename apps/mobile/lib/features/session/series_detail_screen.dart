@@ -10,8 +10,8 @@ import 'package:shooting_companion_photo_geometry/photo_geometry.dart' as geo;
 import '../../app/providers.dart';
 import '../../data/app_database.dart';
 import '../../data/shooting_repository.dart';
+import '../../widgets/app_action_dock.dart';
 import '../../widgets/responsive_metric_grid.dart';
-import '../../widgets/safe_bottom_action_bar.dart';
 import '../photo/photo.dart';
 import '../scoring/target_canvas.dart';
 import '../scoring/transformable_scoring_viewport.dart';
@@ -56,7 +56,7 @@ class SeriesDetailScreen extends ConsumerWidget {
       ),
       bottomNavigationBar: detail.valueOrNull == null
           ? null
-          : SafeBottomActionBar(
+          : AppActionDock(
               actions: [
                 FilledButton.icon(
                   onPressed: () =>
@@ -64,14 +64,20 @@ class SeriesDetailScreen extends ConsumerWidget {
                   icon: const Icon(Icons.edit_outlined),
                   label: const Text('Bewerken'),
                 ),
-                OutlinedButton.icon(
-                  onPressed: () => _edit(
-                    context,
-                    detail.valueOrNull!.series.sessionId,
-                    addPhoto: true,
+                Semantics(
+                  button: true,
+                  label: 'Foto toevoegen aan deze reeks',
+                  child: ExcludeSemantics(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _edit(
+                        context,
+                        detail.valueOrNull!.series.sessionId,
+                        addPhoto: true,
+                      ),
+                      icon: const Icon(Icons.add_a_photo_outlined),
+                      label: const Text('Foto', maxLines: 1),
+                    ),
                   ),
-                  icon: const Icon(Icons.add_a_photo_outlined),
-                  label: const Text('Foto toevoegen'),
                 ),
               ],
             ),
@@ -121,17 +127,17 @@ class SeriesDetailScreen extends ConsumerWidget {
   }
 }
 
-class _SeriesDetailBody extends StatelessWidget {
+class _SeriesDetailBody extends ConsumerWidget {
   const _SeriesDetailBody({required this.detail});
 
   final SeriesDetail detail;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final series = detail.series;
     final target = detail.target;
     final scoreValues = {
-      for (final impact in detail.impacts) impact.id: impact.scoreValue,
+      for (final impact in detail.impacts) impact.id: impact.rawScoreValue,
     };
     return ListView(
       padding: EdgeInsets.fromLTRB(
@@ -142,7 +148,7 @@ class _SeriesDetailBody extends StatelessWidget {
       ),
       children: [
         AspectRatio(
-          aspectRatio: 1,
+          aspectRatio: target.physicalCardWidthMm / target.physicalCardHeightMm,
           child: DecoratedBox(
             decoration: BoxDecoration(
               border: Border.all(
@@ -182,9 +188,23 @@ class _SeriesDetailBody extends StatelessWidget {
           title: Text(target.displayName),
           subtitle: Text(
             '${series.distanceMeters.toStringAsFixed(0)} m · '
-            'projectiel ${series.projectileDiameterMm.toStringAsFixed(2)} mm',
+            '${detail.cartridge?.name ?? 'projectiel ${series.projectileDiameterMm.toStringAsFixed(2)} mm'}',
           ),
         ),
+        if (detail.firearm != null)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.sports_martial_arts_outlined),
+            title: const Text('Wapen'),
+            subtitle: Text(detail.firearm!.name),
+          ),
+        if (detail.ammoLot != null)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.inventory_2_outlined),
+            title: const Text('Munitieprofiel'),
+            subtitle: Text(detail.ammoLot!.displayName),
+          ),
         if (series.notes != null)
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -201,11 +221,14 @@ class _SeriesDetailBody extends StatelessWidget {
             title: Text(
               entry.$2.isMiss
                   ? 'Misser · 0 punten'
-                  : '${entry.$2.scoreValue} punten'
+                  : '${entry.$2.rawScoreValue} punten'
                         '${entry.$2.isInnerTen ? ' · X' : ''}',
             ),
             subtitle: Text(
-              entry.$2.multiplicity > 1
+              entry.$2.scoreDisposition ==
+                      domain.ScoreDisposition.duplicateNotCounted.name
+                  ? 'Telt niet · meerdere schoten op hetzelfde roosje'
+                  : entry.$2.multiplicity > 1
                   ? 'Telt als ${entry.$2.multiplicity} schoten · positie onzeker'
                   : entry.$2.isBoundaryUncertain
                   ? 'Dicht bij een scoringslijn'
@@ -219,17 +242,21 @@ class _SeriesDetailBody extends StatelessWidget {
           Text('Foto’s', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           SizedBox(
-            height: 92,
+            height: 98 + MediaQuery.textScalerOf(context).scale(38),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: detail.images.length,
               separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final image = detail.images[index];
-                return _PhotoThumb(
+                final primary = image.id == detail.primaryImage?.id;
+                return PhotoThumbnailTile(
                   image: image,
-                  primary: image.id == detail.primaryImage?.id,
+                  badgeLabel: primary ? 'Scorefoto' : 'Reeksfoto',
                   onTap: () => _openPhoto(context, image),
+                  onLongPress: () => unawaited(
+                    _showPhotoActions(context, ref, image, primary),
+                  ),
                 );
               },
             ),
@@ -240,45 +267,97 @@ class _SeriesDetailBody extends StatelessWidget {
   }
 
   void _openPhoto(BuildContext context, ImageAssetRecord image) {
+    final isPrimary = image.id == detail.primaryImage?.id;
+    PhotoViewerOverlayData? overlayData;
     if (image.id == detail.primaryImage?.id && detail.photoAlignment != null) {
       final alignment = _decodeAlignment(detail);
       if (alignment != null) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => PhotoOverlayViewer(
-              imageProvider: FileImage(File(image.path)),
-              imagePixelSize: Size(
-                image.width.toDouble(),
-                image.height.toDouble(),
-              ),
-              alignment: alignment,
-              projectileDiameterMm: detail.series.projectileDiameterMm,
-              impacts: [
-                for (var index = 0; index < detail.impacts.length; index++)
-                  if (!detail.impacts[index].isMiss)
-                    PhotoCanvasImpact(
-                      id: detail.impacts[index].id,
-                      positionMm: geo.PhysicalPointMm(
-                        detail.impacts[index].xMm,
-                        detail.impacts[index].yMm,
-                      ),
-                      sequenceNumber: index + 1,
-                      scoreLabel: '${detail.impacts[index].scoreValue}',
-                      multiplicity: detail.impacts[index].multiplicity,
-                      isPositionUncertain:
-                          detail.impacts[index].isPositionUncertain,
-                    ),
-              ],
-            ),
-          ),
+        overlayData = PhotoViewerOverlayData(
+          alignment: alignment,
+          projectileDiameterMm: detail.series.projectileDiameterMm,
+          impacts: [
+            for (var index = 0; index < detail.impacts.length; index++)
+              if (!detail.impacts[index].isMiss)
+                PhotoCanvasImpact(
+                  id: detail.impacts[index].id,
+                  positionMm: geo.PhysicalPointMm(
+                    detail.impacts[index].xMm,
+                    detail.impacts[index].yMm,
+                  ),
+                  sequenceNumber: index + 1,
+                  scoreLabel: '${detail.impacts[index].scoreValue}',
+                  multiplicity: detail.impacts[index].multiplicity,
+                  isPositionUncertain:
+                      detail.impacts[index].isPositionUncertain,
+                ),
+          ],
         );
-        return;
       }
     }
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => _PlainPhotoViewer(image: image)));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PhotoViewerScreen(
+          imageId: image.id,
+          sourceLabel: isPrimary ? 'Scorefoto' : 'Reeksfoto',
+          overlayData: overlayData,
+          onMakePrimary: isPrimary
+              ? null
+              : () => _openAlignment(context, image),
+          onAdjustAlignment: isPrimary && detail.photoAlignment != null
+              ? () => _openAlignment(context, image)
+              : null,
+        ),
+      ),
+    );
   }
+
+  Future<void> _showPhotoActions(
+    BuildContext context,
+    WidgetRef ref,
+    ImageAssetRecord image,
+    bool primary,
+  ) async {
+    final action = await showPhotoActionsSheet(
+      context: context,
+      image: image,
+      canMakePrimary: !primary,
+      canAdjustAlignment: primary && detail.photoAlignment != null,
+    );
+    if (action == null || !context.mounted) return;
+    switch (action) {
+      case PhotoAction.view:
+        _openPhoto(context, image);
+        return;
+      case PhotoAction.resetView:
+        return;
+      case PhotoAction.editCaption:
+        await editPhotoCaption(context: context, ref: ref, image: image);
+        return;
+      case PhotoAction.makePrimary:
+      case PhotoAction.adjustAlignment:
+        await _openAlignment(context, image);
+        return;
+      case PhotoAction.delete:
+        await deletePhotoWithConfirmation(
+          context: context,
+          ref: ref,
+          image: image,
+          sourceLabel: primary ? 'Scorefoto' : 'Reeksfoto',
+        );
+        return;
+    }
+  }
+
+  Future<void> _openAlignment(BuildContext context, ImageAssetRecord image) =>
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ManualSeriesScreen(
+            sessionId: detail.series.sessionId,
+            seriesId: detail.series.id,
+            alignImageIdOnLoad: image.id,
+          ),
+        ),
+      );
 }
 
 class _TargetPreview extends StatelessWidget {
@@ -326,6 +405,11 @@ class _TargetPreview extends StatelessWidget {
               multiplicity: impact.multiplicity,
               isMiss: impact.isMiss,
               isPositionUncertain: impact.isPositionUncertain,
+              targetBullId: impact.targetBullId,
+              rawScoreValue: impact.rawScoreValue,
+              scoreDisposition: domain.ScoreDisposition.values.byName(
+                impact.scoreDisposition,
+              ),
             ),
           )
           .toList(),
@@ -360,83 +444,4 @@ geo.ManualPhotoAlignment? _decodeAlignment(SeriesDetail detail) {
   } catch (_) {
     return null;
   }
-}
-
-class _PhotoThumb extends StatelessWidget {
-  const _PhotoThumb({
-    required this.image,
-    required this.primary,
-    required this.onTap,
-  });
-
-  final ImageAssetRecord image;
-  final bool primary;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    label: primary ? 'Primaire scorefoto' : 'Foto',
-    button: true,
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.file(
-              File(image.path),
-              width: 92,
-              height: 92,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const SizedBox.square(
-                dimension: 92,
-                child: ColoredBox(
-                  color: Colors.black12,
-                  child: Icon(Icons.broken_image_outlined),
-                ),
-              ),
-            ),
-          ),
-          if (primary)
-            const Positioned(
-              left: 4,
-              top: 4,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Colors.black87,
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  child: Text(
-                    'Scorefoto',
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    ),
-  );
-}
-
-class _PlainPhotoViewer extends StatelessWidget {
-  const _PlainPhotoViewer({required this.image});
-
-  final ImageAssetRecord image;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(image.caption ?? 'Foto')),
-    body: SafeArea(
-      top: false,
-      child: InteractiveViewer(
-        minScale: 1,
-        maxScale: 6,
-        child: Center(child: Image.file(File(image.path))),
-      ),
-    ),
-  );
 }

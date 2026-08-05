@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shooting_companion/widgets/app_action_dock.dart';
 import 'package:shooting_companion/widgets/safe_sheet_scaffold.dart';
 
 void main() {
@@ -106,6 +107,101 @@ void main() {
     final second = tester.getTopLeft(find.byKey(const Key('second-field')));
     expect(second.dx, first.dx);
     expect(second.dy, greaterThan(first.dy));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('action dock adds twelve dp above the system inset', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 640);
+    addTearDown(() {
+      tester.view.resetDevicePixelRatio();
+      tester.view.resetPhysicalSize();
+    });
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: MediaQuery(
+          data: MediaQueryData(
+            size: Size(320, 640),
+            padding: EdgeInsets.only(bottom: 48),
+            viewPadding: EdgeInsets.only(bottom: 48),
+          ),
+          child: Scaffold(
+            bottomNavigationBar: AppActionDock(
+              actions: [FilledButton(onPressed: null, child: Text('Bewaren'))],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final surface = find.byKey(const ValueKey('app-action-dock-surface'));
+    expect(surface, findsOneWidget);
+    expect(tester.getBottomRight(surface).dy, closeTo(640 - 48 - 12, .01));
+  });
+
+  testWidgets('compact sheet stays content sized without a cancel footer', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 640);
+    addTearDown(() {
+      tester.view.resetDevicePixelRatio();
+      tester.view.resetPhysicalSize();
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: const MediaQueryData(
+            size: Size(320, 640),
+            padding: EdgeInsets.only(bottom: 48),
+            viewPadding: EdgeInsets.only(bottom: 48),
+            textScaler: TextScaler.linear(2),
+          ),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => FilledButton(
+              onPressed: () => showSafeModalSheet<void>(
+                context: context,
+                presentation: SafeSheetPresentation.compact,
+                builder: (_) => const SafeSheetScaffold(
+                  title: 'Foto toevoegen',
+                  contentSized: true,
+                  actions: [],
+                  body: Column(
+                    children: [
+                      ListTile(
+                        leading: Icon(Icons.camera_alt),
+                        title: Text('Camera'),
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.photo_library),
+                        title: Text('Galerij'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              child: const Text('Open foto'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open foto'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Annuleren'), findsNothing);
+    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(const ValueKey('safe-sheet-surface'))).height,
+      lessThan(500),
+    );
+    expect(tester.getBottomRight(find.text('Galerij')).dy, lessThan(640 - 48));
     expect(tester.takeException(), isNull);
   });
 }
