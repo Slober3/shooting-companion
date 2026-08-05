@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shooting_companion_analysis/analysis.dart';
 import 'package:shooting_companion_domain/domain.dart' as domain;
 import 'package:shooting_companion_photo_geometry/photo_geometry.dart' as geo;
 
@@ -13,8 +14,13 @@ import '../../data/shooting_repository.dart';
 import '../../widgets/app_action_dock.dart';
 import '../../widgets/responsive_metric_grid.dart';
 import '../photo/photo.dart';
+import '../progress/analysis_adapter.dart';
+import '../progress/group_analysis_widgets.dart';
+import '../progress/series_analysis_screen.dart';
 import '../scoring/target_canvas.dart';
 import '../scoring/transformable_scoring_viewport.dart';
+import '../training_tools/shot_timer_flow.dart';
+import '../training_tools/timer_history_screen.dart';
 import 'manual_series_screen.dart';
 
 class SeriesDetailScreen extends ConsumerWidget {
@@ -29,6 +35,17 @@ class SeriesDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Reeksdetail'),
         actions: [
+          if (detail.valueOrNull != null)
+            IconButton(
+              tooltip: 'Timer voor deze reeks starten',
+              onPressed: () => launchShotTimerFlow(
+                context: context,
+                ref: ref,
+                sessionId: detail.valueOrNull!.series.sessionId,
+                seriesId: seriesId,
+              ),
+              icon: const Icon(Icons.timer_outlined),
+            ),
           PopupMenuButton<String>(
             tooltip: 'Reeksacties',
             onSelected: (value) {
@@ -139,6 +156,12 @@ class _SeriesDetailBody extends ConsumerWidget {
     final scoreValues = {
       for (final impact in detail.impacts) impact.id: impact.rawScoreValue,
     };
+    final analysis = GroupAnalyzer.analyze(
+      seriesId: series.id,
+      impacts: detail.impacts.map(impactRecordToDomain).toList(growable: false),
+      targetProfile: target,
+      distanceMeters: series.distanceMeters,
+    );
     return ListView(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -179,6 +202,17 @@ class _SeriesDetailBody extends ConsumerWidget {
             MetricItem(label: 'X', value: '${series.innerTenCount}'),
           ],
         ),
+        const SizedBox(height: 20),
+        GroupAnalysisSummaryCard(
+          analysis: analysis,
+          onOpenAnalysis: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => SeriesAnalysisScreen(seriesId: series.id),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _SeriesTimerActivities(seriesId: series.id),
         const SizedBox(height: 20),
         Text('Instellingen', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 4),
@@ -358,6 +392,79 @@ class _SeriesDetailBody extends ConsumerWidget {
           ),
         ),
       );
+}
+
+class _SeriesTimerActivities extends ConsumerWidget {
+  const _SeriesTimerActivities({required this.seriesId});
+
+  final String seriesId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activities = ref.watch(seriesTrainingActivitiesProvider(seriesId));
+    return activities.when(
+      data: (items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+        return Card(
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+                child: Text(
+                  'Timerresultaten',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              for (final activity in items)
+                ListTile(
+                  leading: const Icon(Icons.timer_outlined),
+                  title: Text(_timerActivityLabel(activity.kind)),
+                  subtitle: Text(_timerActivitySummary(activity.summaryJson)),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          TimerActivityDetailScreen(activityId: activity.id),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+    );
+  }
+}
+
+String _timerActivityLabel(String kind) => switch (kind) {
+  'acousticLiveFire' => 'Akoestische shot timer',
+  'par' => 'Par timer',
+  'cadence' => 'Cadanstrainer',
+  'externalManual' => 'Extern gemeten',
+  _ => 'Trainingstimer',
+};
+
+String _timerActivitySummary(String summaryJson) {
+  try {
+    final summary = (jsonDecode(summaryJson) as Map).cast<String, Object?>();
+    final isExternalSummaryOnly =
+        summary['externalTimingCompleteness'] == 'summaryOnly';
+    final shots = (summary['countedShotCount'] as num?)?.toInt();
+    final total = (summary['totalTimeMicros'] as num?)?.toInt();
+    final parts = <String>[
+      if (shots != null) '$shots schoten',
+      if (isExternalSummaryOnly) 'Splits niet ingevoerd',
+      if (total != null)
+        '${(total / 1000000).toStringAsFixed(2).replaceAll('.', ',')} s',
+    ];
+    return parts.isEmpty ? 'Timerresultaat' : parts.join(' · ');
+  } catch (_) {
+    return 'Timerresultaat';
+  }
 }
 
 class _TargetPreview extends StatelessWidget {

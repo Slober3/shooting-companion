@@ -1,0 +1,25 @@
+name: shooting_companion_shot_timer
+description: Offline shot-timer contracts, deterministic timing logic and Android audio integration.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+  flutter: '>=3.32.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^6.0.0
+  test: 1.31.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: app.shootingcompanion.shot_timer
+        pluginClass: ShootingCompanionShotTimerPlugin

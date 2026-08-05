@@ -20,6 +20,7 @@ import '../../widgets/safe_sheet_scaffold.dart';
 import '../photo/photo.dart';
 import '../scoring/target_canvas.dart';
 import '../scoring/transformable_scoring_viewport.dart';
+import '../training_tools/shot_timer_flow.dart';
 import 'series_settings_sheet.dart';
 import 'series_reflection_sheet.dart';
 
@@ -218,6 +219,11 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
         appBar: AppBar(
           title: Text(isDraft ? 'Nieuwe reeks' : 'Reeks bewerken'),
           actions: [
+            IconButton(
+              tooltip: 'Timer voor deze reeks starten',
+              onPressed: _saving ? null : () => unawaited(_openTimer()),
+              icon: const Icon(Icons.timer_outlined),
+            ),
             PopupMenuButton<String>(
               enabled: !_saving,
               tooltip: 'Meer acties',
@@ -704,6 +710,19 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
         unawaited(_deleteDraft());
         return;
     }
+  }
+
+  Future<void> _openTimer() async {
+    final seriesId = _seriesId;
+    if (seriesId == null || _saving) return;
+    await _flushSave();
+    if (!mounted) return;
+    await launchShotTimerFlow(
+      context: context,
+      ref: ref,
+      sessionId: widget.sessionId,
+      seriesId: seriesId,
+    );
   }
 
   Future<void> _initialize() async {

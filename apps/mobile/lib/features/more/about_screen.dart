@@ -30,7 +30,7 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Versie 0.3.0 (build 5)',
+            'Versie 0.5.0 (build 1)',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
@@ -47,6 +47,16 @@ class AboutScreen extends StatelessWidget {
             title: Text('Volledig offline'),
             subtitle: Text(
               'Geen account, advertenties, telemetrie of internettoegang.',
+            ),
+          ),
+          const Divider(),
+          const ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.mic_none_outlined),
+            title: Text('Lokale timerdetectie'),
+            subtitle: Text(
+              'De microfoon werkt alleen tijdens een zichtbare akoestische '
+              'timerrun. Er wordt geen audio-opname bewaard.',
             ),
           ),
           const Divider(),

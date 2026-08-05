@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:drift/drift.dart';
 import 'package:shooting_companion_domain/domain.dart' as domain;
@@ -9,6 +10,7 @@ import 'package:shooting_companion_target_profiles/target_profiles.dart';
 import 'package:uuid/uuid.dart';
 
 import 'app_database.dart';
+import 'timer_preset_defaults.dart';
 
 class ActiveSessionExistsException implements Exception {
   const ActiveSessionExistsException(this.sessionId);
@@ -77,8 +79,75 @@ enum ReflectionContextTag {
 
 enum StoredCoachFeedbackResponse { useful, notUseful, later, dismiss }
 
+enum StoredTrainingActivityKind {
+  acousticLiveFire,
+  par,
+  cadence,
+  externalManual,
+  drill,
+  experiment,
+  sightVerification,
+  coldSeries,
+}
+
+enum StoredTrainingActivityStatus { draft, completed, interrupted }
+
+enum StoredTimerEventSource { acoustic, manual, generatedPar, external }
+
+enum StoredTimerEventDisposition { counted, excluded }
+
+const _timerActivityKinds = {
+  'acousticLiveFire',
+  'par',
+  'cadence',
+  'externalManual',
+};
+
+class NewShotTimerEvent {
+  const NewShotTimerEvent({
+    this.id,
+    required this.elapsedMicroseconds,
+    required this.splitMicroseconds,
+    required this.source,
+    this.disposition = StoredTimerEventDisposition.counted,
+    this.normalizedPeak,
+    this.detectionQuality,
+    this.exclusionReason,
+  });
+
+  final String? id;
+  final int elapsedMicroseconds;
+  final int splitMicroseconds;
+  final StoredTimerEventSource source;
+  final StoredTimerEventDisposition disposition;
+  final double? normalizedPeak;
+  final String? detectionQuality;
+  final String? exclusionReason;
+}
+
+class TrainingActivityDetail {
+  const TrainingActivityDetail({
+    required this.activity,
+    required this.links,
+    required this.events,
+  });
+
+  final TrainingActivityRecord activity;
+  final List<TrainingActivitySeriesLinkRecord> links;
+  final List<ShotTimerEventRecord> events;
+}
+
+class TrainingActivityFilters {
+  const TrainingActivityFilters({this.kind, this.sessionId, this.status});
+
+  final StoredTrainingActivityKind? kind;
+  final String? sessionId;
+  final StoredTrainingActivityStatus? status;
+}
+
 class AnalysisSeriesData {
   const AnalysisSeriesData({
+    required this.session,
     required this.series,
     required this.impacts,
     required this.firearm,
@@ -87,6 +156,7 @@ class AnalysisSeriesData {
     required this.reflection,
   });
 
+  final SessionRecord session;
   final SeriesRecord series;
   final List<ImpactRecord> impacts;
   final FirearmRecord? firearm;
@@ -541,6 +611,7 @@ class ShootingRepository {
         'SELECT 1',
         readsFrom: {
           database.shootingSeries,
+          database.trainingSessions,
           database.shotImpacts,
           database.firearms,
           database.ammoLots,
@@ -746,9 +817,606 @@ class ShootingRepository {
         );
   }
 
+  Stream<List<TrainingActivityRecord>> watchTrainingActivities([
+    TrainingActivityFilters filters = const TrainingActivityFilters(),
+  ]) {
+    final query = database.select(database.trainingActivities)
+      ..orderBy([(row) => OrderingTerm.desc(row.startedAtUtc)]);
+    final kind = filters.kind;
+    if (kind != null) query.where((row) => row.kind.equals(kind.name));
+    final sessionId = filters.sessionId;
+    if (sessionId != null) {
+      query.where((row) => row.sessionId.equals(sessionId));
+    }
+    final status = filters.status;
+    if (status != null) query.where((row) => row.status.equals(status.name));
+    return query.watch();
+  }
+
+  Stream<TrainingActivityDetail?> watchTrainingActivity(String activityId) =>
+      database
+          .customSelect(
+            'SELECT 1',
+            readsFrom: {
+              database.trainingActivities,
+              database.trainingActivitySeriesLinks,
+              database.shotTimerEvents,
+            },
+          )
+          .watch()
+          .asyncMap((_) => getTrainingActivity(activityId));
+
+  Stream<List<TrainingActivityRecord>> watchSessionTrainingActivities(
+    String sessionId,
+  ) =>
+      (database.select(database.trainingActivities)
+            ..where((row) => row.sessionId.equals(sessionId))
+            ..orderBy([(row) => OrderingTerm.desc(row.startedAtUtc)]))
+          .watch();
+
+  Stream<List<TrainingActivityRecord>> watchSeriesTrainingActivities(
+    String seriesId,
+  ) {
+    final query = database.select(database.trainingActivities).join([
+      innerJoin(
+        database.trainingActivitySeriesLinks,
+        database.trainingActivitySeriesLinks.activityId.equalsExp(
+          database.trainingActivities.id,
+        ),
+      ),
+    ])..where(database.trainingActivitySeriesLinks.seriesId.equals(seriesId));
+    query.orderBy([
+      OrderingTerm.desc(database.trainingActivities.startedAtUtc),
+    ]);
+    return query.watch().map(
+      (rows) => rows
+          .map((row) => row.readTable(database.trainingActivities))
+          .toList(growable: false),
+    );
+  }
+
+  Stream<List<TimerPresetRecord>> watchTimerPresets({
+    bool includeArchived = false,
+  }) {
+    final query = database.select(database.timerPresets)
+      ..orderBy([
+        (row) => OrderingTerm.asc(row.builtIn),
+        (row) => OrderingTerm.asc(row.name),
+      ]);
+    if (!includeArchived) query.where((row) => row.archived.equals(false));
+    return query.watch();
+  }
+
+  Stream<List<AcousticCalibrationProfileRecord>>
+  watchAcousticCalibrationProfiles() => (database.select(
+    database.acousticCalibrationProfiles,
+  )..orderBy([(row) => OrderingTerm.desc(row.updatedAtUtc)])).watch();
+
+  Future<TrainingActivityDetail?> getTrainingActivity(String activityId) async {
+    final activity = await (database.select(
+      database.trainingActivities,
+    )..where((row) => row.id.equals(activityId))).getSingleOrNull();
+    if (activity == null) return null;
+    final links =
+        await (database.select(database.trainingActivitySeriesLinks)
+              ..where((row) => row.activityId.equals(activityId))
+              ..orderBy([(row) => OrderingTerm.asc(row.sequenceNumber)]))
+            .get();
+    final events =
+        await (database.select(database.shotTimerEvents)
+              ..where((row) => row.activityId.equals(activityId))
+              ..orderBy([(row) => OrderingTerm.asc(row.sequenceNumber)]))
+            .get();
+    return TrainingActivityDetail(
+      activity: activity,
+      links: List.unmodifiable(links),
+      events: List.unmodifiable(events),
+    );
+  }
+
+  Future<String> createTrainingActivity({
+    String? id,
+    required StoredTrainingActivityKind kind,
+    int activitySchemaVersion = 1,
+    StoredTrainingActivityStatus status = StoredTrainingActivityStatus.draft,
+    String? sessionId,
+    Map<String, Object?> configuration = const {},
+    Map<String, Object?> summary = const {},
+    String? detectorVersion,
+    required DateTime startedAtUtc,
+    required int localUtcOffsetMinutes,
+    DateTime? completedAtUtc,
+    String? notes,
+  }) async {
+    if (activitySchemaVersion < 1 || localUtcOffsetMinutes.abs() > 24 * 60) {
+      throw ArgumentError('Ongeldige trainingsactiviteit.');
+    }
+    if (status == StoredTrainingActivityStatus.completed &&
+        completedAtUtc == null) {
+      throw ArgumentError('Een voltooide activiteit vereist een eindtijd.');
+    }
+    final configurationJson = _encodeJsonObject(
+      configuration,
+      'timerconfiguratie',
+    );
+    final summaryJson = _encodeJsonObject(summary, 'timersamenvatting');
+    final activityId = id ?? _uuid.v7();
+    final now = DateTime.now().toUtc();
+    await database.transaction(() async {
+      if (sessionId != null && await _session(sessionId) == null) {
+        throw ArgumentError('De gekozen sessie bestaat niet meer.');
+      }
+      await database
+          .into(database.trainingActivities)
+          .insert(
+            TrainingActivitiesCompanion.insert(
+              id: activityId,
+              kind: kind.name,
+              schemaVersion: Value(activitySchemaVersion),
+              status: status.name,
+              sessionId: Value(sessionId),
+              configurationJson: configurationJson,
+              summaryJson: summaryJson,
+              detectorVersion: Value(_nullIfBlank(detectorVersion)),
+              startedAtUtc: startedAtUtc.toUtc(),
+              localUtcOffsetMinutes: localUtcOffsetMinutes,
+              completedAtUtc: Value(completedAtUtc?.toUtc()),
+              notes: Value(_nullIfBlank(notes)),
+              createdAtUtc: now,
+              updatedAtUtc: now,
+            ),
+          );
+      if (sessionId != null) await _touchSession(sessionId, now);
+    });
+    return activityId;
+  }
+
+  /// Persists a reviewed timer result and its optional series link atomically.
+  ///
+  /// Supplying a stable [id] makes a retried call idempotent after the first
+  /// transaction committed. No draft record can remain after a failed write.
+  Future<String> saveCompletedTimerActivity({
+    String? id,
+    required StoredTrainingActivityKind kind,
+    int activitySchemaVersion = 1,
+    String? sessionId,
+    String? seriesId,
+    Map<String, Object?> configuration = const {},
+    required Map<String, Object?> summary,
+    required List<NewShotTimerEvent> events,
+    String? detectorVersion,
+    required DateTime startedAtUtc,
+    required int localUtcOffsetMinutes,
+    required DateTime completedAtUtc,
+    String? notes,
+  }) async {
+    if (!_timerActivityKinds.contains(kind.name) ||
+        activitySchemaVersion < 1 ||
+        localUtcOffsetMinutes.abs() > 24 * 60 ||
+        completedAtUtc.toUtc().isBefore(startedAtUtc.toUtc())) {
+      throw ArgumentError('Ongeldige voltooide timerrun.');
+    }
+    final configurationJson = _encodeJsonObject(
+      configuration,
+      'timerconfiguratie',
+    );
+    final summaryJson = _encodeJsonObject(summary, 'timersamenvatting');
+    final activityId = id ?? _uuid.v7();
+    await database.transaction(() async {
+      final alreadyStored = await _trainingActivity(activityId);
+      if (alreadyStored != null) {
+        if (alreadyStored.status ==
+            StoredTrainingActivityStatus.completed.name) {
+          return;
+        }
+        throw StateError('De activiteit-ID is al in gebruik.');
+      }
+      SeriesRecord? linkedSeries;
+      if (seriesId != null) {
+        linkedSeries = await _series(seriesId);
+        if (linkedSeries == null) {
+          throw ArgumentError('De gekozen reeks bestaat niet meer.');
+        }
+        if (sessionId != null && sessionId != linkedSeries.sessionId) {
+          throw StateError('De reeks hoort bij een andere sessie.');
+        }
+      }
+      final effectiveSessionId = linkedSeries?.sessionId ?? sessionId;
+      if (effectiveSessionId != null &&
+          await _session(effectiveSessionId) == null) {
+        throw ArgumentError('De gekozen sessie bestaat niet meer.');
+      }
+      final now = DateTime.now().toUtc();
+      await database
+          .into(database.trainingActivities)
+          .insert(
+            TrainingActivitiesCompanion.insert(
+              id: activityId,
+              kind: kind.name,
+              schemaVersion: Value(activitySchemaVersion),
+              status: StoredTrainingActivityStatus.completed.name,
+              sessionId: Value(effectiveSessionId),
+              configurationJson: configurationJson,
+              summaryJson: summaryJson,
+              detectorVersion: Value(_nullIfBlank(detectorVersion)),
+              startedAtUtc: startedAtUtc.toUtc(),
+              localUtcOffsetMinutes: localUtcOffsetMinutes,
+              completedAtUtc: Value(completedAtUtc.toUtc()),
+              notes: Value(_nullIfBlank(notes)),
+              createdAtUtc: now,
+              updatedAtUtc: now,
+            ),
+          );
+      await _replaceTimerEvents(activityId, events);
+      final recomputedSummaryJson = await _recomputeTimerSummaryJson(
+        activityId,
+        baseSummaryJson: summaryJson,
+        markUserEdited: false,
+      );
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          summaryJson: Value(recomputedSummaryJson),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      if (linkedSeries != null) {
+        await database
+            .into(database.trainingActivitySeriesLinks)
+            .insert(
+              TrainingActivitySeriesLinksCompanion.insert(
+                activityId: activityId,
+                seriesId: linkedSeries.id,
+                sequenceNumber: 1,
+              ),
+            );
+      }
+      if (effectiveSessionId != null) {
+        await _touchSession(effectiveSessionId, now);
+      }
+    });
+    return activityId;
+  }
+
+  Future<void> completeTrainingActivity({
+    required String activityId,
+    required Map<String, Object?> summary,
+    required List<NewShotTimerEvent> events,
+    required DateTime completedAtUtc,
+    String? detectorVersion,
+    String? notes,
+  }) async {
+    final summaryJson = _encodeJsonObject(summary, 'timersamenvatting');
+    await database.transaction(() async {
+      final activity = await _requireTimerActivity(activityId);
+      await _replaceTimerEvents(activityId, events);
+      final recomputedSummaryJson = await _recomputeTimerSummaryJson(
+        activityId,
+        baseSummaryJson: summaryJson,
+        markUserEdited: false,
+      );
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          status: Value(StoredTrainingActivityStatus.completed.name),
+          summaryJson: Value(recomputedSummaryJson),
+          detectorVersion: Value(
+            _nullIfBlank(detectorVersion) ?? activity.detectorVersion,
+          ),
+          completedAtUtc: Value(completedAtUtc.toUtc()),
+          notes: Value(_nullIfBlank(notes)),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      if (activity.sessionId != null) {
+        await _touchSession(activity.sessionId!, now);
+      }
+    });
+  }
+
+  Future<void> interruptTrainingActivity({
+    required String activityId,
+    Map<String, Object?> summary = const {},
+    DateTime? interruptedAtUtc,
+    String? notes,
+  }) async {
+    final summaryJson = _encodeJsonObject(summary, 'timersamenvatting');
+    await database.transaction(() async {
+      final activity = await _trainingActivity(activityId);
+      if (activity == null) return;
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          status: Value(StoredTrainingActivityStatus.interrupted.name),
+          summaryJson: Value(summaryJson),
+          completedAtUtc: Value((interruptedAtUtc ?? now).toUtc()),
+          notes: Value(_nullIfBlank(notes)),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      if (activity.sessionId != null) {
+        await _touchSession(activity.sessionId!, now);
+      }
+    });
+  }
+
+  Future<void> replaceTimerEvents(
+    String activityId,
+    List<NewShotTimerEvent> events,
+  ) => database.transaction(() async {
+    final activity = await _requireTimerActivity(activityId);
+    await _replaceTimerEvents(activityId, events);
+    final summaryJson = await _recomputeTimerSummaryJson(
+      activityId,
+      baseSummaryJson: activity.summaryJson,
+      markUserEdited: true,
+    );
+    final now = DateTime.now().toUtc();
+    await (database.update(
+      database.trainingActivities,
+    )..where((row) => row.id.equals(activityId))).write(
+      TrainingActivitiesCompanion(
+        summaryJson: Value(summaryJson),
+        updatedAtUtc: Value(now),
+      ),
+    );
+    if (activity.sessionId != null) {
+      await _touchSession(activity.sessionId!, now);
+    }
+  });
+
+  Future<void> excludeTimerEvent(String eventId, String reason) =>
+      _setTimerEventDisposition(
+        eventId,
+        StoredTimerEventDisposition.excluded,
+        reason: reason,
+      );
+
+  Future<void> restoreTimerEvent(String eventId) =>
+      _setTimerEventDisposition(eventId, StoredTimerEventDisposition.counted);
+
+  Future<void> linkTrainingActivityToSeries(
+    String activityId,
+    String seriesId, {
+    String? role,
+    String? variantId,
+  }) async {
+    await database.transaction(() async {
+      final activity = await _trainingActivity(activityId);
+      final series = await _series(seriesId);
+      if (activity == null || series == null) {
+        throw ArgumentError('De trainingsactiviteit of reeks bestaat niet.');
+      }
+      if (activity.sessionId != null &&
+          activity.sessionId != series.sessionId) {
+        throw StateError('Activiteit en reeks behoren tot een andere sessie.');
+      }
+      final existingLinks = await (database.select(
+        database.trainingActivitySeriesLinks,
+      )..where((row) => row.activityId.equals(activityId))).get();
+      final isTimer = _timerActivityKinds.contains(activity.kind);
+      if (isTimer && existingLinks.any((link) => link.seriesId != seriesId)) {
+        throw StateError('Een timerrun kan aan maximaal één reeks hangen.');
+      }
+      final existingForSeries = existingLinks
+          .where((link) => link.seriesId == seriesId)
+          .firstOrNull;
+      final sequenceNumber =
+          existingForSeries?.sequenceNumber ??
+          (existingLinks.isEmpty
+              ? 1
+              : existingLinks
+                        .map((link) => link.sequenceNumber)
+                        .reduce((left, right) => left > right ? left : right) +
+                    1);
+      await database
+          .into(database.trainingActivitySeriesLinks)
+          .insertOnConflictUpdate(
+            TrainingActivitySeriesLinksCompanion.insert(
+              activityId: activityId,
+              seriesId: seriesId,
+              sequenceNumber: sequenceNumber,
+              role: Value(_nullIfBlank(role)),
+              variantId: Value(_nullIfBlank(variantId)),
+            ),
+          );
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          sessionId: Value(series.sessionId),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      await _touchSession(series.sessionId, now);
+    });
+  }
+
+  Future<void> unlinkTrainingActivityFromSeries(
+    String activityId,
+    String seriesId,
+  ) =>
+      (database.delete(database.trainingActivitySeriesLinks)..where(
+            (row) =>
+                row.activityId.equals(activityId) &
+                row.seriesId.equals(seriesId),
+          ))
+          .go();
+
+  Future<void> appendTimerSummaryToSeriesNote(
+    String seriesId,
+    String summaryText,
+  ) async {
+    final summary = summaryText.trim();
+    if (summary.isEmpty) {
+      throw ArgumentError('De timersamenvatting is leeg.');
+    }
+    await database.transaction(() async {
+      final series = await _series(seriesId);
+      if (series == null) {
+        throw ArgumentError('De gekozen reeks bestaat niet meer.');
+      }
+      final existing = series.notes?.trim();
+      final updatedNotes = existing == null || existing.isEmpty
+          ? summary
+          : '$existing\n\n$summary';
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.shootingSeries,
+      )..where((row) => row.id.equals(seriesId))).write(
+        ShootingSeriesCompanion(
+          notes: Value(updatedNotes),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      await _touchSession(series.sessionId, now);
+    });
+  }
+
+  Future<int> countSessionTrainingActivities(String sessionId) async {
+    final count = database.trainingActivities.id.count();
+    final query = database.selectOnly(database.trainingActivities)
+      ..addColumns([count])
+      ..where(database.trainingActivities.sessionId.equals(sessionId));
+    return (await query.getSingle()).read(count) ?? 0;
+  }
+
+  Future<void> deleteTrainingActivity(String activityId) => (database.delete(
+    database.trainingActivities,
+  )..where((row) => row.id.equals(activityId))).go();
+
+  Future<String> saveTimerPreset({
+    String? id,
+    required String name,
+    required StoredTrainingActivityKind mode,
+    required Map<String, Object?> configuration,
+    bool builtIn = false,
+  }) async {
+    if (!_timerActivityKinds.contains(mode.name) || name.trim().isEmpty) {
+      throw ArgumentError('Ongeldige timerpreset.');
+    }
+    final configurationJson = _encodeJsonObject(
+      configuration,
+      'timerconfiguratie',
+    );
+    final presetId = id ?? _uuid.v7();
+    final existing = await (database.select(
+      database.timerPresets,
+    )..where((row) => row.id.equals(presetId))).getSingleOrNull();
+    if (existing?.builtIn == true && !builtIn) {
+      throw StateError('Ingebouwde timerpresets zijn alleen-lezen.');
+    }
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.timerPresets)
+        .insertOnConflictUpdate(
+          TimerPresetsCompanion.insert(
+            id: presetId,
+            name: name.trim(),
+            mode: mode.name,
+            configurationJson: configurationJson,
+            builtIn: Value(builtIn || (existing?.builtIn ?? false)),
+            archived: const Value(false),
+            createdAtUtc: existing?.createdAtUtc ?? now,
+            updatedAtUtc: now,
+          ),
+        );
+    return presetId;
+  }
+
+  Future<void> archiveTimerPreset(String id) async {
+    final preset = await (database.select(
+      database.timerPresets,
+    )..where((row) => row.id.equals(id))).getSingleOrNull();
+    if (preset == null) return;
+    if (preset.builtIn) {
+      throw StateError(
+        'Ingebouwde timerpresets kunnen niet gearchiveerd worden.',
+      );
+    }
+    await (database.update(
+      database.timerPresets,
+    )..where((row) => row.id.equals(id))).write(
+      TimerPresetsCompanion(
+        archived: const Value(true),
+        updatedAtUtc: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
+  Future<String> saveCalibrationProfile({
+    String? id,
+    required String name,
+    String? firearmId,
+    String? cartridgeId,
+    required String environment,
+    required String audioRoute,
+    required int sampleRate,
+    required double sensitivity,
+    required int echoLockoutMicroseconds,
+    required int beepBlankingMicroseconds,
+    required String detectorVersion,
+  }) async {
+    if (name.trim().isEmpty ||
+        environment.trim().isEmpty ||
+        audioRoute.trim().isEmpty ||
+        detectorVersion.trim().isEmpty ||
+        sampleRate <= 0 ||
+        !sensitivity.isFinite ||
+        sensitivity < 0 ||
+        echoLockoutMicroseconds < 0 ||
+        beepBlankingMicroseconds < 0) {
+      throw ArgumentError('Ongeldig akoestisch kalibratieprofiel.');
+    }
+    final profileId = id ?? _uuid.v7();
+    await database.transaction(() async {
+      if (firearmId != null && await _firearm(firearmId) == null) {
+        throw ArgumentError('Het gekozen wapen bestaat niet meer.');
+      }
+      if (cartridgeId != null && await _cartridge(cartridgeId) == null) {
+        throw ArgumentError('Het gekozen kaliber bestaat niet meer.');
+      }
+      final existing = await (database.select(
+        database.acousticCalibrationProfiles,
+      )..where((row) => row.id.equals(profileId))).getSingleOrNull();
+      final now = DateTime.now().toUtc();
+      await database
+          .into(database.acousticCalibrationProfiles)
+          .insertOnConflictUpdate(
+            AcousticCalibrationProfilesCompanion.insert(
+              id: profileId,
+              name: name.trim(),
+              firearmId: Value(firearmId),
+              cartridgeId: Value(cartridgeId),
+              environment: environment.trim(),
+              audioRoute: audioRoute.trim(),
+              sampleRate: sampleRate,
+              sensitivity: sensitivity,
+              echoLockoutMicroseconds: echoLockoutMicroseconds,
+              beepBlankingMicroseconds: beepBlankingMicroseconds,
+              detectorVersion: detectorVersion.trim(),
+              createdAtUtc: existing?.createdAtUtc ?? now,
+              updatedAtUtc: now,
+            ),
+          );
+    });
+    return profileId;
+  }
+
+  Future<void> deleteCalibrationProfile(String id) => (database.delete(
+    database.acousticCalibrationProfiles,
+  )..where((row) => row.id.equals(id))).go();
+
   Future<List<AnalysisSeriesData>> _loadAnalysisDataset() async {
     final series = await getConfirmedSeries();
     if (series.isEmpty) return const [];
+    final sessions = await database.select(database.trainingSessions).get();
     final impacts = await database.select(database.shotImpacts).get();
     final firearms = await database.select(database.firearms).get();
     final ammoLots = await database.select(database.ammoLots).get();
@@ -758,6 +1426,7 @@ class ShootingRepository {
     for (final impact in impacts) {
       impactsBySeries.putIfAbsent(impact.seriesId, () => []).add(impact);
     }
+    final sessionById = {for (final item in sessions) item.id: item};
     final firearmById = {for (final item in firearms) item.id: item};
     final ammoById = {for (final item in ammoLots) item.id: item};
     final cartridgeById = {for (final item in cartridges) item.id: item};
@@ -765,8 +1434,15 @@ class ShootingRepository {
       for (final item in reflections) item.seriesId: item,
     };
     return series
-        .map(
-          (item) => AnalysisSeriesData(
+        .map((item) {
+          final session = sessionById[item.sessionId];
+          if (session == null) {
+            throw StateError(
+              'Bevestigde reeks ${item.id} verwijst naar een ontbrekende sessie.',
+            );
+          }
+          return AnalysisSeriesData(
+            session: session,
             series: item,
             impacts: List.unmodifiable(impactsBySeries[item.id] ?? const []),
             firearm: item.firearmId == null
@@ -777,8 +1453,8 @@ class ShootingRepository {
                 ? null
                 : cartridgeById[item.cartridgeId],
             reflection: reflectionBySeries[item.id],
-          ),
-        )
+          );
+        })
         .toList(growable: false);
   }
 
@@ -814,6 +1490,10 @@ class ShootingRepository {
               ),
             )
             .toList(),
+      );
+      batch.insertAllOnConflictUpdate(
+        database.timerPresets,
+        builtInTimerPresetCompanions(),
       );
     });
   }
@@ -2332,6 +3012,281 @@ class ShootingRepository {
         );
     await _touchSession(asset.sessionId, now);
     return id;
+  }
+
+  Future<TrainingActivityRecord?> _trainingActivity(String id) =>
+      (database.select(database.trainingActivities)
+            ..where((row) => row.id.equals(id))
+            ..limit(1))
+          .getSingleOrNull();
+
+  Future<void> _replaceTimerEvents(
+    String activityId,
+    List<NewShotTimerEvent> events,
+  ) async {
+    await _requireTimerActivity(activityId);
+    var previousElapsed = 0;
+    var previousCountedElapsed = 0;
+    final eventIds = <String>{};
+    final companions = <ShotTimerEventsCompanion>[];
+    for (var index = 0; index < events.length; index++) {
+      final event = events[index];
+      final peak = event.normalizedPeak;
+      if (event.elapsedMicroseconds < 0 ||
+          (index > 0 && event.elapsedMicroseconds <= previousElapsed) ||
+          event.splitMicroseconds < 0 ||
+          event.splitMicroseconds > event.elapsedMicroseconds ||
+          peak != null && (!peak.isFinite || peak < 0 || peak > 1)) {
+        throw ArgumentError('Schottijden moeten geldig en oplopend zijn.');
+      }
+      if (event.disposition == StoredTimerEventDisposition.counted) {
+        final expectedSplit =
+            event.elapsedMicroseconds - previousCountedElapsed;
+        if (event.splitMicroseconds != expectedSplit) {
+          throw ArgumentError(
+            'Splits moeten ten opzichte van het vorige getelde event zijn.',
+          );
+        }
+        previousCountedElapsed = event.elapsedMicroseconds;
+      }
+      final eventId = event.id ?? _uuid.v7();
+      if (!eventIds.add(eventId)) {
+        throw ArgumentError('Een timerevent-ID komt meer dan één keer voor.');
+      }
+      final exclusionReason = _nullIfBlank(event.exclusionReason);
+      if (event.disposition == StoredTimerEventDisposition.excluded &&
+          exclusionReason == null) {
+        throw ArgumentError('Een uitgesloten detectie vereist een reden.');
+      }
+      companions.add(
+        ShotTimerEventsCompanion.insert(
+          id: eventId,
+          activityId: activityId,
+          sequenceNumber: index + 1,
+          elapsedMicroseconds: event.elapsedMicroseconds,
+          splitMicroseconds: event.splitMicroseconds,
+          source: event.source.name,
+          disposition: event.disposition.name,
+          normalizedPeak: Value(peak),
+          detectionQuality: Value(_nullIfBlank(event.detectionQuality)),
+          exclusionReason: Value(
+            event.disposition == StoredTimerEventDisposition.excluded
+                ? exclusionReason
+                : null,
+          ),
+        ),
+      );
+      previousElapsed = event.elapsedMicroseconds;
+    }
+    await (database.delete(
+      database.shotTimerEvents,
+    )..where((row) => row.activityId.equals(activityId))).go();
+    if (companions.isNotEmpty) {
+      await database.batch(
+        (batch) => batch.insertAll(database.shotTimerEvents, companions),
+      );
+    }
+  }
+
+  Future<void> _setTimerEventDisposition(
+    String eventId,
+    StoredTimerEventDisposition disposition, {
+    String? reason,
+  }) async {
+    final normalizedReason = _nullIfBlank(reason);
+    if (disposition == StoredTimerEventDisposition.excluded &&
+        normalizedReason == null) {
+      throw ArgumentError('Een uitgesloten detectie vereist een reden.');
+    }
+    await database.transaction(() async {
+      final event = await (database.select(
+        database.shotTimerEvents,
+      )..where((row) => row.id.equals(eventId))).getSingleOrNull();
+      if (event == null) return;
+      final activity = await _requireTimerActivity(event.activityId);
+      await (database.update(
+        database.shotTimerEvents,
+      )..where((row) => row.id.equals(eventId))).write(
+        ShotTimerEventsCompanion(
+          disposition: Value(disposition.name),
+          exclusionReason: Value(
+            disposition == StoredTimerEventDisposition.excluded
+                ? normalizedReason
+                : null,
+          ),
+        ),
+      );
+      await _normalizeStoredCountedSplits(event.activityId);
+      final now = DateTime.now().toUtc();
+      final summaryJson = await _recomputeTimerSummaryJson(
+        event.activityId,
+        baseSummaryJson: activity.summaryJson,
+        markUserEdited: true,
+      );
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(event.activityId))).write(
+        TrainingActivitiesCompanion(
+          summaryJson: Value(summaryJson),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      if (activity.sessionId != null) {
+        await _touchSession(activity.sessionId!, now);
+      }
+    });
+  }
+
+  Future<void> _normalizeStoredCountedSplits(String activityId) async {
+    final events =
+        await (database.select(database.shotTimerEvents)
+              ..where((row) => row.activityId.equals(activityId))
+              ..orderBy([(row) => OrderingTerm.asc(row.sequenceNumber)]))
+            .get();
+    var previousElapsed = 0;
+    var previousCountedElapsed = 0;
+    for (var index = 0; index < events.length; index++) {
+      final event = events[index];
+      if (event.sequenceNumber != index + 1 ||
+          event.elapsedMicroseconds < 0 ||
+          index > 0 && event.elapsedMicroseconds <= previousElapsed) {
+        throw StateError(
+          'Timerevents zijn niet geldig chronologisch opgeslagen.',
+        );
+      }
+      final disposition = StoredTimerEventDisposition.values
+          .where((value) => value.name == event.disposition)
+          .firstOrNull;
+      if (disposition == null ||
+          event.splitMicroseconds < 0 ||
+          event.splitMicroseconds > event.elapsedMicroseconds ||
+          disposition == StoredTimerEventDisposition.excluded &&
+              _nullIfBlank(event.exclusionReason) == null) {
+        throw StateError('Timerevent bevat ongeldige opgeslagen gegevens.');
+      }
+      if (disposition == StoredTimerEventDisposition.counted) {
+        final normalizedSplit =
+            event.elapsedMicroseconds - previousCountedElapsed;
+        if (event.splitMicroseconds != normalizedSplit) {
+          await (database.update(
+            database.shotTimerEvents,
+          )..where((row) => row.id.equals(event.id))).write(
+            ShotTimerEventsCompanion(splitMicroseconds: Value(normalizedSplit)),
+          );
+        }
+        previousCountedElapsed = event.elapsedMicroseconds;
+      }
+      previousElapsed = event.elapsedMicroseconds;
+    }
+  }
+
+  Future<TrainingActivityRecord> _requireTimerActivity(
+    String activityId,
+  ) async {
+    final activity = await _trainingActivity(activityId);
+    if (activity == null) {
+      throw ArgumentError('De trainingsactiviteit bestaat niet meer.');
+    }
+    if (!_timerActivityKinds.contains(activity.kind)) {
+      throw StateError('Alleen timeractiviteiten mogen timerevents bevatten.');
+    }
+    return activity;
+  }
+
+  Future<String> _recomputeTimerSummaryJson(
+    String activityId, {
+    required String baseSummaryJson,
+    required bool markUserEdited,
+  }) async {
+    final activity = await _requireTimerActivity(activityId);
+    final decoded = jsonDecode(baseSummaryJson);
+    if (decoded is! Map) {
+      throw StateError('De timersamenvatting is ongeldig.');
+    }
+    final summary = decoded.cast<String, Object?>();
+    final allEvents =
+        await (database.select(database.shotTimerEvents)
+              ..where((row) => row.activityId.equals(activityId))
+              ..orderBy([
+                (row) => OrderingTerm.asc(row.elapsedMicroseconds),
+                (row) => OrderingTerm.asc(row.sequenceNumber),
+              ]))
+            .get();
+    final counted = allEvents
+        .where(
+          (event) =>
+              event.disposition == StoredTimerEventDisposition.counted.name,
+        )
+        .toList(growable: false);
+
+    final splits = <int>[];
+    for (var index = 1; index < counted.length; index++) {
+      splits.add(
+        counted[index].elapsedMicroseconds -
+            counted[index - 1].elapsedMicroseconds,
+      );
+    }
+    final averageSplit = splits.isEmpty
+        ? null
+        : splits.fold<int>(0, (sum, value) => sum + value) ~/ splits.length;
+    int? splitStandardDeviation;
+    if (splits.length >= 2) {
+      final mean =
+          splits.fold<double>(0, (sum, value) => sum + value) / splits.length;
+      final variance =
+          splits.fold<double>(0, (sum, value) {
+            final delta = value - mean;
+            return sum + delta * delta;
+          }) /
+          (splits.length - 1);
+      splitStandardDeviation = math.sqrt(variance).round();
+    }
+
+    final preservesSignalDuration =
+        allEvents.isEmpty &&
+        (activity.kind == StoredTrainingActivityKind.par.name ||
+            activity.kind == StoredTrainingActivityKind.cadence.name);
+    final preservesExternalManualSummary =
+        allEvents.isEmpty &&
+        activity.kind == StoredTrainingActivityKind.externalManual.name &&
+        summary['externalTimingCompleteness'] == 'summaryOnly';
+    final previousTotalTime = summary['totalTimeMicros'];
+
+    if (!preservesExternalManualSummary) {
+      summary
+        ..['countedShotCount'] = counted.length
+        ..['firstShotTimeMicros'] = counted.isEmpty
+            ? null
+            : counted.first.elapsedMicroseconds
+        ..['lastShotTimeMicros'] = counted.isEmpty
+            ? null
+            : counted.last.elapsedMicroseconds
+        ..['totalTimeMicros'] = preservesSignalDuration
+            ? previousTotalTime
+            : counted.isEmpty
+            ? 0
+            : counted.last.elapsedMicroseconds
+        ..['fastestSplitMicros'] = splits.isEmpty
+            ? null
+            : splits.reduce(math.min)
+        ..['slowestSplitMicros'] = splits.isEmpty
+            ? null
+            : splits.reduce(math.max)
+        ..['averageSplitMicros'] = averageSplit
+        ..['splitStandardDeviationMicros'] = splitStandardDeviation;
+    }
+    if (markUserEdited) summary['userEdited'] = true;
+    return _encodeJsonObject(summary, 'timersamenvatting');
+  }
+
+  String _encodeJsonObject(Map<String, Object?> value, String label) {
+    try {
+      final encoded = jsonEncode(value);
+      if (jsonDecode(encoded) is! Map) throw const FormatException();
+      return encoded;
+    } on Object {
+      throw ArgumentError('$label bevat niet-serialiseerbare gegevens.');
+    }
   }
 
   Future<SeriesDefaults> _lastUsedDefaults() async {

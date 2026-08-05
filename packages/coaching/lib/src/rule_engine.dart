@@ -861,7 +861,11 @@ class CoachRuleEngine {
     CoachSeriesObservation second,
   ) {
     final byTime = first.occurredAtUtc.compareTo(second.occurredAtUtc);
-    return byTime != 0 ? byTime : first.seriesId.compareTo(second.seriesId);
+    if (byTime != 0) return byTime;
+    final bySequence = first.sequenceNumber.compareTo(second.sequenceNumber);
+    return bySequence != 0
+        ? bySequence
+        : first.seriesId.compareTo(second.seriesId);
   }
 
   static int _hitCount(Iterable<CoachSeriesObservation> samples) =>

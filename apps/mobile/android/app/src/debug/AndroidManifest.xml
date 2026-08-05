@@ -4,4 +4,7 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Development-only acoustic validation. Stable release builds do not
+         merge this manifest and must not request microphone access. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 </manifest>

@@ -76,6 +76,22 @@ class _DataTransferScreenState extends ConsumerState<_DataTransferScreen> {
             ),
             const Divider(indent: 56),
             _ActionTile(
+              icon: Icons.timer_outlined,
+              title: 'Timerruns exporteren',
+              subtitle: 'Eén CSV-regel per bewaarde timerrun',
+              enabled: !_busy,
+              onTap: () => _exportTimerRuns(context),
+            ),
+            const Divider(indent: 56),
+            _ActionTile(
+              icon: Icons.format_list_numbered,
+              title: 'Timerevents exporteren',
+              subtitle: 'Schottijden, splits en uitgesloten detecties',
+              enabled: !_busy,
+              onTap: () => _exportTimerEvents(context),
+            ),
+            const Divider(indent: 56),
+            _ActionTile(
               icon: Icons.picture_as_pdf_outlined,
               title: 'PDF-trainingsrapport',
               subtitle: 'Leesbaar rapport dat lokaal wordt gemaakt',
@@ -128,6 +144,24 @@ class _DataTransferScreenState extends ConsumerState<_DataTransferScreen> {
         file,
         label: 'Shooting Companion trainingsrapport',
       );
+    });
+  }
+
+  Future<void> _exportTimerRuns(BuildContext context) async {
+    if (!await _confirmPlainExport(context)) return;
+    await _run(() async {
+      final service = ExportService(ref.read(databaseProvider));
+      final file = await service.createTimerRunsCsv();
+      await service.shareFile(file, label: 'Shooting Companion timerruns');
+    });
+  }
+
+  Future<void> _exportTimerEvents(BuildContext context) async {
+    if (!await _confirmPlainExport(context)) return;
+    await _run(() async {
+      final service = ExportService(ref.read(databaseProvider));
+      final file = await service.createTimerEventsCsv();
+      await service.shareFile(file, label: 'Shooting Companion timerevents');
     });
   }
 

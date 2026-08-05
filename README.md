@@ -7,8 +7,8 @@ internetpermission.
 
 ## Huidige status
 
-Versie `0.4.0` behoudt de snelle puntplaatsing van 0.3 en voegt lokale,
-verklaarbare analyse en optionele coaching toe:
+Versie `0.5.0` behoudt de snelle puntplaatsing van 0.3 en voegt lokale,
+verklaarbare analyse, optionele coaching en gestructureerde trainingstools toe:
 
 - lokale bibliotheken voor wapens, kalibers, munitielots, standen en kaarten;
 - bibliotheekitems bekijken, bewerken, dupliceren en veilig verwijderen;
@@ -30,6 +30,12 @@ verklaarbare analyse en optionele coaching toe:
 - compacte Logboekfilters en één geaggregeerde SQLite-query zonder query per rij;
 - groepsanalyse met centroid, bias, extreme spread, mean radius, R50/R90,
   spreidingsellips, MOA/millirad en target-aware BR50-normalisatie;
+- één gedeelde groepsgrafiek met verklaarde 1-sigma-ellips, databasis, legenda
+  en een zichtbare extreme-spreadlijn tussen het verst uit elkaar liggende paar;
+- analyse per afzonderlijke reeks en per volledig standbezoek, plus een
+  expliciete keuze van historische reeksen en vergelijkingen;
+- aantikbare metriekkaarten met uitleg over berekening, interpretatie,
+  databasis en beperkingen;
 - reproduceerbare potential-scoreanalyse en voorzichtige subgroepsuggesties die
   nooit treffers of scores wijzigen;
 - coachkaarten volgens `waarneming -> bewijs -> mogelijke verklaringen -> test`,
@@ -37,10 +43,21 @@ verklaarbare analyse en optionele coaching toe:
 - optionele vijfsecondenreflectie, persoonlijke doelen en volledig uit te
   schakelen coachmodus;
 - een offline drillbibliotheek, A/B-experimentplanner en viziercalculator;
+- een offline timer met par-, cadans- en externe invoermodus, reviewbare events,
+  presets, lokale geschiedenis en optionele reekskoppeling;
+- gestructureerde timerexports en compacte timerinformatie in het PDF-rapport;
 - systeem/licht/donker met vier lokaal opgeslagen kleurpaletten;
 - CSV, Unicode-PDF met ingebedde fonts en AES-256-GCM/Argon2id-back-up;
 - migratie en back-upcompatibiliteit voor lokale gegevens uit versie 0.1;
-- databaseschema 5 en back-upmanifest 5, met import van v1-v4-back-ups.
+- databaseschema 6 en back-upmanifest 6, met import van v1-v5-back-ups.
+
+De akoestische live-firetimer zit als ontwikkelbasis in de broncode, maar is in
+de stabiele `0.5.0+1`-build compile-time uitgeschakeld. Er is geen zichtbare
+akoestische route en de release vraagt geen microfoontoegang. Publieke activatie
+volgt pas na de volledige fysieke vergelijking met een referentietimer die in
+[`docs/shot-timer.md`](docs/shot-timer.md) is vastgelegd. De geplande
+analysehotfix `0.4.2` is niet afzonderlijk gepubliceerd; hij is in deze
+`0.5.0`-release geïntegreerd.
 
 Er is nog geen automatische trefferdetectie in de app. De schutter duidt iedere
 treffer of misser expliciet aan; de deterministische score-engine berekent daarna
@@ -66,7 +83,8 @@ flutter test
 flutter run
 ```
 
-De app declareert alleen cameratoegang. Controleer voor een release:
+De stabiele app declareert alleen cameratoegang. Microfoontoegang is in
+`0.5.0+1` verboden in het release-APK. Controleer voor een release:
 
 ```powershell
 flutter build apk --release
@@ -75,7 +93,17 @@ flutter build apk --release
 ```
 
 De tweede opdracht mag `CAMERA` en Androids interne receiver-permission tonen,
-maar geen `INTERNET`, audio-, opslag- of netwerkstatuspermission.
+maar geen `RECORD_AUDIO`, `INTERNET`, opslag- of netwerkstatuspermission.
+
+Interne akoestische validatie kan uitsluitend in een development/profile build:
+
+```powershell
+flutter run --dart-define=SC_ENABLE_ACOUSTIC_TIMER=true
+```
+
+De debug- en profile-manifests bevatten daarvoor microfoontoegang; het
+release-manifest bewust niet. Dit opt-inpad is geen nauwkeurigheidsclaim en mag
+niet als stabiele APK worden verspreid.
 
 ## Monorepo
 
@@ -87,6 +115,7 @@ maar geen `INTERNET`, audio-, opslag- of netwerkstatuspermission.
 - `packages/analysis` — pure, afgeleide groeps- en cohortanalyse.
 - `packages/coaching` — lokale, bewijsgebonden coachregels zonder generatief model.
 - `packages/training` — versioned drills, experimentplanning en vizierberekening.
+- `packages/shot_timer` — pure timerlogica, testklok en lokale Android-audio-engine.
 - `packages/vision_api` — immutable onderzoekscontracten voor kandidaten.
 - `packages/vision_research` — versleutelde, opgeschoonde onderzoeks-export.
 - `native/vision_core` — C++/C-ABI/CLI-basis met optionele OpenCV-backend.

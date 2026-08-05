@@ -1,16 +1,20 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
-import 'package:drift/drift.dart' show Value;
+import 'package:cryptography/cryptography.dart';
+import 'package:drift/drift.dart' show OrderingTerm, Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:shooting_companion/data/app_database.dart';
+import 'package:shooting_companion/data/shooting_repository.dart';
 import 'package:shooting_companion/services/backup_service.dart';
 
 void main() {
-  group('BackupPayloadAdapter v1-v4 -> v5', () {
+  group('BackupPayloadAdapter v1-v5 -> v6', () {
     test('uses impact multiplicity for actual count and ignores scans', () {
       final data = _v1Data(
         expectedShots: 99,
@@ -76,7 +80,7 @@ void main() {
     test('rejects future versions and inconsistent record counts', () {
       expect(
         () => BackupPayloadAdapter.normalize(
-          manifest: _manifest(version: 6),
+          manifest: _manifest(version: 7),
           data: _v1Data(expectedShots: 1),
         ),
         throwsFormatException,
@@ -192,6 +196,160 @@ void main() {
         throwsFormatException,
       );
     });
+
+    test('v5 payload gains an empty schema-6 training layer', () {
+      final normalizedV6 = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 1),
+        data: _v1Data(expectedShots: 1),
+      ).data;
+      final payload = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 5),
+        data: normalizedV6,
+      );
+
+      expect(payload.data['trainingActivities'], isEmpty);
+      expect(payload.data['trainingActivitySeriesLinks'], isEmpty);
+      expect(payload.data['shotTimerEvents'], isEmpty);
+      expect(payload.data['timerPresets'], isEmpty);
+      expect(payload.data['acousticCalibrationProfiles'], isEmpty);
+    });
+
+    test('rejects orphan or non-monotone timer data in v6', () {
+      final valid = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 1),
+        data: _v1Data(expectedShots: 1),
+      ).data;
+      final activity = {
+        'id': 'timer-1',
+        'kind': 'acousticLiveFire',
+        'schemaVersion': 1,
+        'status': 'completed',
+        'sessionId': 'session-1',
+        'configurationJson': '{}',
+        'summaryJson': '{}',
+        'detectorVersion': 'impulse-v1',
+        'startedAtUtc': '2026-01-01T10:00:00.000Z',
+        'localUtcOffsetMinutes': 60,
+        'completedAtUtc': '2026-01-01T10:00:02.000Z',
+        'notes': null,
+        'createdAtUtc': '2026-01-01T10:00:00.000Z',
+        'updatedAtUtc': '2026-01-01T10:00:02.000Z',
+      };
+      final data = <String, dynamic>{
+        for (final entry in valid.entries) entry.key: entry.value,
+        'trainingActivities': [activity],
+        'trainingActivitySeriesLinks': <Map<String, dynamic>>[],
+        'shotTimerEvents': [
+          {
+            'id': 'event-1',
+            'activityId': 'timer-1',
+            'sequenceNumber': 1,
+            'elapsedMicroseconds': 1000000,
+            'splitMicroseconds': 1000000,
+            'source': 'acoustic',
+            'disposition': 'counted',
+            'normalizedPeak': 0.8,
+            'detectionQuality': 'high',
+            'exclusionReason': null,
+          },
+          {
+            'id': 'event-2',
+            'activityId': 'timer-1',
+            'sequenceNumber': 2,
+            'elapsedMicroseconds': 900000,
+            'splitMicroseconds': 0,
+            'source': 'acoustic',
+            'disposition': 'counted',
+            'normalizedPeak': null,
+            'detectionQuality': null,
+            'exclusionReason': null,
+          },
+        ],
+      };
+
+      expect(
+        () => BackupPayloadAdapter.normalize(
+          manifest: _manifest(version: 6),
+          data: data,
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('validates splits against the previous counted timer event', () {
+      final valid = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 1),
+        data: _v1Data(expectedShots: 1),
+      ).data;
+      final data = <String, dynamic>{
+        for (final entry in valid.entries) entry.key: entry.value,
+        'trainingActivities': [
+          {
+            'id': 'timer-counted-splits',
+            'kind': 'acousticLiveFire',
+            'schemaVersion': 1,
+            'status': 'completed',
+            'sessionId': 'session-1',
+            'configurationJson': '{}',
+            'summaryJson': '{}',
+            'detectorVersion': 'impulse-v1',
+            'startedAtUtc': '2026-01-01T10:00:00.000Z',
+            'localUtcOffsetMinutes': 60,
+            'completedAtUtc': '2026-01-01T10:00:02.000Z',
+            'notes': null,
+            'createdAtUtc': '2026-01-01T10:00:00.000Z',
+            'updatedAtUtc': '2026-01-01T10:00:02.000Z',
+          },
+        ],
+        'trainingActivitySeriesLinks': <Map<String, dynamic>>[],
+        'shotTimerEvents': [
+          _timerEventFixture(
+            id: 'counted-1',
+            sequenceNumber: 1,
+            elapsedMicroseconds: 1000000,
+            splitMicroseconds: 1000000,
+          ),
+          _timerEventFixture(
+            id: 'excluded-2',
+            sequenceNumber: 2,
+            elapsedMicroseconds: 1100000,
+            splitMicroseconds: 100000,
+            disposition: 'excluded',
+            exclusionReason: 'Mogelijke echo',
+          ),
+          _timerEventFixture(
+            id: 'counted-3',
+            sequenceNumber: 3,
+            elapsedMicroseconds: 1500000,
+            splitMicroseconds: 500000,
+          ),
+        ],
+      };
+
+      final payload = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 6),
+        data: data,
+      );
+
+      expect(payload.data['shotTimerEvents'], hasLength(3));
+      expect(
+        (payload.data['shotTimerEvents'] as List).last['splitMicroseconds'],
+        500000,
+      );
+
+      final invalidEvents = [
+        for (final event in data['shotTimerEvents']! as List)
+          Map<String, dynamic>.from(event as Map),
+      ];
+      invalidEvents.last['splitMicroseconds'] = 400000;
+      expect(
+        () => BackupPayloadAdapter.normalize(
+          manifest: _manifest(version: 6),
+          data: {...data, 'shotTimerEvents': invalidEvents},
+        ),
+        throwsFormatException,
+      );
+    });
   });
 
   group('BackupMediaIntegrity', () {
@@ -231,7 +389,7 @@ void main() {
   });
 
   test(
-    'SCB1 v5 roundtrip preserves insights, draft, media and settings',
+    'SCB1 v6 roundtrip preserves training, insights, media and settings',
     () async {
       final workspace = await Directory.systemTemp.createTemp(
         'shooting-companion-backup-test-',
@@ -413,6 +571,125 @@ void main() {
               updatedAtUtc: now,
             ),
           );
+      await database
+          .into(database.trainingActivities)
+          .insert(
+            TrainingActivitiesCompanion.insert(
+              id: 'timer-1',
+              kind: 'acousticLiveFire',
+              status: 'completed',
+              sessionId: const Value('session-1'),
+              configurationJson: '{"mode":"acousticLiveFire"}',
+              summaryJson:
+                  '{"countedShotCount":3,"firstShotTimeMicros":1000000,'
+                  '"lastShotTimeMicros":1500000,"totalTimeMicros":1500000,'
+                  '"fastestSplitMicros":100000,"slowestSplitMicros":400000,'
+                  '"averageSplitMicros":250000}',
+              detectorVersion: const Value('impulse-v1'),
+              startedAtUtc: now,
+              localUtcOffsetMinutes: 60,
+              completedAtUtc: Value(now.add(const Duration(seconds: 1))),
+              createdAtUtc: now,
+              updatedAtUtc: now,
+            ),
+          );
+      await database
+          .into(database.trainingActivitySeriesLinks)
+          .insert(
+            const TrainingActivitySeriesLinksCompanion(
+              activityId: Value('timer-1'),
+              seriesId: Value('series-1'),
+              sequenceNumber: Value(1),
+            ),
+          );
+      await database
+          .into(database.shotTimerEvents)
+          .insert(
+            const ShotTimerEventsCompanion(
+              id: Value('timer-event-1'),
+              activityId: Value('timer-1'),
+              sequenceNumber: Value(1),
+              elapsedMicroseconds: Value(1000000),
+              splitMicroseconds: Value(1000000),
+              source: Value('acoustic'),
+              disposition: Value('counted'),
+              normalizedPeak: Value(0.8),
+              detectionQuality: Value('high'),
+            ),
+          );
+      await database
+          .into(database.shotTimerEvents)
+          .insert(
+            const ShotTimerEventsCompanion(
+              id: Value('timer-event-echo'),
+              activityId: Value('timer-1'),
+              sequenceNumber: Value(2),
+              elapsedMicroseconds: Value(1100000),
+              splitMicroseconds: Value(100000),
+              source: Value('acoustic'),
+              disposition: Value('counted'),
+            ),
+          );
+      await database
+          .into(database.shotTimerEvents)
+          .insert(
+            const ShotTimerEventsCompanion(
+              id: Value('timer-event-3'),
+              activityId: Value('timer-1'),
+              sequenceNumber: Value(3),
+              elapsedMicroseconds: Value(1500000),
+              splitMicroseconds: Value(400000),
+              source: Value('acoustic'),
+              disposition: Value('counted'),
+              detectionQuality: Value('high'),
+            ),
+          );
+
+      final repository = ShootingRepository(database);
+      await repository.excludeTimerEvent('timer-event-echo', 'Mogelijke echo');
+      final normalizedBeforeBackup = await (database.select(
+        database.shotTimerEvents,
+      )..orderBy([(row) => OrderingTerm.asc(row.sequenceNumber)])).get();
+      expect(normalizedBeforeBackup.map((event) => event.disposition), [
+        'counted',
+        'excluded',
+        'counted',
+      ]);
+      expect(normalizedBeforeBackup.map((event) => event.splitMicroseconds), [
+        1000000,
+        100000,
+        500000,
+      ]);
+      await database
+          .into(database.timerPresets)
+          .insert(
+            TimerPresetsCompanion.insert(
+              id: 'timer-preset-1',
+              name: 'Testpreset',
+              mode: 'acousticLiveFire',
+              configurationJson: '{"mode":"acousticLiveFire"}',
+              createdAtUtc: now,
+              updatedAtUtc: now,
+            ),
+          );
+      await database
+          .into(database.acousticCalibrationProfiles)
+          .insert(
+            AcousticCalibrationProfilesCompanion.insert(
+              id: 'calibration-1',
+              name: 'Binnenstand',
+              cartridgeId: const Value('cartridge-1'),
+              environment: 'indoor',
+              audioRoute: 'builtIn',
+              sampleRate: 48000,
+              sensitivity: 0.65,
+              echoLockoutMicroseconds: 90000,
+              beepBlankingMicroseconds: 250000,
+              detectorVersion: 'impulse-v1',
+              createdAtUtc: now,
+              updatedAtUtc: now,
+            ),
+          );
 
       final service = BackupService(
         database,
@@ -424,20 +701,22 @@ void main() {
         backup,
         'test-password-123',
       );
-      expect(inspected.formatVersion, 5);
+      expect(inspected.formatVersion, 6);
       expect(inspected.sessionCount, 1);
       expect(inspected.seriesCount, 1);
       expect(inspected.imageCount, 1);
 
       await database.delete(database.trainingSessions).go();
       await database.delete(database.preferences).go();
+      await database.delete(database.timerPresets).go();
+      await database.delete(database.acousticCalibrationProfiles).go();
       if (await original.exists()) await original.delete();
 
       final restored = await service.restoreEncryptedBackup(
         backup,
         'test-password-123',
       );
-      expect(restored.summary.formatVersion, 5);
+      expect(restored.summary.formatVersion, 6);
       expect(
         await database.select(database.trainingSessions).get(),
         hasLength(1),
@@ -486,8 +765,145 @@ void main() {
         (await database.select(database.coachFeedback).get()).single.response,
         'useful',
       );
+      final restoredActivity =
+          (await database.select(database.trainingActivities).get()).single;
+      expect(restoredActivity.kind, 'acousticLiveFire');
+      expect(restoredActivity.status, 'completed');
+      expect(
+        (await database.select(database.trainingActivitySeriesLinks).get())
+            .single
+            .seriesId,
+        'series-1',
+      );
+      final restoredTimerEvents = await (database.select(
+        database.shotTimerEvents,
+      )..orderBy([(row) => OrderingTerm.asc(row.sequenceNumber)])).get();
+      expect(restoredTimerEvents, hasLength(3));
+      expect(restoredTimerEvents.first.elapsedMicroseconds, 1000000);
+      expect(restoredTimerEvents.first.normalizedPeak, 0.8);
+      expect(restoredTimerEvents[1].disposition, 'excluded');
+      expect(restoredTimerEvents[1].exclusionReason, 'Mogelijke echo');
+      expect(restoredTimerEvents.last.elapsedMicroseconds, 1500000);
+      expect(restoredTimerEvents.last.splitMicroseconds, 500000);
+      final restoredPresets = await database
+          .select(database.timerPresets)
+          .get();
+      expect(restoredPresets, hasLength(4));
+      expect(
+        restoredPresets
+            .singleWhere((preset) => preset.id == 'timer-preset-1')
+            .name,
+        'Testpreset',
+      );
+      expect(restoredPresets.where((preset) => preset.builtIn), hasLength(3));
+      expect(
+        (await database.select(database.acousticCalibrationProfiles).get())
+            .single
+            .sampleRate,
+        48000,
+      );
     },
   );
+
+  test(
+    'SCB1 roundtrip preserves an external summary without invented events',
+    () async {
+      final workspace = await Directory.systemTemp.createTemp(
+        'shooting-companion-external-summary-backup-',
+      );
+      final documents = Directory(path.join(workspace.path, 'documents'))
+        ..createSync(recursive: true);
+      final temporary = Directory(path.join(workspace.path, 'temporary'))
+        ..createSync(recursive: true);
+      final database = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(() async {
+        await database.close();
+        if (await workspace.exists()) await workspace.delete(recursive: true);
+      });
+      final repository = ShootingRepository(database);
+      final started = DateTime.utc(2026, 8, 5, 10);
+      await repository.saveCompletedTimerActivity(
+        id: 'external-summary-only',
+        kind: StoredTrainingActivityKind.externalManual,
+        summary: const {
+          'countedShotCount': null,
+          'firstShotTimeMicros': 1140000,
+          'lastShotTimeMicros': 4720000,
+          'totalTimeMicros': 4720000,
+          'externalTimingCompleteness': 'summaryOnly',
+          'shotCountKnown': false,
+          'userEdited': true,
+        },
+        events: const [],
+        startedAtUtc: started,
+        localUtcOffsetMinutes: 120,
+        completedAtUtc: started.add(const Duration(seconds: 5)),
+      );
+      final service = BackupService(
+        database,
+        temporaryDirectory: () async => temporary,
+        applicationDocumentsDirectory: () async => documents,
+      );
+      final backup = await service.createEncryptedBackup('test-password-123');
+
+      await database.delete(database.trainingActivities).go();
+      await service.restoreEncryptedBackup(backup, 'test-password-123');
+
+      final restored = await repository.getTrainingActivity(
+        'external-summary-only',
+      );
+      final summary =
+          jsonDecode(restored!.activity.summaryJson) as Map<String, dynamic>;
+      expect(restored.events, isEmpty);
+      expect(summary['countedShotCount'], isNull);
+      expect(summary['firstShotTimeMicros'], 1140000);
+      expect(summary['lastShotTimeMicros'], 4720000);
+      expect(summary['totalTimeMicros'], 4720000);
+      expect(summary['externalTimingCompleteness'], 'summaryOnly');
+      expect(summary['shotCountKnown'], false);
+    },
+  );
+
+  test('legacy restore immediately seeds built-in timer presets', () async {
+    final temporary = await Directory.systemTemp.createTemp(
+      'shooting-companion-legacy-restore-',
+    );
+    final documents = Directory('${temporary.path}/documents')
+      ..createSync(recursive: true);
+    addTearDown(() async {
+      if (await temporary.exists()) {
+        await temporary.delete(recursive: true);
+      }
+    });
+    final database = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(database.close);
+    final legacyBackup = await _writeEncryptedFixture(
+      directory: temporary,
+      password: 'test-password-123',
+      manifest: _manifest(version: 1),
+      data: _v1Data(expectedShots: 1),
+    );
+    final service = BackupService(
+      database,
+      temporaryDirectory: () async => temporary,
+      applicationDocumentsDirectory: () async => documents,
+    );
+
+    final result = await service.restoreEncryptedBackup(
+      legacyBackup,
+      'test-password-123',
+    );
+
+    expect(result.summary.formatVersion, 1);
+    final presets = await database.select(database.timerPresets).get();
+    expect(presets, hasLength(3));
+    expect(presets.every((preset) => preset.builtIn), isTrue);
+    expect(presets.map((preset) => preset.id).toSet(), {
+      'builtin-live-fire-random-2-4',
+      'builtin-par-5-seconds',
+      'builtin-cadence-1-second',
+    });
+  });
 }
 
 Map<String, dynamic> _manifest({required int version, int images = 0}) => {
@@ -497,6 +913,26 @@ Map<String, dynamic> _manifest({required int version, int images = 0}) => {
   'sessionCount': 1,
   'seriesCount': 1,
   'imageCount': images,
+};
+
+Map<String, dynamic> _timerEventFixture({
+  required String id,
+  required int sequenceNumber,
+  required int elapsedMicroseconds,
+  required int splitMicroseconds,
+  String disposition = 'counted',
+  String? exclusionReason,
+}) => {
+  'id': id,
+  'activityId': 'timer-counted-splits',
+  'sequenceNumber': sequenceNumber,
+  'elapsedMicroseconds': elapsedMicroseconds,
+  'splitMicroseconds': splitMicroseconds,
+  'source': 'acoustic',
+  'disposition': disposition,
+  'normalizedPeak': null,
+  'detectionQuality': null,
+  'exclusionReason': exclusionReason,
 };
 
 Map<String, dynamic> _v1Data({
@@ -517,7 +953,9 @@ Map<String, dynamic> _v1Data({
     {
       'id': 'series-1',
       'sessionId': 'session-1',
+      'sequenceNumber': 1,
       'status': 'confirmed',
+      'targetProfileVersionedId': 'synthetic@1',
       'targetProfileJson': jsonEncode({
         'displayName': 'Synthetische kaart',
         'rings': [
@@ -525,8 +963,14 @@ Map<String, dynamic> _v1Data({
           {'value': 3},
         ],
       }),
+      'distanceMeters': 25.0,
+      'projectileDiameterMm': 5.6,
       'expectedShots': expectedShots,
       'ammoLotId': 'ammo-1',
+      'totalScore': 0,
+      'innerTenCount': 0,
+      'missCount': 0,
+      'hasBoundaryWarnings': false,
       'createdAtUtc': '2026-01-01T10:01:00.000Z',
       'confirmedAtUtc': '2026-01-01T10:02:00.000Z',
     },
@@ -537,10 +981,14 @@ Map<String, dynamic> _v1Data({
   'images': images,
   'firearms': <Map<String, dynamic>>[],
   'cartridges': [
-    {'id': 'cartridge-1'},
+    {'id': 'cartridge-1', 'name': '.22 LR', 'projectileDiameterMm': 5.6},
   ],
   'ammoLots': [
-    {'id': 'ammo-1', 'cartridgeId': 'cartridge-1'},
+    {
+      'id': 'ammo-1',
+      'cartridgeId': 'cartridge-1',
+      'displayName': 'Testmunitie',
+    },
   ],
   'ranges': <Map<String, dynamic>>[],
   'goals': <Map<String, dynamic>>[],
@@ -555,3 +1003,35 @@ Map<String, dynamic> _v1Data({
     {'id': 'discard-me-too'},
   ],
 };
+
+Future<File> _writeEncryptedFixture({
+  required Directory directory,
+  required String password,
+  required Map<String, dynamic> manifest,
+  required Map<String, dynamic> data,
+}) async {
+  final archive = Archive()
+    ..addFile(ArchiveFile.string('manifest.json', jsonEncode(manifest)))
+    ..addFile(ArchiveFile.string('database.json', jsonEncode(data)));
+  final salt = List<int>.generate(16, (index) => index + 1);
+  final nonce = List<int>.generate(12, (index) => index + 21);
+  final key = await Argon2id(
+    parallelism: 1,
+    memory: 19 * 1024,
+    iterations: 2,
+    hashLength: 32,
+  ).deriveKey(secretKey: SecretKey(utf8.encode(password)), nonce: salt);
+  final encrypted = await AesGcm.with256bits().encrypt(
+    ZipEncoder().encode(archive),
+    secretKey: key,
+    nonce: nonce,
+  );
+  final container = BytesBuilder(copy: false)
+    ..add(const [0x53, 0x43, 0x42, 0x31])
+    ..add(salt)
+    ..add(nonce)
+    ..add(encrypted.mac.bytes)
+    ..add(encrypted.cipherText);
+  final file = File('${directory.path}/legacy-v1.scbackup');
+  return file.writeAsBytes(container.takeBytes(), flush: true);
+}

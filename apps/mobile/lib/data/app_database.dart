@@ -252,6 +252,106 @@ class TargetProfiles extends Table {
   Set<Column<Object>> get primaryKey => {versionedId};
 }
 
+@DataClassName('TrainingActivityRecord')
+class TrainingActivities extends Table {
+  TextColumn get id => text()();
+  TextColumn get kind => text()();
+  IntColumn get schemaVersion => integer().withDefault(const Constant(1))();
+  TextColumn get status => text()();
+  TextColumn get sessionId => text().nullable().references(
+    TrainingSessions,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
+  TextColumn get configurationJson => text()();
+  TextColumn get summaryJson => text()();
+  TextColumn get detectorVersion => text().nullable()();
+  DateTimeColumn get startedAtUtc => dateTime()();
+  IntColumn get localUtcOffsetMinutes => integer()();
+  DateTimeColumn get completedAtUtc => dateTime().nullable()();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAtUtc => dateTime()();
+  DateTimeColumn get updatedAtUtc => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+@DataClassName('TrainingActivitySeriesLinkRecord')
+class TrainingActivitySeriesLinks extends Table {
+  TextColumn get activityId =>
+      text().references(TrainingActivities, #id, onDelete: KeyAction.cascade)();
+  TextColumn get seriesId =>
+      text().references(ShootingSeries, #id, onDelete: KeyAction.cascade)();
+  IntColumn get sequenceNumber => integer()();
+  TextColumn get role => text().nullable()();
+  TextColumn get variantId => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {activityId, seriesId};
+}
+
+@DataClassName('ShotTimerEventRecord')
+class ShotTimerEvents extends Table {
+  TextColumn get id => text()();
+  TextColumn get activityId =>
+      text().references(TrainingActivities, #id, onDelete: KeyAction.cascade)();
+  IntColumn get sequenceNumber => integer()();
+  IntColumn get elapsedMicroseconds => integer()();
+  IntColumn get splitMicroseconds => integer()();
+  TextColumn get source => text()();
+  TextColumn get disposition => text()();
+  RealColumn get normalizedPeak => real().nullable()();
+  TextColumn get detectionQuality => text().nullable()();
+  TextColumn get exclusionReason => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+@DataClassName('TimerPresetRecord')
+class TimerPresets extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get mode => text()();
+  TextColumn get configurationJson => text()();
+  BoolColumn get builtIn => boolean().withDefault(const Constant(false))();
+  BoolColumn get archived => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAtUtc => dateTime()();
+  DateTimeColumn get updatedAtUtc => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+@DataClassName('AcousticCalibrationProfileRecord')
+class AcousticCalibrationProfiles extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get firearmId => text().nullable().references(
+    Firearms,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
+  TextColumn get cartridgeId => text().nullable().references(
+    Cartridges,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
+  TextColumn get environment => text()();
+  TextColumn get audioRoute => text()();
+  IntColumn get sampleRate => integer()();
+  RealColumn get sensitivity => real()();
+  IntColumn get echoLockoutMicroseconds => integer()();
+  IntColumn get beepBlankingMicroseconds => integer()();
+  TextColumn get detectorVersion => text()();
+  DateTimeColumn get createdAtUtc => dateTime()();
+  DateTimeColumn get updatedAtUtc => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     Firearms,
@@ -268,6 +368,11 @@ class TargetProfiles extends Table {
     CoachFeedback,
     Preferences,
     TargetProfiles,
+    TrainingActivities,
+    TrainingActivitySeriesLinks,
+    ShotTimerEvents,
+    TimerPresets,
+    AcousticCalibrationProfiles,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -276,7 +381,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -298,6 +403,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from <= 4 && to >= 5) {
         await _migrateToV5(migrator);
+      }
+      if (from <= 5 && to >= 6) {
+        await _migrateToV6(migrator);
       }
     },
     beforeOpen: (details) async {
@@ -376,6 +484,30 @@ class AppDatabase extends _$AppDatabase {
       CREATE INDEX IF NOT EXISTS coach_feedback_by_rule
       ON coach_feedback(rule_id, rule_version)
     ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS training_activities_by_session_started
+      ON training_activities(session_id, started_at_utc DESC)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS training_activities_by_kind_started
+      ON training_activities(kind, started_at_utc DESC)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS training_activity_links_by_series
+      ON training_activity_series_links(series_id, sequence_number)
+    ''');
+    await customStatement('''
+      CREATE UNIQUE INDEX IF NOT EXISTS timer_events_by_activity_sequence
+      ON shot_timer_events(activity_id, sequence_number)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS active_timer_presets_by_name
+      ON timer_presets(archived, built_in, name)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS calibration_profiles_by_material
+      ON acoustic_calibration_profiles(firearm_id, cartridge_id, updated_at_utc DESC)
+    ''');
   }
 
   Future<void> _migrateToV3(Migrator migrator) async {
@@ -428,6 +560,14 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('DROP TABLE goals_v4');
     await migrator.createTable(seriesReflections);
     await migrator.createTable(coachFeedback);
+  }
+
+  Future<void> _migrateToV6(Migrator migrator) async {
+    await migrator.createTable(trainingActivities);
+    await migrator.createTable(trainingActivitySeriesLinks);
+    await migrator.createTable(shotTimerEvents);
+    await migrator.createTable(timerPresets);
+    await migrator.createTable(acousticCalibrationProfiles);
   }
 
   Future<void> _migrateFromV1(Migrator migrator) async {

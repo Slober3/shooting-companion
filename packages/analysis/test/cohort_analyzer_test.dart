@@ -8,17 +8,24 @@ void main() {
 
   CohortSeriesInput sample(
     String id, {
+    DateTime? occurredAtUtc,
+    int? sequenceNumber,
     double distance = 25,
+    String? cartridge = '22-lr',
+    double projectileDiameterMm = 5.6,
     String? ammo = 'ammo-a',
     double score = 80,
     List<ShotImpact>? impacts,
   }) => CohortSeriesInput(
     seriesId: id,
-    occurredAtUtc: DateTime.utc(2026, 8, 1, 12, int.parse(id)),
+    occurredAtUtc: occurredAtUtc ?? DateTime.utc(2026, 8, 1, 12, int.parse(id)),
+    sequenceNumber: sequenceNumber ?? int.parse(id),
     updatedAtUtc: DateTime.utc(2026, 8, 1, 12, int.parse(id)),
     targetProfileVersionedId: target.versionedId,
     targetProfile: target,
     distanceMeters: distance,
+    projectileDiameterMm: projectileDiameterMm,
+    cartridgeId: cartridge,
     firearmId: 'firearm',
     ammoLotId: ammo,
     scorePercentage: score,
@@ -37,13 +44,28 @@ void main() {
       sample('3', distance: 50),
     ]);
     expect(result, hasLength(3));
-    expect(
-      CohortAnalyzer.analyzeAll([
-        sample('1'),
-        sample('2', ammo: 'ammo-b'),
-      ], includeAmmoLot: false),
-      hasLength(1),
-    );
+    final withoutAmmoLot = CohortAnalyzer.analyzeAll([
+      sample('1'),
+      sample('2', ammo: 'ammo-b'),
+    ], includeAmmoLot: false);
+    expect(withoutAmmoLot, hasLength(1));
+    expect(withoutAmmoLot.values.single.cohort.ammoLotId, isNull);
+
+    final directWithoutAmmoLot = CohortAnalyzer.analyze([
+      sample('1'),
+      sample('2', ammo: 'ammo-b'),
+    ], includeAmmoLot: false);
+    expect(directWithoutAmmoLot.cohort.ammoLotId, isNull);
+  });
+
+  test('separates cartridge and projectile diameter without an ammo lot', () {
+    final result = CohortAnalyzer.analyzeAll([
+      sample('1', ammo: null),
+      sample('2', ammo: null, cartridge: '9x19', projectileDiameterMm: 9.01),
+      sample('3', ammo: null, cartridge: null, projectileDiameterMm: 5.5),
+    ]);
+
+    expect(result, hasLength(3));
   });
 
   test('calculates pooled metrics, moving averages and consistency', () {
@@ -65,10 +87,54 @@ void main() {
     );
   });
 
+  test('score trend keeps a selected series without physical positions', () {
+    final result = CohortAnalyzer.analyze([
+      sample(
+        '1',
+        score: 20,
+        impacts: const [ShotImpact(id: 'miss', xMm: 0, yMm: 0, isMiss: true)],
+      ),
+      sample('2', score: 80),
+    ]);
+
+    expect(result.seriesAnalyses, hasLength(2));
+    expect(result.pooledMetrics.positionedShotCount, 2);
+    expect(result.scoreTrend.percentages, [20, 80]);
+    expect(
+      result.scoreTrend.linearSlopePercentagePointsPerSeries,
+      closeTo(60, 1e-9),
+    );
+  });
+
   test('rejects a manually mixed cohort', () {
     expect(
       () => CohortAnalyzer.analyze([sample('1'), sample('2', distance: 50)]),
       throwsArgumentError,
     );
   });
+
+  test(
+    'orders sessions by occurrence and series within a session by sequence',
+    () {
+      final laterSession = DateTime.utc(2026, 8, 2);
+      final earlierSession = DateTime.utc(2026, 8, 1);
+      final result = CohortAnalyzer.analyze([
+        sample('3', occurredAtUtc: laterSession, sequenceNumber: 2, score: 30),
+        sample('2', occurredAtUtc: laterSession, sequenceNumber: 1, score: 20),
+        sample(
+          '1',
+          occurredAtUtc: earlierSession,
+          sequenceNumber: 1,
+          score: 10,
+        ),
+      ]);
+
+      expect(result.seriesAnalyses.map((item) => item.seriesId), [
+        '1',
+        '2',
+        '3',
+      ]);
+      expect(result.scoreTrend.percentages, [10, 20, 30]);
+    },
+  );
 }

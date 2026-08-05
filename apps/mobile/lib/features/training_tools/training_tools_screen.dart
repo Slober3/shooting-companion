@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shooting_companion_shot_timer/shot_timer.dart';
 import 'package:shooting_companion_training/training.dart';
 
 import '../../widgets/compact_page_scaffold.dart';
 import 'drill_screens.dart';
 import 'experiment_planner_screen.dart';
+import 'shot_timer_flow.dart';
+import 'shot_timer_release_gate.dart';
 import 'sight_calculator_screen.dart';
+import 'timer_history_screen.dart';
 
 /// Standalone entry point for offline drills, A/B plans and sight corrections.
 ///
 /// This screen deliberately owns no persistence or app navigation state. The
 /// optional callbacks let the app shell connect selections in a later release.
-class TrainingToolsScreen extends StatelessWidget {
+class TrainingToolsScreen extends ConsumerWidget {
   const TrainingToolsScreen({
     this.initialTargetProfileVersionedId = 'issf-25m-precision-50m-pistol@1',
     this.initialDistanceMeters = 25,
@@ -25,7 +30,7 @@ class TrainingToolsScreen extends StatelessWidget {
   final ValueChanged<ExperimentPlan>? onExperimentPlanCreated;
 
   @override
-  Widget build(BuildContext context) => CompactPageScaffold(
+  Widget build(BuildContext context, WidgetRef ref) => CompactPageScaffold(
     title: 'Trainingstools',
     body: ListView(
       padding: EdgeInsets.fromLTRB(
@@ -40,6 +45,59 @@ class TrainingToolsScreen extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyLarge,
         ),
         const SizedBox(height: 20),
+        _ToolCard(
+          key: const ValueKey('training-tool-shot-timer'),
+          icon: Icons.timer_outlined,
+          title: 'Shot timer',
+          description: acousticShotTimerEnabled
+              ? 'Meet live-firetijden en splits, of neem een externe timer over.'
+              : 'Gebruik par, cadans of neem tijden van een externe timer over.',
+          onTap: () => launchShotTimerFlow(context: context, ref: ref),
+        ),
+        const SizedBox(height: 12),
+        _ToolCard(
+          key: const ValueKey('training-tool-par-cadence'),
+          icon: Icons.notifications_active_outlined,
+          title: 'Par en cadans',
+          description:
+              'Train tijden, ritme en werk-rustblokken zonder microfoon.',
+          onTap: () => launchShotTimerFlow(
+            context: context,
+            ref: ref,
+            initialMode: ShotTimerMode.par,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _ToolCard(
+          key: const ValueKey('training-tool-timer-history'),
+          icon: Icons.history,
+          title: 'Timergeschiedenis',
+          description:
+              'Bekijk bewaarde runs, schottijden, splits en uitsluitingen.',
+          onTap: () => Navigator.push<void>(
+            context,
+            MaterialPageRoute(builder: (_) => const TimerHistoryScreen()),
+          ),
+        ),
+        if (acousticShotTimerEnabled) ...[
+          const SizedBox(height: 12),
+          _ToolCard(
+            key: const ValueKey('training-tool-calibration-profiles'),
+            icon: Icons.graphic_eq,
+            title: 'Akoestische profielen',
+            description:
+                'Beheer lokale gevoeligheid en echofilters per omgeving.',
+            onTap: () => Navigator.push<void>(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AcousticCalibrationProfilesScreen(),
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
+        Text('Andere tools', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
         _ToolCard(
           key: const ValueKey('training-tool-drills'),
           icon: Icons.fitness_center_outlined,
@@ -95,8 +153,14 @@ class TrainingToolsScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Alle berekeningen gebeuren lokaal. De tools wijzigen geen '
-                    'sessie of score totdat de app ze expliciet koppelt.',
+                    acousticShotTimerEnabled
+                        ? 'Alle berekeningen en timerdetecties gebeuren lokaal. '
+                              'Er worden geen audio-opnames bewaard. Een '
+                              'timerresultaat wijzigt nooit automatisch een '
+                              'score of treffer.'
+                        : 'Alle timers werken volledig offline. Deze stabiele '
+                              'build gebruikt geen microfoon. Een timerresultaat '
+                              'wijzigt nooit automatisch een score of treffer.',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),

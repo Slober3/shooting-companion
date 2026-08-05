@@ -400,6 +400,10 @@ class _SessionRow extends ConsumerWidget {
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final trainingCount = await ref
+        .read(repositoryProvider)
+        .countSessionTrainingActivities(item.session.id);
+    if (!context.mounted) return;
     final date = DateFormat(
       'd MMMM yyyy',
       'nl_BE',
@@ -412,6 +416,7 @@ class _SessionRow extends ConsumerWidget {
           'De sessie van $date bevat ${item.confirmedSeriesCount} '
           '${item.confirmedSeriesCount == 1 ? 'reeks' : 'reeksen'} en '
           '${item.photoCount} ${item.photoCount == 1 ? 'foto' : 'foto’s'}. '
+          '${trainingCount == 0 ? '' : '$trainingCount gekoppelde ${trainingCount == 1 ? 'trainingsactiviteit' : 'trainingsactiviteiten'} worden ook verwijderd. '}'
           'Alle gekoppelde gegevens worden permanent verwijderd.',
         ),
         actions: [
