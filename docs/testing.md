@@ -18,6 +18,9 @@ Pure Dart packages are also tested independently. Acceptance covers:
 - BR50 A3 geometry, 25 record bulls, sighters, duplicate shots, X ties,
   incomplete cards, multiplicity, fixed maximum and excess-shot penalties;
 - v1/v2/v3/v4-to-v5 migration and all five backup manifest versions;
+- contextual series, session and historical-comparison analysis, including
+  strict cohorts, visit-date chronology and archived material references;
+- metric explanation and chart accessibility at narrow widths and large text;
 - built-in library protection, unused deletion, referenced archiving, restore,
   dependent-ammunition transactions and immutable target versioning;
 - one-active-session and one-draft-series invariants;

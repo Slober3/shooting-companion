@@ -79,6 +79,7 @@ enum StoredCoachFeedbackResponse { useful, notUseful, later, dismiss }
 
 class AnalysisSeriesData {
   const AnalysisSeriesData({
+    required this.session,
     required this.series,
     required this.impacts,
     required this.firearm,
@@ -87,6 +88,7 @@ class AnalysisSeriesData {
     required this.reflection,
   });
 
+  final SessionRecord session;
   final SeriesRecord series;
   final List<ImpactRecord> impacts;
   final FirearmRecord? firearm;
@@ -541,6 +543,7 @@ class ShootingRepository {
         'SELECT 1',
         readsFrom: {
           database.shootingSeries,
+          database.trainingSessions,
           database.shotImpacts,
           database.firearms,
           database.ammoLots,
@@ -749,6 +752,7 @@ class ShootingRepository {
   Future<List<AnalysisSeriesData>> _loadAnalysisDataset() async {
     final series = await getConfirmedSeries();
     if (series.isEmpty) return const [];
+    final sessions = await database.select(database.trainingSessions).get();
     final impacts = await database.select(database.shotImpacts).get();
     final firearms = await database.select(database.firearms).get();
     final ammoLots = await database.select(database.ammoLots).get();
@@ -758,6 +762,7 @@ class ShootingRepository {
     for (final impact in impacts) {
       impactsBySeries.putIfAbsent(impact.seriesId, () => []).add(impact);
     }
+    final sessionById = {for (final item in sessions) item.id: item};
     final firearmById = {for (final item in firearms) item.id: item};
     final ammoById = {for (final item in ammoLots) item.id: item};
     final cartridgeById = {for (final item in cartridges) item.id: item};
@@ -765,8 +770,15 @@ class ShootingRepository {
       for (final item in reflections) item.seriesId: item,
     };
     return series
-        .map(
-          (item) => AnalysisSeriesData(
+        .map((item) {
+          final session = sessionById[item.sessionId];
+          if (session == null) {
+            throw StateError(
+              'Bevestigde reeks ${item.id} verwijst naar een ontbrekende sessie.',
+            );
+          }
+          return AnalysisSeriesData(
+            session: session,
             series: item,
             impacts: List.unmodifiable(impactsBySeries[item.id] ?? const []),
             firearm: item.firearmId == null
@@ -777,8 +789,8 @@ class ShootingRepository {
                 ? null
                 : cartridgeById[item.cartridgeId],
             reflection: reflectionBySeries[item.id],
-          ),
-        )
+          );
+        })
         .toList(growable: false);
   }
 

@@ -2,6 +2,42 @@
 
 All notable changes follow [Semantic Versioning](https://semver.org/).
 
+## 0.4.1 - 2026-08-05
+
+### Added
+
+- Added a full single-series analysis screen with target, normalized group and
+  heatmap views, advanced group metrics, data-quality warnings, potential score
+  and previous/next navigation within the same range visit.
+- Added session analysis that compares individual series from one visit and
+  keeps incompatible target, distance, firearm and ammunition contexts apart.
+- Added an explicit historical-series picker and a configurable comparison set
+  of up to five compatible series in the Analyse tab.
+- Added tappable metric explanations with the current value, data basis,
+  calculation, interpretation, minimum-data guidance and limitations.
+- Added accessible chart summaries and structured non-visual data surfaces for
+  future analysis charts.
+
+### Changed
+
+- Renamed the Analyse section `Groepen` to `Vergelijken` and made its selected
+  source series and comparison composition explicit.
+- Series chronology and period filters now use the parent range-visit time,
+  with series sequence as the stable order inside a visit.
+- Series and session detail now provide direct analysis entry points; analysis
+  is no longer reachable only through the global Analyse tab.
+- Archived firearm and ammunition names remain part of historical analysis
+  contexts without introducing query-per-row loading.
+- Strict comparison cohorts now also include cartridge and projectile diameter,
+  preventing calibre mixes when no ammunition lot was selected.
+
+### Safety boundaries
+
+- Combined metrics are calculated only for exactly compatible target version,
+  distance, firearm and ammunition contexts.
+- Every explanation is descriptive: it does not infer technique or modify a
+  historical score, impact or target snapshot.
+
 ## 0.4.0 - 2026-08-04
 
 ### Added

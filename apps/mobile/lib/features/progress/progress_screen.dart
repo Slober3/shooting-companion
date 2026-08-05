@@ -3,6 +3,7 @@ import 'dart:isolate';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:shooting_companion_analysis/analysis.dart';
 import 'package:shooting_companion_coaching/coaching.dart';
 
@@ -15,7 +16,13 @@ import '../../widgets/responsive_metric_grid.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
 import '../../widgets/app_notice.dart';
 import 'analysis_adapter.dart';
+import 'analysis_evidence.dart';
+import 'analysis_series_picker_screen.dart';
 import 'goal_editor_sheet.dart';
+import 'group_analysis_widgets.dart';
+import 'metric_definitions.dart';
+import 'metric_explanation_sheet.dart';
+import 'series_analysis_screen.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
@@ -72,17 +79,44 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             for (final target in targets)
               target.versionedId: target.displayName,
           };
-          final filteredData = _filters.applyData(allData);
+          final filteredData = _filters.applyData(allData)
+            ..sort((first, second) {
+              final bySession = first.session.startedAtUtc.compareTo(
+                second.session.startedAtUtc,
+              );
+              if (bySession != 0) return bySession;
+              final bySequence = first.series.sequenceNumber.compareTo(
+                second.series.sequenceNumber,
+              );
+              return bySequence != 0
+                  ? bySequence
+                  : first.series.id.compareTo(second.series.id);
+            });
           final items = filteredData
               .map((item) => item.series)
               .toList(growable: false);
-          final analysis = _analysisFor(allData)
-              .where(
-                (item) => filteredData.any(
-                  (source) => source.series.id == item.source.series.id,
-                ),
-              )
-              .toList(growable: false);
+          final filteredSeriesIds = filteredData
+              .map((item) => item.series.id)
+              .toSet();
+          final analysis =
+              _analysisFor(allData)
+                  .where(
+                    (item) => filteredSeriesIds.contains(item.source.series.id),
+                  )
+                  .toList(growable: false)
+                ..sort((first, second) {
+                  final bySession = first.source.session.startedAtUtc.compareTo(
+                    second.source.session.startedAtUtc,
+                  );
+                  if (bySession != 0) return bySession;
+                  final bySequence = first.source.series.sequenceNumber
+                      .compareTo(second.source.series.sequenceNumber);
+                  return bySequence != 0
+                      ? bySequence
+                      : first.source.series.id.compareTo(
+                          second.source.series.id,
+                        );
+                });
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -133,7 +167,15 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       children: [
                         _Overview(items: items),
                         const SizedBox(height: 16),
-                        _TrendCard(items: items),
+                        _TrendCard(
+                          items: items,
+                          onSelected: (series) => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  SeriesAnalysisScreen(seriesId: series.id),
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         _Breakdown(items: items, targetNames: targetNames),
                         const SizedBox(height: 16),
@@ -152,9 +194,15 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         ),
                       ],
                     ),
-                    _AnalysisSection.groups => _GroupAnalysisSection(
+                    _AnalysisSection.compare => _GroupAnalysisSection(
                       items: analysis,
                       onPotentialScore: _showPotentialScore,
+                      onOpenSeries: (seriesId) => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              SeriesAnalysisScreen(seriesId: seriesId),
+                        ),
+                      ),
                     ),
                     _AnalysisSection.coach => _CoachSection(
                       insights: buildCoachInsights(analysis),
@@ -399,7 +447,7 @@ class _GoalsCard extends StatelessWidget {
   );
 }
 
-enum _AnalysisSection { overview, groups, coach }
+enum _AnalysisSection { overview, compare, coach }
 
 class _AnalysisSectionPicker extends StatelessWidget {
   const _AnalysisSectionPicker({
@@ -426,9 +474,9 @@ class _AnalysisSectionPicker extends StatelessWidget {
               compact: compact,
             ),
             _segment(
-              value: _AnalysisSection.groups,
+              value: _AnalysisSection.compare,
               icon: Icons.adjust,
-              label: 'Groepen',
+              label: 'Vergelijken',
               compact: compact,
             ),
             _segment(
@@ -471,10 +519,12 @@ class _GroupAnalysisSection extends StatefulWidget {
   const _GroupAnalysisSection({
     required this.items,
     required this.onPotentialScore,
+    required this.onOpenSeries,
   });
 
   final List<AnalyzedSeriesView> items;
   final ValueChanged<AnalyzedSeriesView> onPotentialScore;
+  final ValueChanged<String> onOpenSeries;
 
   @override
   State<_GroupAnalysisSection> createState() => _GroupAnalysisSectionState();
@@ -482,6 +532,8 @@ class _GroupAnalysisSection extends StatefulWidget {
 
 class _GroupAnalysisSectionState extends State<_GroupAnalysisSection> {
   bool _showDensity = true;
+  String? _selectedSeriesId;
+  Set<String>? _comparisonSeriesIds;
 
   @override
   Widget build(BuildContext context) {
@@ -489,20 +541,30 @@ class _GroupAnalysisSectionState extends State<_GroupAnalysisSection> {
         widget.items
             .where((item) => item.analysis.positionedShotCount > 0)
             .toList(growable: false)
-          ..sort(
-            (a, b) => b.source.series.createdAtUtc.compareTo(
-              a.source.series.createdAtUtc,
-            ),
-          );
+          ..sort((a, b) {
+            final bySession = b.source.session.startedAtUtc.compareTo(
+              a.source.session.startedAtUtc,
+            );
+            if (bySession != 0) return bySession;
+            return b.source.series.sequenceNumber.compareTo(
+              a.source.series.sequenceNumber,
+            );
+          });
     if (usable.isEmpty) {
       return const _MessagePanel(
         icon: Icons.adjust,
         message: 'Geen positionele treffers beschikbaar voor groepsanalyse.',
       );
     }
-    final item = usable.first;
+    final item =
+        usable
+            .where(
+              (candidate) => candidate.source.series.id == _selectedSeriesId,
+            )
+            .firstOrNull ??
+        usable.first;
     final metrics = item.analysis.metrics;
-    final comparable = usable
+    final comparableCandidates = usable
         .where(
           (candidate) =>
               candidate.source.series.targetProfileVersionedId ==
@@ -511,14 +573,82 @@ class _GroupAnalysisSectionState extends State<_GroupAnalysisSection> {
                           item.source.series.distanceMeters)
                       .abs() <
                   0.000001 &&
+              (candidate.source.series.projectileDiameterMm -
+                          item.source.series.projectileDiameterMm)
+                      .abs() <
+                  0.000001 &&
+              candidate.source.series.cartridgeId ==
+                  item.source.series.cartridgeId &&
               candidate.source.series.firearmId ==
                   item.source.series.firearmId &&
               candidate.source.series.ammoLotId == item.source.series.ammoLotId,
         )
-        .take(20)
+        .toList(growable: false);
+    final validComparisonIds = comparableCandidates
+        .map((candidate) => candidate.source.series.id)
+        .toSet();
+    final requestedComparisonIds = _comparisonSeriesIds;
+    final defaultComparisonIds = <String>{item.source.series.id};
+    for (final candidate in comparableCandidates) {
+      if (defaultComparisonIds.length >= 5) break;
+      defaultComparisonIds.add(candidate.source.series.id);
+    }
+    final effectiveComparisonIds =
+        requestedComparisonIds == null ||
+            !requestedComparisonIds.contains(item.source.series.id) ||
+            requestedComparisonIds.any(
+              (seriesId) => !validComparisonIds.contains(seriesId),
+            )
+        ? defaultComparisonIds
+        : requestedComparisonIds;
+    final comparableViews = comparableCandidates
+        .where(
+          (candidate) =>
+              effectiveComparisonIds.contains(candidate.source.series.id),
+        )
+        .toList(growable: false);
+    final comparable = comparableViews
         .map(cohortInputFromAnalyzed)
         .toList(growable: false);
     final cohort = CohortAnalyzer.analyze(comparable);
+    final cohortActualShots = comparableViews.fold<int>(
+      0,
+      (sum, candidate) => sum + candidate.analysis.actualShotCount,
+    );
+    final cohortPositionedShots = cohort.pooledMetrics.positionedShotCount;
+    final hasPhysicalGroupMetrics = cohortPositionedShots >= 3;
+    final hasR90 = cohortPositionedShots >= 10;
+    final hasScoreComparison = comparableViews.length >= 2;
+    final cohortEvidence = AnalysisEvidence(
+      quality: comparableViews.length >= 5 && cohortPositionedShots >= 60
+          ? AnalysisDataQuality.stronger
+          : comparableViews.length >= 3 && cohortPositionedShots >= 30
+          ? AnalysisDataQuality.usable
+          : comparableViews.length >= 2
+          ? AnalysisDataQuality.smallSample
+          : AnalysisDataQuality.provisional,
+      actualShotCount: cohortActualShots,
+      positionedShotCount: cohortPositionedShots,
+      seriesCount: comparableViews.length,
+      limitations: cohort.comparisonWarnings,
+    );
+    MetricItem explainedCohortMetric({
+      required String label,
+      required String value,
+      required IconData icon,
+      required MetricDefinition definition,
+    }) => MetricItem(
+      label: label,
+      value: value,
+      icon: icon,
+      helpSemanticLabel: 'Uitleg over ${definition.label}',
+      onTap: () => showMetricExplanationSheet(
+        context: context,
+        definition: definition,
+        currentValue: value,
+        evidence: cohortEvidence,
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -530,7 +660,69 @@ class _GroupAnalysisSectionState extends State<_GroupAnalysisSection> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Laatste vergelijkbare trefbeeld',
+                  'Geselecteerde reeks',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${DateFormat('d MMMM yyyy · HH:mm', 'nl_BE').format(item.source.session.startedAtUtc.toLocal())} · '
+                  'Reeks ${item.source.series.sequenceNumber}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${item.target.displayName} · '
+                  '${item.source.series.distanceMeters.toStringAsFixed(_distanceDigits(item.source.series.distanceMeters))} m'
+                  '${item.source.cartridge == null ? '' : ' · ${item.source.cartridge!.name}'}'
+                  '${item.source.firearm == null ? '' : ' · ${item.source.firearm!.name}'}'
+                  '${item.source.ammoLot == null ? '' : ' · ${item.source.ammoLot!.displayName}'}',
+                ),
+                const SizedBox(height: 12),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final stack =
+                        constraints.maxWidth < 390 ||
+                        MediaQuery.textScalerOf(context).scale(1) >= 1.5;
+                    final choose = OutlinedButton.icon(
+                      onPressed: () => _chooseSeries(context, usable),
+                      icon: const Icon(Icons.swap_horiz),
+                      label: const Text('Kies reeks'),
+                    );
+                    final open = FilledButton.tonalIcon(
+                      onPressed: () =>
+                          widget.onOpenSeries(item.source.series.id),
+                      icon: const Icon(Icons.insights_outlined),
+                      label: const Text('Volledige analyse'),
+                    );
+                    if (stack) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [choose, const SizedBox(height: 12), open],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        Expanded(child: choose),
+                        const SizedBox(width: 12),
+                        Expanded(child: open),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Trefbeeld van deze reeks',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 4),
@@ -552,30 +744,7 @@ class _GroupAnalysisSectionState extends State<_GroupAnalysisSection> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                ResponsiveMetricGrid(
-                  items: [
-                    MetricItem(
-                      label: 'Mean radius',
-                      value: '${metrics.meanRadiusMm.toStringAsFixed(1)} mm',
-                      icon: Icons.radio_button_checked,
-                    ),
-                    MetricItem(
-                      label: 'Extreme spreiding',
-                      value: '${metrics.extremeSpreadMm.toStringAsFixed(1)} mm',
-                      icon: Icons.open_in_full,
-                    ),
-                    MetricItem(
-                      label: 'Horizontale bias',
-                      value: _signedMm(metrics.horizontalBiasMm),
-                      icon: Icons.swap_horiz,
-                    ),
-                    MetricItem(
-                      label: 'Verticale bias',
-                      value: _signedMm(metrics.verticalBiasMm),
-                      icon: Icons.swap_vert,
-                    ),
-                  ],
-                ),
+                GroupAnalysisMetrics(analysis: item.analysis),
                 const SizedBox(height: 12),
                 Text(
                   _reliabilityText(item.analysis.reliability),
@@ -616,44 +785,74 @@ class _GroupAnalysisSectionState extends State<_GroupAnalysisSection> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Vergelijkbare reeksen',
+                  'Geselecteerde vergelijking',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${comparable.length} reeks${comparable.length == 1 ? '' : 'en'} · '
+                  '${comparable.length} reeks${comparable.length == 1 ? '' : 'en'} met dezelfde kaart, afstand, kaliber, wapen en munitie · '
                   '${cohort.pooledMetrics.positionedShotCount} positionele schoten',
                 ),
-                const SizedBox(height: 16),
-                ResponsiveMetricGrid(
-                  items: [
-                    MetricItem(
-                      label: 'Gezamenlijke mean radius',
-                      value:
-                          '${cohort.pooledMetrics.meanRadiusMm.toStringAsFixed(1)} mm',
-                      icon: Icons.track_changes,
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _chooseComparison(
+                      context,
+                      comparableCandidates,
+                      effectiveComparisonIds,
+                      item.source.series.id,
                     ),
-                    MetricItem(
-                      label: 'Scorevariatie',
-                      value:
-                          '${cohort.consistency.scoreStandardDeviation.toStringAsFixed(1)} pp',
-                      icon: Icons.multiline_chart,
-                    ),
-                    MetricItem(
-                      label: 'Trend per reeks',
-                      value:
-                          '${cohort.scoreTrend.linearSlopePercentagePointsPerSeries >= 0 ? '+' : ''}'
-                          '${cohort.scoreTrend.linearSlopePercentagePointsPerSeries.toStringAsFixed(1)} pp',
-                      icon: Icons.trending_up,
-                    ),
-                    MetricItem(
-                      label: 'R90',
-                      value:
-                          '${cohort.pooledMetrics.empiricalR90Mm.toStringAsFixed(1)} mm',
-                      icon: Icons.blur_circular,
-                    ),
-                  ],
+                    icon: const Icon(Icons.checklist),
+                    label: const Text('Samenstelling wijzigen'),
+                  ),
                 ),
+                const SizedBox(height: 16),
+                if (!hasPhysicalGroupMetrics && !hasScoreComparison)
+                  const Text(
+                    'Alleen de geplaatste posities worden getoond. Selecteer '
+                    'minstens twee reeksen voor een scorevergelijking of '
+                    'verzamel minstens drie positionele treffers voor '
+                    'groepsmaten.',
+                  )
+                else
+                  ResponsiveMetricGrid(
+                    items: [
+                      if (hasPhysicalGroupMetrics)
+                        explainedCohortMetric(
+                          label: 'Gezamenlijke mean radius',
+                          value:
+                              '${cohort.pooledMetrics.meanRadiusMm.toStringAsFixed(1)} mm',
+                          icon: Icons.track_changes,
+                          definition: MetricDefinitions.meanRadius,
+                        ),
+                      if (hasScoreComparison) ...[
+                        explainedCohortMetric(
+                          label: 'Scorevariatie',
+                          value:
+                              '${cohort.consistency.scoreStandardDeviation.toStringAsFixed(1)} pp',
+                          icon: Icons.multiline_chart,
+                          definition: MetricDefinitions.scoreConsistency,
+                        ),
+                        explainedCohortMetric(
+                          label: 'Trend per reeks',
+                          value:
+                              '${cohort.scoreTrend.linearSlopePercentagePointsPerSeries >= 0 ? '+' : ''}'
+                              '${cohort.scoreTrend.linearSlopePercentagePointsPerSeries.toStringAsFixed(1)} pp',
+                          icon: Icons.trending_up,
+                          definition: MetricDefinitions.scoreTrend,
+                        ),
+                      ],
+                      if (hasR90)
+                        explainedCohortMetric(
+                          label: 'R90',
+                          value:
+                              '${cohort.pooledMetrics.empiricalR90Mm.toStringAsFixed(1)} mm',
+                          icon: Icons.blur_circular,
+                          definition: MetricDefinitions.empiricalR90,
+                        ),
+                    ],
+                  ),
                 if (cohort.comparisonWarnings.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   for (final warning in cohort.comparisonWarnings)
@@ -688,15 +887,22 @@ class _GroupAnalysisSectionState extends State<_GroupAnalysisSection> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
+                        '${DateFormat('d MMM yyyy', 'nl_BE').format(series.source.session.startedAtUtc.toLocal())} · '
                         'Reeks ${series.source.series.sequenceNumber}',
                       ),
                       subtitle: Text(
+                        '${series.target.displayName} · '
                         '${series.analysis.metrics.positionedShotCount} schoten · '
-                        '${series.analysis.metrics.meanRadiusMm.toStringAsFixed(1)} mm mean radius',
-                      ),
-                      trailing: Text(
+                        '${series.analysis.metrics.positionedShotCount >= 3 ? '${series.analysis.metrics.meanRadiusMm.toStringAsFixed(1)} mm gemiddelde radius · ' : 'alleen posities · '}'
                         '${series.scorePercentage.toStringAsFixed(1)}%',
                       ),
+                      trailing: const Icon(Icons.chevron_right),
+                      selected:
+                          series.source.series.id == item.source.series.id,
+                      onTap: () => setState(() {
+                        _selectedSeriesId = series.source.series.id;
+                        _comparisonSeriesIds = null;
+                      }),
                     ),
                 ],
               ),
@@ -705,6 +911,34 @@ class _GroupAnalysisSectionState extends State<_GroupAnalysisSection> {
         ],
       ],
     );
+  }
+
+  Future<void> _chooseSeries(
+    BuildContext context,
+    List<AnalyzedSeriesView> items,
+  ) async {
+    final selectedId = await showAnalysisSeriesPicker(context, items);
+    if (!mounted || selectedId == null) return;
+    setState(() {
+      _selectedSeriesId = selectedId;
+      _comparisonSeriesIds = null;
+    });
+  }
+
+  Future<void> _chooseComparison(
+    BuildContext context,
+    List<AnalyzedSeriesView> items,
+    Set<String> selectedIds,
+    String requiredSeriesId,
+  ) async {
+    final result = await showAnalysisComparisonPicker(
+      context,
+      items: items,
+      selectedIds: selectedIds,
+      requiredSeriesId: requiredSeriesId,
+    );
+    if (!mounted || result == null) return;
+    setState(() => _comparisonSeriesIds = result);
   }
 }
 
@@ -717,11 +951,13 @@ class _GroupPlot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final metrics = analysis.metrics;
-    final summary =
-        'Trefbeeld met ${metrics.positionedShotCount} positionele schoten. '
-        'Groepscentrum ${_signedMm(metrics.horizontalBiasMm)} horizontaal en '
-        '${_signedMm(metrics.verticalBiasMm)} verticaal. '
-        'Mean radius ${metrics.meanRadiusMm.toStringAsFixed(1)} millimeter.';
+    final summary = metrics.positionedShotCount < 3
+        ? 'Trefbeeld met ${metrics.positionedShotCount} positionele schoten. '
+              'Er zijn nog te weinig treffers voor groepsmaten.'
+        : 'Trefbeeld met ${metrics.positionedShotCount} positionele schoten. '
+              'Groepscentrum ${_signedMm(metrics.horizontalBiasMm)} horizontaal en '
+              '${_signedMm(metrics.verticalBiasMm)} verticaal. '
+              'Mean radius ${metrics.meanRadiusMm.toStringAsFixed(1)} millimeter.';
     return Semantics(
       image: true,
       label: summary,
@@ -823,21 +1059,23 @@ class _GroupPlotPainter extends CustomPainter {
 
     final ellipse = metrics.covarianceEllipse;
     final ellipseCenter = project(metrics.centroidXMm, metrics.centroidYMm);
-    canvas.save();
-    canvas.translate(ellipseCenter.dx, ellipseCenter.dy);
-    canvas.rotate(ellipse.angleDegrees * math.pi / 180);
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset.zero,
-        width: math.max(2, ellipse.semiMajorAxisMm * 4 * scale),
-        height: math.max(2, ellipse.semiMinorAxisMm * 4 * scale),
-      ),
-      Paint()
-        ..color = colorScheme.primary
-        ..strokeWidth = 2
-        ..style = PaintingStyle.stroke,
-    );
-    canvas.restore();
+    if (positions.length >= 3) {
+      canvas.save();
+      canvas.translate(ellipseCenter.dx, ellipseCenter.dy);
+      canvas.rotate(ellipse.angleDegrees * math.pi / 180);
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset.zero,
+          width: math.max(2, ellipse.semiMajorAxisMm * 2 * scale),
+          height: math.max(2, ellipse.semiMinorAxisMm * 2 * scale),
+        ),
+        Paint()
+          ..color = colorScheme.primary
+          ..strokeWidth = 2
+          ..style = PaintingStyle.stroke,
+      );
+      canvas.restore();
+    }
 
     for (final point in positions) {
       final location = project(point.xMm, point.yMm);
@@ -860,19 +1098,21 @@ class _GroupPlotPainter extends CustomPainter {
       );
     }
 
-    final centroidPaint = Paint()
-      ..color = colorScheme.secondary
-      ..strokeWidth = 2.5;
-    canvas.drawLine(
-      ellipseCenter + const Offset(-8, 0),
-      ellipseCenter + const Offset(8, 0),
-      centroidPaint,
-    );
-    canvas.drawLine(
-      ellipseCenter + const Offset(0, -8),
-      ellipseCenter + const Offset(0, 8),
-      centroidPaint,
-    );
+    if (positions.length >= 3) {
+      final centroidPaint = Paint()
+        ..color = colorScheme.secondary
+        ..strokeWidth = 2.5;
+      canvas.drawLine(
+        ellipseCenter + const Offset(-8, 0),
+        ellipseCenter + const Offset(8, 0),
+        centroidPaint,
+      );
+      canvas.drawLine(
+        ellipseCenter + const Offset(0, -8),
+        ellipseCenter + const Offset(0, 8),
+        centroidPaint,
+      );
+    }
   }
 
   @override
@@ -1063,9 +1303,10 @@ class _CoachPart extends StatelessWidget {
 }
 
 class _TrendCard extends StatelessWidget {
-  const _TrendCard({required this.items});
+  const _TrendCard({required this.items, required this.onSelected});
 
   final List<SeriesRecord> items;
+  final ValueChanged<SeriesRecord> onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -1081,17 +1322,41 @@ class _TrendCard extends StatelessWidget {
             const SizedBox(height: 4),
             const Text('Percentage van de maximumscore per reeks'),
             const SizedBox(height: 16),
-            Semantics(
-              label:
-                  'Scoretrend van ${values.first.toStringAsFixed(1)} tot ${values.last.toStringAsFixed(1)} procent',
-              image: true,
-              child: SizedBox(
-                height: 180,
-                width: double.infinity,
-                child: CustomPaint(
-                  painter: _TrendPainter(values, Theme.of(context).colorScheme),
+            LayoutBuilder(
+              builder: (context, constraints) => Semantics(
+                label:
+                    'Scoretrend van ${values.first.toStringAsFixed(1)} tot ${values.last.toStringAsFixed(1)} procent. Tik op de grafiek om de dichtstbijzijnde reeks te openen.',
+                button: true,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapUp: (details) {
+                    final fraction =
+                        (details.localPosition.dx / constraints.maxWidth).clamp(
+                          0.0,
+                          1.0,
+                        );
+                    final index = values.length == 1
+                        ? 0
+                        : (fraction * (values.length - 1)).round();
+                    onSelected(items[index]);
+                  },
+                  child: SizedBox(
+                    height: 180,
+                    width: double.infinity,
+                    child: CustomPaint(
+                      painter: _TrendPainter(
+                        values,
+                        Theme.of(context).colorScheme,
+                      ),
+                    ),
+                  ),
                 ),
               ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tik op een punt in de trend om de bronreeks te analyseren.',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
         ),
@@ -1169,8 +1434,14 @@ class _Breakdown extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Vergelijkbare reeksen',
+              'Score per kaart en afstand',
               style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Brede percentagesamenvatting; verschillende wapens, kalibers '
+              'en munitie kunnen hierin gecombineerd zijn.',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
             for (final entry in groups.entries)
@@ -1479,7 +1750,7 @@ class _AnalysisFilters {
       (firearmId == null ? 0 : 1) +
       (ammoLotId == null ? 0 : 1);
 
-  List<SeriesRecord> apply(List<SeriesRecord> items) {
+  List<AnalysisSeriesData> applyData(List<AnalysisSeriesData> items) {
     final cutoff = switch (period) {
       _AnalysisPeriod.all => null,
       _AnalysisPeriod.last30Days => DateTime.now().toUtc().subtract(
@@ -1492,27 +1763,23 @@ class _AnalysisFilters {
         const Duration(days: 365),
       ),
     };
-    return items.where((item) {
-      if (cutoff != null && item.createdAtUtc.isBefore(cutoff)) return false;
-      if (targetId != null && item.targetProfileVersionedId != targetId) {
-        return false;
-      }
-      if (distanceMeters != null &&
-          (item.distanceMeters - distanceMeters!).abs() > 0.0001) {
-        return false;
-      }
-      if (firearmId != null && item.firearmId != firearmId) return false;
-      if (ammoLotId != null && item.ammoLotId != ammoLotId) return false;
-      return true;
-    }).toList();
-  }
-
-  List<AnalysisSeriesData> applyData(List<AnalysisSeriesData> items) {
-    final acceptedIds = apply(
-      items.map((item) => item.series).toList(growable: false),
-    ).map((item) => item.id).toSet();
     return items
-        .where((item) => acceptedIds.contains(item.series.id))
+        .where((item) {
+          final series = item.series;
+          if (cutoff != null && item.session.startedAtUtc.isBefore(cutoff)) {
+            return false;
+          }
+          if (targetId != null && series.targetProfileVersionedId != targetId) {
+            return false;
+          }
+          if (distanceMeters != null &&
+              (series.distanceMeters - distanceMeters!).abs() > 0.0001) {
+            return false;
+          }
+          if (firearmId != null && series.firearmId != firearmId) return false;
+          if (ammoLotId != null && series.ammoLotId != ammoLotId) return false;
+          return true;
+        })
         .toList(growable: false);
   }
 

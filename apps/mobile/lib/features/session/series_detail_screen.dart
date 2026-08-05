@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shooting_companion_analysis/analysis.dart';
 import 'package:shooting_companion_domain/domain.dart' as domain;
 import 'package:shooting_companion_photo_geometry/photo_geometry.dart' as geo;
 
@@ -13,6 +14,9 @@ import '../../data/shooting_repository.dart';
 import '../../widgets/app_action_dock.dart';
 import '../../widgets/responsive_metric_grid.dart';
 import '../photo/photo.dart';
+import '../progress/analysis_adapter.dart';
+import '../progress/group_analysis_widgets.dart';
+import '../progress/series_analysis_screen.dart';
 import '../scoring/target_canvas.dart';
 import '../scoring/transformable_scoring_viewport.dart';
 import 'manual_series_screen.dart';
@@ -139,6 +143,12 @@ class _SeriesDetailBody extends ConsumerWidget {
     final scoreValues = {
       for (final impact in detail.impacts) impact.id: impact.rawScoreValue,
     };
+    final analysis = GroupAnalyzer.analyze(
+      seriesId: series.id,
+      impacts: detail.impacts.map(impactRecordToDomain).toList(growable: false),
+      targetProfile: target,
+      distanceMeters: series.distanceMeters,
+    );
     return ListView(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -178,6 +188,15 @@ class _SeriesDetailBody extends ConsumerWidget {
             MetricItem(label: 'Schoten', value: '${series.shotCount}'),
             MetricItem(label: 'X', value: '${series.innerTenCount}'),
           ],
+        ),
+        const SizedBox(height: 20),
+        GroupAnalysisSummaryCard(
+          analysis: analysis,
+          onOpenAnalysis: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => SeriesAnalysisScreen(seriesId: series.id),
+            ),
+          ),
         ),
         const SizedBox(height: 20),
         Text('Instellingen', style: Theme.of(context).textTheme.titleMedium),

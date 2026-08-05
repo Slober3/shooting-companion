@@ -7,7 +7,7 @@ internetpermission.
 
 ## Huidige status
 
-Versie `0.4.0` behoudt de snelle puntplaatsing van 0.3 en voegt lokale,
+Versie `0.4.1` behoudt de snelle puntplaatsing van 0.3 en voegt lokale,
 verklaarbare analyse en optionele coaching toe:
 
 - lokale bibliotheken voor wapens, kalibers, munitielots, standen en kaarten;
@@ -30,6 +30,10 @@ verklaarbare analyse en optionele coaching toe:
 - compacte Logboekfilters en één geaggregeerde SQLite-query zonder query per rij;
 - groepsanalyse met centroid, bias, extreme spread, mean radius, R50/R90,
   spreidingsellips, MOA/millirad en target-aware BR50-normalisatie;
+- analyse per afzonderlijke reeks en per volledig standbezoek, plus een
+  expliciete keuze van historische reeksen en vergelijkingen;
+- aantikbare metriekkaarten met uitleg over berekening, interpretatie,
+  databasis en beperkingen;
 - reproduceerbare potential-scoreanalyse en voorzichtige subgroepsuggesties die
   nooit treffers of scores wijzigen;
 - coachkaarten volgens `waarneming -> bewijs -> mogelijke verklaringen -> test`,

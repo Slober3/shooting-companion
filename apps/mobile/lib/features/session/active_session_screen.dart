@@ -15,6 +15,8 @@ import '../../widgets/app_notice.dart';
 import '../../widgets/responsive_metric_grid.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
 import '../photo/photo.dart';
+import '../progress/series_analysis_screen.dart';
+import '../progress/session_analysis_screen.dart';
 import 'manual_series_screen.dart';
 import 'series_detail_screen.dart';
 import 'session_completion_flow.dart';
@@ -468,6 +470,22 @@ class _SessionBody extends ConsumerWidget {
             MetricItem(label: 'X', value: '${detail.innerTenCount}'),
           ],
         ),
+        if (detail.confirmedSeriesItems.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      SessionAnalysisScreen(sessionId: detail.session.id),
+                ),
+              ),
+              icon: const Icon(Icons.insights_outlined),
+              label: const Text('Analyse sessie'),
+            ),
+          ),
+        ],
         const SizedBox(height: 20),
         Row(
           children: [
@@ -679,6 +697,12 @@ class _SeriesTile extends ConsumerWidget {
                 builder: (_) => SeriesDetailScreen(seriesId: series.id),
               ),
             );
+          } else if (action == 'analysis') {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => SeriesAnalysisScreen(seriesId: series.id),
+              ),
+            );
           } else if (action == 'edit') {
             await Navigator.of(context).push(
               MaterialPageRoute(
@@ -715,6 +739,7 @@ class _SeriesTile extends ConsumerWidget {
         },
         itemBuilder: (_) => const [
           PopupMenuItem(value: 'view', child: Text('Bekijken')),
+          PopupMenuItem(value: 'analysis', child: Text('Analyseer')),
           PopupMenuItem(value: 'edit', child: Text('Bewerken')),
           PopupMenuItem(value: 'delete', child: Text('Verwijderen')),
         ],
