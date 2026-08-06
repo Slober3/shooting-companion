@@ -106,7 +106,8 @@ bool rings_support_registration(const cv::Mat& canonical) {
 }
 
 std::vector<CandidateImpact> detect_candidates(
-    const cv::Mat& canonical, const AnalyzeRequest& request) {
+    const cv::Mat& canonical, const AnalyzeRequest& request,
+    const cv::Mat& canonical_to_source, const cv::Size& source_size) {
   cv::Mat binary;
   cv::adaptiveThreshold(canonical, binary, 255, cv::ADAPTIVE_THRESH_GAUSSIAN_C,
                         cv::THRESH_BINARY_INV, 31, 7);
@@ -132,24 +133,51 @@ std::vector<CandidateImpact> detect_candidates(
     if (std::abs(moments.m00) < 1e-9) continue;
     const auto x = moments.m10 / moments.m00;
     const auto y = moments.m01 / moments.m00;
+    std::vector<cv::Point2f> canonical_point = {
+        cv::Point2f(static_cast<float>(x), static_cast<float>(y))};
+    std::vector<cv::Point2f> source_point;
+    cv::perspectiveTransform(canonical_point, source_point,
+                             canonical_to_source);
     CandidateImpact candidate;
     candidate.id = "candidate-" + std::to_string(candidates.size() + 1);
-    candidate.image_x_normalized = x / canonical.cols;
-    candidate.image_y_normalized = y / canonical.rows;
-    candidate.x_mm = candidate.image_x_normalized * request.card_width_mm -
-                     request.card_width_mm / 2.0;
-    candidate.y_mm = candidate.image_y_normalized * request.card_height_mm -
-                     request.card_height_mm / 2.0;
+    candidate.source_image_x_normalized =
+        std::clamp(source_point[0].x / source_size.width, 0.0f, 1.0f);
+    candidate.source_image_y_normalized =
+        std::clamp(source_point[0].y / source_size.height, 0.0f, 1.0f);
+    candidate.card_x_mm =
+        x / std::max(1, canonical.cols - 1) * request.card_width_mm -
+        request.card_width_mm / 2.0;
+    candidate.card_y_mm =
+        y / std::max(1, canonical.rows - 1) * request.card_height_mm -
+        request.card_height_mm / 2.0;
     candidate.estimated_diameter_mm =
         equivalent_diameter / request.options.canonical_pixels_per_mm;
-    candidate.confidence = circularity >= 0.55 ? ConfidenceBand::medium
-                                               : ConfidenceBand::low;
+    const auto diameter_ratio =
+        candidate.estimated_diameter_mm / request.projectile_diameter_mm;
+    candidate.confidence =
+        circularity >= 0.72 && diameter_ratio >= 0.75 &&
+                diameter_ratio <= 1.30
+            ? ConfidenceBand::high
+            : circularity >= 0.45 ? ConfidenceBand::medium
+                                  : ConfidenceBand::low;
     candidate.reasons = {"localContrast", "diameterMatchesProjectile",
                          "darkCore"};
     candidate.boundary_uncertainty_mm = std::max(
         0.5, std::abs(candidate.estimated_diameter_mm -
                       request.projectile_diameter_mm) /
                  2.0);
+    const auto radius =
+        std::hypot(candidate.card_x_mm, candidate.card_y_mm);
+    for (const auto diameter : request.ring_outer_diameters_mm) {
+      const auto distance_to_line = std::abs(radius - diameter / 2.0);
+      if (distance_to_line <= request.projectile_diameter_mm / 2.0 +
+                                  candidate.boundary_uncertainty_mm +
+                                  request.line_thickness_mm / 2.0) {
+        candidate.near_scoring_boundary = true;
+        candidate.reasons.push_back("nearScoringLine");
+        break;
+      }
+    }
     candidates.push_back(std::move(candidate));
     if (candidates.size() >= 200) break;
   }
@@ -182,6 +210,9 @@ AnalyzeResult analyze_with_opencv(const AnalyzeRequest& request) {
         {"imageUnreadable", "Het beeldbestand kon niet worden gedecodeerd."});
     return result;
   }
+  if (request.cancelled()) {
+    throw std::runtime_error("Vision analysis cancelled");
+  }
   cv::Mat gray;
   cv::cvtColor(source, gray, cv::COLOR_BGR2GRAY);
   result.quality =
@@ -193,8 +224,25 @@ AnalyzeResult analyze_with_opencv(const AnalyzeRequest& request) {
         {"qualityRejected", "De kwaliteitscontrole blokkeerde verdere analyse."});
     return result;
   }
+  if (request.cancelled()) {
+    throw std::runtime_error("Vision analysis cancelled");
+  }
 
-  const auto corners = find_card(gray);
+  std::optional<std::array<cv::Point2f, 4>> corners;
+  const auto uses_manual_alignment =
+      request.manual_source_corners_normalized.has_value();
+  if (uses_manual_alignment) {
+    std::array<cv::Point2f, 4> manual{};
+    for (std::size_t index = 0; index < 4; ++index) {
+      const auto point = (*request.manual_source_corners_normalized)[index];
+      manual[index] = cv::Point2f(
+          static_cast<float>(point.x * source.cols),
+          static_cast<float>(point.y * source.rows));
+    }
+    corners = manual;
+  } else {
+    corners = find_card(gray);
+  }
   if (!corners) {
     result.status = AnalysisStatus::not_analyzed;
     result.registration.status = RegistrationStatus::manual_alignment_required;
@@ -204,7 +252,8 @@ AnalyzeResult analyze_with_opencv(const AnalyzeRequest& request) {
   }
   const auto angle = perspective_heuristic(*corners);
   result.registration.estimated_perspective_angle_degrees = angle;
-  if (angle > request.options.maximum_perspective_angle_degrees) {
+  if (!uses_manual_alignment &&
+      angle > request.options.maximum_perspective_angle_degrees) {
     result.status = AnalysisStatus::not_analyzed;
     result.registration.status = RegistrationStatus::manual_alignment_required;
     result.warnings.push_back(
@@ -228,9 +277,13 @@ AnalyzeResult analyze_with_opencv(const AnalyzeRequest& request) {
                                                     destination.end());
   const cv::Mat transform =
       cv::getPerspectiveTransform(source_points, destination_points);
+  const cv::Mat canonical_to_source = transform.inv();
   cv::Mat canonical;
   cv::warpPerspective(gray, canonical, transform, cv::Size(width, height));
-  if (!rings_support_registration(canonical)) {
+  if (request.cancelled()) {
+    throw std::runtime_error("Vision analysis cancelled");
+  }
+  if (!uses_manual_alignment && !rings_support_registration(canonical)) {
     result.status = AnalysisStatus::not_analyzed;
     result.registration.status = RegistrationStatus::manual_alignment_required;
     result.warnings.push_back(
@@ -239,23 +292,51 @@ AnalyzeResult analyze_with_opencv(const AnalyzeRequest& request) {
   }
 
   result.registration.status = RegistrationStatus::registered;
-  result.registration.algorithm_version = "contour-rings-v1";
+  result.registration.algorithm_version = uses_manual_alignment
+                                              ? "manual-corners-v1"
+                                              : "contour-rings-v2";
   result.registration.estimated_perspective_angle_degrees = angle;
   for (const auto& corner : *corners) {
-    result.registration.ordered_normalized_corners.push_back(
+    result.registration.ordered_source_corners_normalized.push_back(
         {corner.x / source.cols, corner.y / source.rows});
   }
+  const std::vector<cv::Point2f> normalized_source_points = {
+      {static_cast<float>((*corners)[0].x / source.cols),
+       static_cast<float>((*corners)[0].y / source.rows)},
+      {static_cast<float>((*corners)[1].x / source.cols),
+       static_cast<float>((*corners)[1].y / source.rows)},
+      {static_cast<float>((*corners)[2].x / source.cols),
+       static_cast<float>((*corners)[2].y / source.rows)},
+      {static_cast<float>((*corners)[3].x / source.cols),
+       static_cast<float>((*corners)[3].y / source.rows)}};
+  const std::vector<cv::Point2f> card_mm_points = {
+      {static_cast<float>(-request.card_width_mm / 2.0),
+       static_cast<float>(-request.card_height_mm / 2.0)},
+      {static_cast<float>(request.card_width_mm / 2.0),
+       static_cast<float>(-request.card_height_mm / 2.0)},
+      {static_cast<float>(request.card_width_mm / 2.0),
+       static_cast<float>(request.card_height_mm / 2.0)},
+      {static_cast<float>(-request.card_width_mm / 2.0),
+       static_cast<float>(request.card_height_mm / 2.0)}};
+  const auto source_normalized_to_card_mm = cv::getPerspectiveTransform(
+      normalized_source_points, card_mm_points);
   std::vector<double> matrix;
   matrix.reserve(9);
   for (int row = 0; row < 3; ++row) {
     for (int column = 0; column < 3; ++column) {
-      matrix.push_back(transform.at<double>(row, column));
+      matrix.push_back(
+          source_normalized_to_card_mm.at<double>(row, column));
     }
   }
-  result.registration.homography_matrix = std::move(matrix);
+  result.registration.source_normalized_to_card_mm_homography =
+      std::move(matrix);
   result.status = AnalysisStatus::completed;
   if (request.options.enable_candidate_detection) {
-    result.candidates = detect_candidates(canonical, request);
+    if (request.cancelled()) {
+      throw std::runtime_error("Vision analysis cancelled");
+    }
+    result.candidates = detect_candidates(canonical, request,
+                                          canonical_to_source, source.size());
     result.warnings.push_back(
         {"candidatesRequireReview", "Bevestig, verplaats of verwijder iedere voorgestelde treffer handmatig."});
   } else {

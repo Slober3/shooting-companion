@@ -29,6 +29,7 @@ class PhotoOverlayCanvas extends StatelessWidget {
     this.onInvalidPosition,
     this.viewportController,
     this.showControls = true,
+    this.semanticsLabel,
     super.key,
   });
 
@@ -52,6 +53,7 @@ class PhotoOverlayCanvas extends StatelessWidget {
   final VoidCallback? onInvalidPosition;
   final ScoringViewportController? viewportController;
   final bool showControls;
+  final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +66,8 @@ class PhotoOverlayCanvas extends StatelessWidget {
 
     return Semantics(
       label:
-          'Doelkaartfoto met ${impacts.length} handmatig geplaatste treffers',
+          semanticsLabel ??
+          'Doelkaartfoto met ${impacts.length} gemarkeerde treffers',
       image: true,
       child: TransformableScoringViewport(
         aspectRatio: imagePixelSize.width / imagePixelSize.height,
@@ -191,7 +194,18 @@ class _PhotoMarker extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final tokens = AppContrastTokens.of(context);
-    final fill = impact.isPositionUncertain ? tokens.critical : tokens.positive;
+    final fill = switch (impact.style) {
+      PhotoCanvasImpactStyle.confirmed =>
+        impact.isPositionUncertain ? tokens.critical : tokens.positive,
+      PhotoCanvasImpactStyle.needsReview => tokens.caution,
+      PhotoCanvasImpactStyle.suggestion => colors.surfaceContainerHighest,
+    };
+    final foreground = switch (impact.style) {
+      PhotoCanvasImpactStyle.confirmed =>
+        impact.isPositionUncertain ? tokens.onCritical : tokens.onPositive,
+      PhotoCanvasImpactStyle.needsReview => tokens.onCaution,
+      PhotoCanvasImpactStyle.suggestion => colors.onSurfaceVariant,
+    };
     final multiplicity = impact.multiplicity > 1
         ? '×${impact.multiplicity}'
         : '';
@@ -211,6 +225,9 @@ class _PhotoMarker extends StatelessWidget {
               border: Border.all(
                 color: selected ? tokens.markerOutline : colors.surface,
                 width: selected ? 4 : 2,
+                style: impact.style == PhotoCanvasImpactStyle.suggestion
+                    ? BorderStyle.none
+                    : BorderStyle.solid,
               ),
             ),
             child: FittedBox(
@@ -220,9 +237,7 @@ class _PhotoMarker extends StatelessWidget {
                 child: Text(
                   '${impact.sequenceNumber}$multiplicity',
                   style: TextStyle(
-                    color: impact.isPositionUncertain
-                        ? tokens.onCritical
-                        : tokens.onPositive,
+                    color: foreground,
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                   ),
@@ -230,6 +245,23 @@ class _PhotoMarker extends StatelessWidget {
               ),
             ),
           ),
+          if (impact.style == PhotoCanvasImpactStyle.suggestion)
+            CustomPaint(
+              size: Size.square(selected ? 38 : 34),
+              painter: _DashedCirclePainter(
+                color: selected ? tokens.markerOutline : colors.outline,
+              ),
+            ),
+          if (impact.style == PhotoCanvasImpactStyle.needsReview)
+            Positioned(
+              right: 1,
+              bottom: 1,
+              child: Icon(
+                Icons.warning_amber_rounded,
+                size: 15,
+                color: foreground,
+              ),
+            ),
           if (impact.scoreLabel case final score?)
             Positioned(
               left: 32,
@@ -259,6 +291,38 @@ class _PhotoMarker extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DashedCirclePainter extends CustomPainter {
+  const _DashedCirclePainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    final rect = Offset.zero & size;
+    const dashCount = 12;
+    const dashFraction = 0.55;
+    final sweep = math.pi * 2 / dashCount;
+    for (var index = 0; index < dashCount; index++) {
+      canvas.drawArc(
+        rect.deflate(paint.strokeWidth / 2),
+        index * sweep,
+        sweep * dashFraction,
+        false,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedCirclePainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 class _AlignmentOutlinePainter extends CustomPainter {

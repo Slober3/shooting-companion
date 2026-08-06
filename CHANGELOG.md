@@ -2,6 +2,36 @@
 
 All notable changes follow [Semantic Versioning](https://semver.org/).
 
+## 0.6.0 - 2026-08-06
+
+### Added
+
+- Added `Meer > Experimentele fotoscore` for one ISSF 25 m Precision / 50 m
+  Pistol target photographed after shooting with .22 LR.
+- Added local image-quality checks, automatic card/ring registration, manual
+  four-corner fallback and classical OpenCV impact candidates.
+- Added a shared review flow with confidence-specific marker shapes, candidate
+  reasons, scoring-boundary warnings, zoom, precision placement, undo,
+  multiplicity and manual misses.
+- Added durable concept scans and atomic commit to a new series, an empty active
+  draft or a new quick session, including photo, alignment and provenance.
+- Added FFI contract/ABI version 2, cancellable native jobs and a pinned
+  OpenCV 4.13.0 Android build.
+- Added schema and encrypted backup manifest 7 for scan drafts, analyses and
+  impact placement provenance.
+
+### Safety and validation boundaries
+
+- Vision candidates never become confirmed impacts without explicit review.
+- Low-confidence suggestions do not count by default and the native engine
+  never calculates a ring score.
+- Only the existing deterministic Dart score engine calculates totals.
+- No ML model, OCR, network call or model download is used.
+- The feature remains labelled experimental until the documented real-photo
+  registration, position, precision/recall and latency gates are measured.
+- Automatic distinction of overlapping shots, misses outside the paper and old
+  versus new holes remains unsupported.
+
 ## 0.5.1 - 2026-08-05
 
 ### Build 3 guided live-fire timer and series reflection

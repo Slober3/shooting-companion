@@ -816,6 +816,11 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
     scoreDisposition: domain.ScoreDisposition.values.byName(
       record.scoreDisposition,
     ),
+    placementMethod: domain.ImpactPlacementMethod.values.byName(
+      record.placementMethod,
+    ),
+    visionAnalysisId: record.visionAnalysisId,
+    positionalUncertaintyMm: record.positionalUncertaintyMm,
   );
 
   geo.ManualPhotoAlignment? _decodeAlignment(

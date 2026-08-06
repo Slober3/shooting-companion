@@ -14,7 +14,7 @@ import 'package:shooting_companion/data/shooting_repository.dart';
 import 'package:shooting_companion/services/backup_service.dart';
 
 void main() {
-  group('BackupPayloadAdapter v1-v5 -> v6', () {
+  group('BackupPayloadAdapter v1-v6 -> v7', () {
     test('uses impact multiplicity for actual count and ignores scans', () {
       final data = _v1Data(
         expectedShots: 99,
@@ -80,7 +80,7 @@ void main() {
     test('rejects future versions and inconsistent record counts', () {
       expect(
         () => BackupPayloadAdapter.normalize(
-          manifest: _manifest(version: 7),
+          manifest: _manifest(version: 8),
           data: _v1Data(expectedShots: 1),
         ),
         throwsFormatException,
@@ -389,7 +389,7 @@ void main() {
   });
 
   test(
-    'SCB1 v6 roundtrip preserves training, insights, media and settings',
+    'SCB1 v7 roundtrip preserves vision, training, media and settings',
     () async {
       final workspace = await Directory.systemTemp.createTemp(
         'shooting-companion-backup-test-',
@@ -495,6 +495,23 @@ void main() {
             ),
           );
       await database
+          .into(database.visionAnalyses)
+          .insert(
+            VisionAnalysesCompanion.insert(
+              id: 'vision-analysis-1',
+              seriesId: 'series-1',
+              imageId: 'image-1',
+              engineVersion: 'vision-core-test',
+              backendVersion: 'opencv-4.13.0',
+              qualityJson: '{"status":"accepted"}',
+              registrationJson:
+                  '{"status":"registered","orderedSourceCornersNormalized":[]}',
+              candidatesJson: '[]',
+              reviewJson: '{"schemaVersion":1,"entries":[]}',
+              createdAtUtc: now,
+            ),
+          );
+      await database
           .into(database.shotImpacts)
           .insert(
             const ShotImpactsCompanion(
@@ -507,6 +524,9 @@ void main() {
               imageYNormalized: Value(0.5),
               multiplicity: Value(2),
               scoreValue: Value(7),
+              placementMethod: Value('assistedEdited'),
+              visionAnalysisId: Value('vision-analysis-1'),
+              positionalUncertaintyMm: Value(0.7),
             ),
           );
       await database
@@ -517,6 +537,32 @@ void main() {
               cornersJson: '[[0,0],[1,0],[1,1],[0,1]]',
               matrixJson: '[1,0,0,0,1,0,0,0,1]',
               algorithmVersion: 'manual-homography-v1',
+              updatedAtUtc: now,
+            ),
+          );
+      final draftBytes = utf8.encode('synthetic-vision-draft-photo');
+      final draftHash = sha256.convert(draftBytes).toString();
+      final draftFile = File(path.join(originals.path, 'vision-draft.jpg'));
+      await draftFile.writeAsBytes(draftBytes, flush: true);
+      await database
+          .into(database.visionScanDrafts)
+          .insert(
+            VisionScanDraftsCompanion.insert(
+              id: 'vision-draft-1',
+              status: 'reviewNeeded',
+              originalImagePath: draftFile.path,
+              sha256: draftHash,
+              width: 20,
+              height: 20,
+              sizeBytes: draftBytes.length,
+              targetProfileJson: targetJson,
+              projectileDiameterMm: 5.6,
+              qualityJson: const Value('{"status":"review"}'),
+              registrationJson: const Value('{"status":"registered"}'),
+              candidatesJson: const Value('[]'),
+              reviewJson: const Value('{"schemaVersion":1,"entries":[]}'),
+              engineVersion: const Value('vision-core-test'),
+              createdAtUtc: now,
               updatedAtUtc: now,
             ),
           );
@@ -701,7 +747,7 @@ void main() {
         backup,
         'test-password-123',
       );
-      expect(inspected.formatVersion, 6);
+      expect(inspected.formatVersion, 7);
       expect(inspected.sessionCount, 1);
       expect(inspected.seriesCount, 1);
       expect(inspected.imageCount, 1);
@@ -710,13 +756,15 @@ void main() {
       await database.delete(database.preferences).go();
       await database.delete(database.timerPresets).go();
       await database.delete(database.acousticCalibrationProfiles).go();
+      await database.delete(database.visionScanDrafts).go();
       if (await original.exists()) await original.delete();
+      if (await draftFile.exists()) await draftFile.delete();
 
       final restored = await service.restoreEncryptedBackup(
         backup,
         'test-password-123',
       );
-      expect(restored.summary.formatVersion, 6);
+      expect(restored.summary.formatVersion, 7);
       expect(
         await database.select(database.trainingSessions).get(),
         hasLength(1),
@@ -730,6 +778,20 @@ void main() {
           (await database.select(database.shotImpacts).get()).single;
       expect(restoredImpact.sourceImageId, 'image-1');
       expect(restoredImpact.multiplicity, 2);
+      expect(restoredImpact.placementMethod, 'assistedEdited');
+      expect(restoredImpact.visionAnalysisId, 'vision-analysis-1');
+      expect(restoredImpact.positionalUncertaintyMm, 0.7);
+      final restoredAnalysis =
+          (await database.select(database.visionAnalyses).get()).single;
+      expect(restoredAnalysis.engineVersion, 'vision-core-test');
+      expect(restoredAnalysis.backendVersion, 'opencv-4.13.0');
+      final restoredDraft =
+          (await database.select(database.visionScanDrafts).get()).single;
+      expect(restoredDraft.status, 'reviewNeeded');
+      expect(
+        await File(restoredDraft.originalImagePath).readAsBytes(),
+        draftBytes,
+      );
       final restoredImage =
           (await database.select(database.imageAssets).get()).single;
       expect(await File(restoredImage.path).readAsBytes(), imageBytes);

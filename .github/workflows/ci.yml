@@ -83,12 +83,32 @@ jobs:
           flutter pub get
           flutter analyze
           flutter test
+      - name: Vision FFI Flutter package
+        working-directory: packages/vision_ffi
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
       - name: Shot timer Android unit tests
         working-directory: apps/mobile/android
         run: ./gradlew :shooting_companion_shot_timer:testDebugUnitTest
-      - name: Build release APK
+      - name: Install pinned OpenCV Android SDK
+        shell: bash
+        run: |
+          mkdir -p .tooling/opencv-4.13.0
+          curl --fail --location --retry 3 \
+            --output .tooling/opencv-4.13.0/opencv-4.13.0-android-sdk.zip \
+            https://github.com/opencv/opencv/releases/download/4.13.0/opencv-4.13.0-android-sdk.zip
+          echo "edfda20fdf65d0bd45391d168ec5261dd30b600b00279c4d910d7f1c3e020f0f  .tooling/opencv-4.13.0/opencv-4.13.0-android-sdk.zip" \
+            | sha256sum --check
+          unzip -q .tooling/opencv-4.13.0/opencv-4.13.0-android-sdk.zip \
+            -d .tooling/opencv-4.13.0
+          test -f .tooling/opencv-4.13.0/OpenCV-android-sdk/sdk/native/jni/OpenCVConfig.cmake
+      - name: Build arm64 release APK with OpenCV
         working-directory: apps/mobile
-        run: flutter build apk --release
+        env:
+          OPENCV_ANDROID_SDK: ${{ github.workspace }}/.tooling/opencv-4.13.0/OpenCV-android-sdk
+        run: flutter build apk --release --target-platform android-arm64
       - name: Reject forbidden permissions in built APK
         shell: bash
         run: |
@@ -100,6 +120,11 @@ jobs:
             exit 1
           fi
           echo "$PERMISSIONS" | grep "android.permission.RECORD_AUDIO"
+      - name: Verify packaged arm64 vision library
+        shell: bash
+        run: |
+          APK="apps/mobile/build/app/outputs/flutter-apk/app-release.apk"
+          unzip -l "$APK" | grep -F "lib/arm64-v8a/libshooting_companion_vision.so"
 
   native-vision-fallback:
     runs-on: ubuntu-latest

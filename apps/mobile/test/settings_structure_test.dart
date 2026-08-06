@@ -38,6 +38,8 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: MoreScreen()));
 
     expect(find.text('Over en privacy'), findsOneWidget);
+    await tester.drag(find.byType(ListView), const Offset(0, -240));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Over en privacy'));
     await tester.pumpAndSettle();
 

@@ -61,11 +61,11 @@ class NormalizedBackupPayload {
   );
 }
 
-/// Converts every supported SCB1 payload to the schema-6 JSON shape.
+/// Converts every supported SCB1 payload to the schema-7 JSON shape.
 class BackupPayloadAdapter {
   const BackupPayloadAdapter._();
 
-  static const currentFormatVersion = 6;
+  static const currentFormatVersion = 7;
   static const _formatName = 'shooting-companion-backup';
 
   static NormalizedBackupPayload normalize({
@@ -85,12 +85,15 @@ class BackupPayloadAdapter {
     }
 
     final normalized = switch (version) {
-      1 => _upgradeV6(_upgradeV5(_upgradeV4(_upgradeV2(_upgradeV1(data))))),
-      2 => _upgradeV6(_upgradeV5(_upgradeV4(_upgradeV2(data)))),
-      3 => _upgradeV6(_upgradeV5(_upgradeV4(_normalizeV3(data)))),
-      4 => _upgradeV6(_upgradeV5(_normalizeV4(data))),
-      5 => _upgradeV6(_normalizeV5(data)),
-      _ => _normalizeV6(data),
+      1 => _upgradeV7(
+        _upgradeV6(_upgradeV5(_upgradeV4(_upgradeV2(_upgradeV1(data))))),
+      ),
+      2 => _upgradeV7(_upgradeV6(_upgradeV5(_upgradeV4(_upgradeV2(data))))),
+      3 => _upgradeV7(_upgradeV6(_upgradeV5(_upgradeV4(_normalizeV3(data))))),
+      4 => _upgradeV7(_upgradeV6(_upgradeV5(_normalizeV4(data)))),
+      5 => _upgradeV7(_upgradeV6(_normalizeV5(data))),
+      6 => _upgradeV7(_normalizeV6(data)),
+      _ => _normalizeV7(data),
     };
     final sessionCount = _integer(manifest['sessionCount'], 'sessionCount');
     final seriesCount = _integer(manifest['seriesCount'], 'seriesCount');
@@ -153,6 +156,93 @@ class BackupPayloadAdapter {
     );
     _validateTrainingRelations(result);
     return result;
+  }
+
+  static Map<String, dynamic> _normalizeV7(Map<String, dynamic> data) {
+    final result = _normalizeV6(data);
+    result['visionScanDrafts'] = _table(data, 'visionScanDrafts');
+    result['visionAnalyses'] = _table(data, 'visionAnalyses');
+    _validateVisionRelations(result);
+    return result;
+  }
+
+  static Map<String, dynamic> _upgradeV7(Map<String, dynamic> data) {
+    final result = <String, dynamic>{
+      for (final entry in data.entries) entry.key: entry.value,
+    };
+    result['impacts'] = (result['impacts']! as List).map((value) {
+      final row = Map<String, dynamic>.from(value as Map);
+      return row
+        ..['placementMethod'] = 'manual'
+        ..['visionAnalysisId'] = null
+        ..['positionalUncertaintyMm'] = null;
+    }).toList();
+    result['visionScanDrafts'] = <Map<String, dynamic>>[];
+    result['visionAnalyses'] = <Map<String, dynamic>>[];
+    _validateVisionRelations(result);
+    return result;
+  }
+
+  static void _validateVisionRelations(Map<String, dynamic> data) {
+    final seriesIds = (data['series']! as List)
+        .map((value) => (value as Map)['id'])
+        .whereType<String>()
+        .toSet();
+    final imageIds = (data['images']! as List)
+        .map((value) => (value as Map)['id'])
+        .whereType<String>()
+        .toSet();
+    final analysisIds = <String>{};
+    for (final value in data['visionAnalyses']! as List) {
+      final row = value as Map;
+      final id = row['id'];
+      if (id is! String ||
+          !analysisIds.add(id) ||
+          !seriesIds.contains(row['seriesId']) ||
+          !imageIds.contains(row['imageId']) ||
+          !_isJsonObject(row['qualityJson']) ||
+          !_isJsonObject(row['registrationJson']) ||
+          !_isJsonList(row['candidatesJson']) ||
+          !_isJsonObject(row['reviewJson'])) {
+        throw const FormatException('Visionanalyse is ongeldig.');
+      }
+    }
+    for (final value in data['impacts']! as List) {
+      final row = value as Map;
+      final placement = row['placementMethod'];
+      final analysisId = row['visionAnalysisId'];
+      if (!const {
+            'manual',
+            'assistedAccepted',
+            'assistedEdited',
+          }.contains(placement) ||
+          (analysisId != null &&
+              (analysisId is! String || !analysisIds.contains(analysisId)))) {
+        throw const FormatException('Trefferprovenance is ongeldig.');
+      }
+    }
+    final draftIds = <String>{};
+    for (final value in data['visionScanDrafts']! as List) {
+      final row = value as Map;
+      final id = row['id'];
+      if (id is! String ||
+          !draftIds.add(id) ||
+          row['originalImagePath'] is! String ||
+          row['sha256'] is! String ||
+          row['width'] is! int ||
+          row['height'] is! int ||
+          row['sizeBytes'] is! int ||
+          row['targetProfileJson'] is! String ||
+          row['projectileDiameterMm'] is! num ||
+          (row['qualityJson'] != null && !_isJsonObject(row['qualityJson'])) ||
+          (row['registrationJson'] != null &&
+              !_isJsonObject(row['registrationJson'])) ||
+          (row['candidatesJson'] != null &&
+              !_isJsonList(row['candidatesJson'])) ||
+          (row['reviewJson'] != null && !_isJsonObject(row['reviewJson']))) {
+        throw const FormatException('Visionconceptscan is ongeldig.');
+      }
+    }
   }
 
   static Map<String, dynamic> _upgradeV6(Map<String, dynamic> data) {
@@ -594,6 +684,15 @@ class BackupPayloadAdapter {
     }
   }
 
+  static bool _isJsonList(Object? source) {
+    if (source is! String) return false;
+    try {
+      return jsonDecode(source) is List;
+    } on FormatException {
+      return false;
+    }
+  }
+
   static const _goalMetrics = {
     'scorePercentage',
     'meanRadiusMm',
@@ -993,10 +1092,23 @@ class BackupService {
       'acousticCalibrationProfiles',
       AcousticCalibrationProfileRecord.fromJson,
     );
+    final visionScanDraftRecords = _rows(
+      data,
+      'visionScanDrafts',
+      VisionScanDraftRecord.fromJson,
+    );
+    final visionAnalyses = _rows(
+      data,
+      'visionAnalyses',
+      VisionAnalysisRecord.fromJson,
+    );
 
     // A safety backup must exist before either files or records are replaced.
     final safetyBackup = await createEncryptedBackup(password);
     final oldImages = await database.select(database.imageAssets).get();
+    final oldVisionDrafts = await database
+        .select(database.visionScanDrafts)
+        .get();
     final appRoot = await _applicationDocumentsDirectory();
     final imageDirectory = Directory(
       path.join(appRoot.path, 'target_images', 'originals'),
@@ -1004,6 +1116,7 @@ class BackupService {
     await imageDirectory.create(recursive: true);
     final stagedFiles = <File>[];
     final restoredImages = <ImageAssetRecord>[];
+    final restoredVisionDrafts = <VisionScanDraftRecord>[];
 
     try {
       final fileEntries = _mediaEntries(payload, imageRecords);
@@ -1036,9 +1149,48 @@ class BackupService {
         stagedFiles.add(destination);
         restoredImages.add(record.copyWith(path: destination.path));
       }
+      final draftFileEntries = _visionDraftMediaEntries(
+        payload,
+        visionScanDraftRecords,
+      );
+      for (final record in visionScanDraftRecords) {
+        final entry = draftFileEntries[record.id];
+        if (entry == null) {
+          throw FormatException(
+            'Bestandsbeschrijving voor conceptscan ${record.id} ontbreekt.',
+          );
+        }
+        final archived = archive.findFile(entry.archivePath);
+        if (archived == null) {
+          throw FormatException(
+            'Conceptscanfoto ${record.id} ontbreekt in de back-up.',
+          );
+        }
+        final bytes = Uint8List.fromList(archived.content as List<int>);
+        BackupMediaIntegrity.verify(
+          imageId: record.id,
+          bytes: bytes,
+          recordSha256: record.sha256,
+          recordSizeBytes: record.sizeBytes,
+          manifestSha256: entry.sha256,
+          manifestSizeBytes: entry.sizeBytes,
+        );
+        final destination = await _uniqueRestoreFile(
+          imageDirectory,
+          'vision-${record.id}',
+          entry.extension,
+        );
+        await destination.writeAsBytes(bytes, flush: true);
+        stagedFiles.add(destination);
+        restoredVisionDrafts.add(
+          record.copyWith(originalImagePath: destination.path),
+        );
+      }
 
       await database.transaction(() async {
         await database.batch((batch) {
+          batch.deleteAll(database.visionAnalyses);
+          batch.deleteAll(database.visionScanDrafts);
           batch.deleteAll(database.shotTimerEvents);
           batch.deleteAll(database.trainingActivitySeriesLinks);
           batch.deleteAll(database.trainingActivities);
@@ -1067,6 +1219,7 @@ class BackupService {
           batch.insertAll(database.trainingSessions, sessions);
           batch.insertAll(database.shootingSeries, series);
           batch.insertAll(database.imageAssets, restoredImages);
+          batch.insertAll(database.visionAnalyses, visionAnalyses);
           batch.insertAll(database.shotImpacts, impacts);
           batch.insertAll(database.photoAlignments, alignments);
           batch.insertAll(database.goals, goals);
@@ -1088,6 +1241,7 @@ class BackupService {
             database.acousticCalibrationProfiles,
             acousticCalibrationProfiles,
           );
+          batch.insertAll(database.visionScanDrafts, restoredVisionDrafts);
         });
       });
     } catch (_) {
@@ -1104,12 +1258,20 @@ class BackupService {
 
     final restoredPaths = restoredImages
         .map((item) => path.normalize(path.absolute(item.path)))
+        .followedBy(
+          restoredVisionDrafts.map(
+            (item) => path.normalize(path.absolute(item.originalImagePath)),
+          ),
+        )
         .toSet();
     final ownedRoot = path.normalize(
       path.absolute(path.join(appRoot.path, 'target_images')),
     );
-    for (final image in oldImages) {
-      final normalized = path.normalize(path.absolute(image.path));
+    final oldOwnedPaths = oldImages
+        .map((image) => image.path)
+        .followedBy(oldVisionDrafts.map((draft) => draft.originalImagePath));
+    for (final imagePath in oldOwnedPaths) {
+      final normalized = path.normalize(path.absolute(imagePath));
       if (restoredPaths.contains(normalized) ||
           !(normalized == ownedRoot || path.isWithin(ownedRoot, normalized))) {
         continue;
@@ -1153,6 +1315,10 @@ class BackupService {
     final acousticCalibrationProfiles = await database
         .select(database.acousticCalibrationProfiles)
         .get();
+    final visionScanDrafts = await database
+        .select(database.visionScanDrafts)
+        .get();
+    final visionAnalyses = await database.select(database.visionAnalyses).get();
     final createdAt = _now().toUtc();
     final archive = Archive();
     final files = <Map<String, dynamic>>[];
@@ -1179,6 +1345,30 @@ class BackupService {
         'sizeBytes': bytes.length,
       });
     }
+    for (var index = 0; index < visionScanDrafts.length; index++) {
+      final draft = visionScanDrafts[index];
+      final file = File(draft.originalImagePath);
+      if (!await file.exists()) {
+        throw StateError('Conceptscanfoto ${draft.id} bestaat niet meer.');
+      }
+      final bytes = await file.readAsBytes();
+      final digest = sha256.convert(bytes).toString();
+      if (digest != draft.sha256 || bytes.length != draft.sizeBytes) {
+        throw StateError(
+          'Conceptscanfoto ${draft.id} is gewijzigd of beschadigd.',
+        );
+      }
+      final extension = _safeExtension(file.path);
+      final archivePath =
+          'vision/${index.toString().padLeft(6, '0')}-${_safeFilePart(draft.id)}$extension';
+      archive.addFile(ArchiveFile(archivePath, bytes.length, bytes));
+      files.add({
+        'visionScanDraftId': draft.id,
+        'archivePath': archivePath,
+        'sha256': digest,
+        'sizeBytes': bytes.length,
+      });
+    }
 
     archive.addFile(
       ArchiveFile.string(
@@ -1186,13 +1376,14 @@ class BackupService {
         jsonEncode({
           'format': 'shooting-companion-backup',
           'formatVersion': BackupPayloadAdapter.currentFormatVersion,
-          'appVersion': '0.5.1+3',
-          'databaseSchemaVersion': 6,
+          'appVersion': '0.6.0+1',
+          'databaseSchemaVersion': 7,
           'minimumAppVersion': '0.2.0',
           'createdAtUtc': createdAt.toIso8601String(),
           'sessionCount': sessions.length,
           'seriesCount': series.length,
           'imageCount': images.length,
+          'visionScanDraftCount': visionScanDrafts.length,
           'files': files,
         }),
       ),
@@ -1228,6 +1419,10 @@ class BackupService {
           'acousticCalibrationProfiles': acousticCalibrationProfiles
               .map((row) => row.toJson())
               .toList(),
+          'visionScanDrafts': visionScanDrafts
+              .map((row) => row.toJson())
+              .toList(),
+          'visionAnalyses': visionAnalyses.map((row) => row.toJson()).toList(),
         }),
       ),
     );
@@ -1272,6 +1467,7 @@ class BackupService {
       }
       final item = value.cast<String, dynamic>();
       final imageId = item['imageId'];
+      if (imageId == null) continue;
       final archivePath = item['archivePath'];
       final digest = item['sha256'];
       final size = item['sizeBytes'];
@@ -1293,6 +1489,49 @@ class BackupService {
     if (result.length != images.length) {
       throw const FormatException(
         'Aantal bestanden komt niet overeen met het fotoregister.',
+      );
+    }
+    return result;
+  }
+
+  Map<String, _BackupMediaEntry> _visionDraftMediaEntries(
+    NormalizedBackupPayload payload,
+    List<VisionScanDraftRecord> drafts,
+  ) {
+    if (payload.sourceFormatVersion < 7) return const {};
+    final rawFiles = payload.manifest['files'];
+    if (rawFiles is! List) {
+      throw const FormatException('Bestandsmanifest ontbreekt.');
+    }
+    final result = <String, _BackupMediaEntry>{};
+    for (final value in rawFiles) {
+      if (value is! Map) {
+        throw const FormatException('Ongeldige bestandsbeschrijving.');
+      }
+      final item = value.cast<String, dynamic>();
+      final draftId = item['visionScanDraftId'];
+      if (draftId == null) continue;
+      final archivePath = item['archivePath'];
+      final digest = item['sha256'];
+      final size = item['sizeBytes'];
+      if (draftId is! String ||
+          archivePath is! String ||
+          digest is! String ||
+          size is! int ||
+          result.containsKey(draftId) ||
+          !_isSafeArchiveMediaPath(archivePath)) {
+        throw const FormatException('Ongeldige visionbestandsbeschrijving.');
+      }
+      result[draftId] = _BackupMediaEntry(
+        archivePath: archivePath,
+        sha256: digest,
+        sizeBytes: size,
+        extension: _safeExtension(archivePath),
+      );
+    }
+    if (result.length != drafts.length) {
+      throw const FormatException(
+        'Aantal conceptscanfoto’s komt niet overeen met het register.',
       );
     }
     return result;
@@ -1381,7 +1620,8 @@ class BackupService {
 
   static bool _isSafeArchiveMediaPath(String value) {
     final normalized = path.posix.normalize(value.replaceAll('\\', '/'));
-    return normalized.startsWith('media/') &&
+    return (normalized.startsWith('media/') ||
+            normalized.startsWith('vision/')) &&
         !normalized.startsWith('/') &&
         !normalized.contains('../');
   }

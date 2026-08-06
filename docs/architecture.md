@@ -42,11 +42,12 @@ place a run in the logbook. The Android engine emits state and impulse events,
 never raw audio. Timer event counts are deliberately independent from confirmed
 impact counts and can only produce a mismatch warning.
 
-The experimental vision packages are outside the confirmed-score path. Native
-analysis returns immutable JSON candidates plus provenance; only explicit user
-review in the manual editor may later convert a candidate into an impact. A
-build without an available image backend returns `unsupported` or
-`notAnalyzed` and never fabricates candidates.
+The experimental vision packages are outside the authoritative score engine.
+Native analysis returns immutable JSON candidates plus provenance. The review
+editor keeps candidates separate from `ShotImpact`; only the atomic
+`commitReviewedVisionScan` use case converts the visible, user-confirmed
+selection. A build without candidate capability never presents the
+geometry-only fallback as automatic detection.
 
 `packages/vision_research` is a separate privacy boundary, not a normal backup
 format. It creates a password-encrypted `.scvision` container from an explicit,
@@ -62,6 +63,10 @@ upload and is not connected to the production UI yet.
 5. Score calculation is deterministic and synchronous.
 6. Confirm and edit replace impacts and aggregates inside one transaction.
 7. Analytics read confirmed series only; drafts remain resumable.
+8. Vision imports immediately create a durable concept scan. Native jobs are
+   cancellable and save no partial result.
+9. Reviewed vision data, photo, alignment, impacts and score aggregates commit
+   in one database transaction; failure leaves the concept intact.
 
 ## Library lifecycle
 
@@ -112,4 +117,5 @@ penalty and scored-bull count so historical totals are never silently changed.
 - Database: Drift `schemaVersion` and explicit migrations.
 - Target: `profileId@profileVersion`; snapshots are stored per series.
 - Photo alignment: algorithm version stored with corners and matrix.
-- Backup: binary `SCB1` container with manifest v6; v1-v5 stay importable.
+- Vision: contract schema 2, stable C ABI 2 and versioned stage algorithms.
+- Backup: binary `SCB1` container with manifest v7; v1-v6 stay importable.

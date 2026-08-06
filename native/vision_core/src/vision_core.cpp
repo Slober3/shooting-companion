@@ -157,6 +157,9 @@ AnalyzeResult analyze(const AnalyzeRequest& request) {
       request.options.canonical_pixels_per_mm <= 0.0) {
     throw std::invalid_argument("AnalyzeRequest contains invalid dimensions or path");
   }
+  if (request.cancelled()) {
+    throw std::runtime_error("Vision analysis cancelled");
+  }
   if (opencv_backend_available()) {
     return analyze_with_opencv(request);
   }
@@ -169,6 +172,9 @@ AnalyzeResult analyze(const AnalyzeRequest& request) {
       {"imageProbe", "image-probe-v1"}, {"quality", "quality-v1"}};
   result.registration.status = RegistrationStatus::unsupported;
   const auto probe = probe_image(request.image_path);
+  if (request.cancelled()) {
+    throw std::runtime_error("Vision analysis cancelled");
+  }
   if (!probe.readable) {
     result.status = AnalysisStatus::failed;
     result.quality.status = QualityStatus::not_analyzed;
@@ -233,7 +239,7 @@ std::uint32_t capabilities() noexcept {
 std::string AnalyzeResult::to_json() const {
   std::ostringstream output;
   output << std::setprecision(12);
-  output << "{\"schemaVersion\":1,\"status\":\"" << name(status)
+  output << "{\"schemaVersion\":2,\"status\":\"" << name(status)
          << "\",\"engineVersion\":\"" << kEngineVersion
          << "\",\"modelVersion\":null,";
 
@@ -251,20 +257,25 @@ std::string AnalyzeResult::to_json() const {
   output << "},\"analyzedAtUtc\":null},";
 
   output << "\"registrationResult\":{\"status\":\""
-         << name(registration.status) << "\",\"orderedNormalizedCorners\":[";
+         << name(registration.status)
+         << "\",\"orderedSourceCornersNormalized\":[";
   for (std::size_t index = 0;
-       index < registration.ordered_normalized_corners.size(); ++index) {
+       index < registration.ordered_source_corners_normalized.size(); ++index) {
     if (index != 0) output << ',';
-    const auto& point = registration.ordered_normalized_corners[index];
+    const auto& point =
+        registration.ordered_source_corners_normalized[index];
     output << "{\"x\":" << point.x << ",\"y\":" << point.y << '}';
   }
-  output << "],\"homographyMatrix\":";
-  if (registration.homography_matrix) {
+  output << "],\"sourceNormalizedToCardMmHomography\":";
+  if (registration.source_normalized_to_card_mm_homography) {
     output << '[';
-    for (std::size_t index = 0; index < registration.homography_matrix->size();
+    for (std::size_t index = 0;
+         index <
+         registration.source_normalized_to_card_mm_homography->size();
          ++index) {
       if (index != 0) output << ',';
-      output << (*registration.homography_matrix)[index];
+      output
+          << (*registration.source_normalized_to_card_mm_homography)[index];
     }
     output << ']';
   } else {
@@ -315,15 +326,19 @@ std::string AnalyzeResult::to_json() const {
     if (index != 0) output << ',';
     const auto& candidate = candidates[index];
     output << "{\"id\":\"" << escape_json(candidate.id)
-           << "\",\"imageXNormalized\":" << candidate.image_x_normalized
-           << ",\"imageYNormalized\":" << candidate.image_y_normalized
-           << ",\"xMm\":" << candidate.x_mm << ",\"yMm\":"
-           << candidate.y_mm << ",\"estimatedDiameterMm\":"
+           << "\",\"sourceImageXNormalized\":"
+           << candidate.source_image_x_normalized
+           << ",\"sourceImageYNormalized\":"
+           << candidate.source_image_y_normalized
+           << ",\"cardXMm\":" << candidate.card_x_mm << ",\"cardYMm\":"
+           << candidate.card_y_mm << ",\"estimatedDiameterMm\":"
            << candidate.estimated_diameter_mm << ",\"confidenceBand\":\""
            << name(candidate.confidence) << "\",\"reasons\":";
     write_string_array(output, candidate.reasons);
     output << ",\"boundaryUncertaintyMm\":"
-           << candidate.boundary_uncertainty_mm << '}';
+           << candidate.boundary_uncertainty_mm
+           << ",\"nearScoringBoundary\":"
+           << (candidate.near_scoring_boundary ? "true" : "false") << '}';
   }
   output << "],\"warnings\":[";
   for (std::size_t index = 0; index < warnings.size(); ++index) {

@@ -62,13 +62,13 @@ void main() {
         ),
         registrationResult: VisionRegistrationResult(
           status: VisionRegistrationStatus.registered,
-          orderedNormalizedCorners: const [
+          orderedSourceCornersNormalized: const [
             VisionPoint(x: 0.1, y: 0.1),
             VisionPoint(x: 0.9, y: 0.1),
             VisionPoint(x: 0.9, y: 0.9),
             VisionPoint(x: 0.1, y: 0.9),
           ],
-          homographyMatrix: const [1, 0, 0, 0, 1, 0, 0, 0, 1],
+          sourceNormalizedToCardMmHomography: const [1, 0, 0, 0, 1, 0, 0, 0, 1],
           reprojectionErrorPx: 0.4,
           algorithmVersion: 'contour-rings-v1',
         ),
@@ -82,10 +82,10 @@ void main() {
         candidateImpacts: [
           VisionCandidateImpact(
             id: 'candidate-1',
-            imageXNormalized: 0.5,
-            imageYNormalized: 0.5,
-            xMm: 0,
-            yMm: 0,
+            sourceImageXNormalized: 0.5,
+            sourceImageYNormalized: 0.5,
+            cardXMm: 0,
+            cardYMm: 0,
             estimatedDiameterMm: 5.7,
             confidenceBand: VisionConfidenceBand.medium,
             reasons: const [
@@ -109,7 +109,10 @@ void main() {
       expect(restored.status, VisionAnalysisStatus.completed);
       expect(restored.modelVersion, isNull);
       expect(restored.candidateImpacts.single.id, 'candidate-1');
-      expect(restored.registrationResult.homographyMatrix, hasLength(9));
+      expect(
+        restored.registrationResult.sourceNormalizedToCardMmHomography,
+        hasLength(9),
+      );
       expect(restored.provenance.backend, VisionBackend.openCv);
       expect(restored.requiresManualReview, isTrue);
       expect(
@@ -193,10 +196,10 @@ void main() {
           candidateImpacts: [
             VisionCandidateImpact(
               id: 'fake',
-              imageXNormalized: 0.5,
-              imageYNormalized: 0.5,
-              xMm: 0,
-              yMm: 0,
+              sourceImageXNormalized: 0.5,
+              sourceImageYNormalized: 0.5,
+              cardXMm: 0,
+              cardYMm: 0,
               estimatedDiameterMm: 5.6,
               confidenceBand: VisionConfidenceBand.low,
               reasons: const [VisionCandidateReason.geometryUnverified],

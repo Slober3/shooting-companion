@@ -140,6 +140,50 @@ class ImageAssets extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+@DataClassName('VisionScanDraftRecord')
+class VisionScanDrafts extends Table {
+  TextColumn get id => text()();
+  TextColumn get status => text()();
+  TextColumn get originalImagePath => text()();
+  TextColumn get sha256 => text()();
+  IntColumn get width => integer()();
+  IntColumn get height => integer()();
+  IntColumn get sizeBytes => integer()();
+  TextColumn get targetProfileJson => text()();
+  RealColumn get projectileDiameterMm => real()();
+  TextColumn get qualityJson => text().nullable()();
+  TextColumn get registrationJson => text().nullable()();
+  TextColumn get candidatesJson => text().nullable()();
+  TextColumn get reviewJson => text().nullable()();
+  TextColumn get engineVersion => text().nullable()();
+  TextColumn get failureCode => text().nullable()();
+  DateTimeColumn get createdAtUtc => dateTime()();
+  DateTimeColumn get updatedAtUtc => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+@DataClassName('VisionAnalysisRecord')
+class VisionAnalyses extends Table {
+  TextColumn get id => text()();
+  TextColumn get seriesId =>
+      text().references(ShootingSeries, #id, onDelete: KeyAction.cascade)();
+  TextColumn get imageId =>
+      text().references(ImageAssets, #id, onDelete: KeyAction.cascade)();
+  TextColumn get engineVersion => text()();
+  TextColumn get backendVersion => text()();
+  TextColumn get modelVersion => text().nullable()();
+  TextColumn get qualityJson => text()();
+  TextColumn get registrationJson => text()();
+  TextColumn get candidatesJson => text()();
+  TextColumn get reviewJson => text()();
+  DateTimeColumn get createdAtUtc => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 @DataClassName('ImpactRecord')
 class ShotImpacts extends Table {
   TextColumn get id => text()();
@@ -166,6 +210,14 @@ class ShotImpacts extends Table {
   BoolColumn get isInnerTen => boolean().withDefault(const Constant(false))();
   BoolColumn get isBoundaryUncertain =>
       boolean().withDefault(const Constant(false))();
+  TextColumn get placementMethod =>
+      text().withDefault(const Constant('manual'))();
+  TextColumn get visionAnalysisId => text().nullable().references(
+    VisionAnalyses,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
+  RealColumn get positionalUncertaintyMm => real().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -361,6 +413,8 @@ class AcousticCalibrationProfiles extends Table {
     TrainingSessions,
     ShootingSeries,
     ImageAssets,
+    VisionScanDrafts,
+    VisionAnalyses,
     ShotImpacts,
     PhotoAlignments,
     Goals,
@@ -381,7 +435,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -406,6 +460,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from <= 5 && to >= 6) {
         await _migrateToV6(migrator);
+      }
+      if (from <= 6 && to >= 7) {
+        await _migrateToV7(migrator, addImpactColumns: from != 1);
       }
     },
     beforeOpen: (details) async {
@@ -508,6 +565,14 @@ class AppDatabase extends _$AppDatabase {
       CREATE INDEX IF NOT EXISTS calibration_profiles_by_material
       ON acoustic_calibration_profiles(firearm_id, cartridge_id, updated_at_utc DESC)
     ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS vision_scan_drafts_by_status_updated
+      ON vision_scan_drafts(status, updated_at_utc DESC)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS vision_analyses_by_series_created
+      ON vision_analyses(series_id, created_at_utc DESC)
+    ''');
   }
 
   Future<void> _migrateToV3(Migrator migrator) async {
@@ -568,6 +633,22 @@ class AppDatabase extends _$AppDatabase {
     await migrator.createTable(shotTimerEvents);
     await migrator.createTable(timerPresets);
     await migrator.createTable(acousticCalibrationProfiles);
+  }
+
+  Future<void> _migrateToV7(
+    Migrator migrator, {
+    required bool addImpactColumns,
+  }) async {
+    await migrator.createTable(visionScanDrafts);
+    await migrator.createTable(visionAnalyses);
+    if (addImpactColumns) {
+      await migrator.addColumn(shotImpacts, shotImpacts.placementMethod);
+      await migrator.addColumn(shotImpacts, shotImpacts.visionAnalysisId);
+      await migrator.addColumn(
+        shotImpacts,
+        shotImpacts.positionalUncertaintyMm,
+      );
+    }
   }
 
   Future<void> _migrateFromV1(Migrator migrator) async {

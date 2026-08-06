@@ -8,6 +8,12 @@ enum SeriesStatus { draft, confirmed }
 
 enum ImageRole { primaryScoringPhoto, attachment }
 
+/// Describes how a confirmed impact entered the editor.
+///
+/// Assisted impacts are still user-confirmed; this value is provenance and
+/// never changes scoring behavior.
+enum ImpactPlacementMethod { manual, assistedAccepted, assistedEdited }
+
 enum ValidationStatus {
   official,
   officialGeometryTrainingRendering,
@@ -389,6 +395,9 @@ class ShotImpact {
     this.targetBullId,
     this.rawScoreValue,
     this.scoreDisposition = ScoreDisposition.counted,
+    this.placementMethod = ImpactPlacementMethod.manual,
+    this.visionAnalysisId,
+    this.positionalUncertaintyMm,
   }) : assert(multiplicity > 0),
        assert(
          (imageXNormalized == null) == (imageYNormalized == null),
@@ -401,7 +410,8 @@ class ShotImpact {
        assert(
          imageYNormalized == null ||
              (imageYNormalized >= 0 && imageYNormalized <= 1),
-       );
+       ),
+       assert(positionalUncertaintyMm == null || positionalUncertaintyMm >= 0);
 
   final String id;
   final double xMm;
@@ -415,6 +425,9 @@ class ShotImpact {
   final String? targetBullId;
   final int? rawScoreValue;
   final ScoreDisposition scoreDisposition;
+  final ImpactPlacementMethod placementMethod;
+  final String? visionAnalysisId;
+  final double? positionalUncertaintyMm;
 
   ShotImpact copyWith({
     double? xMm,
@@ -431,6 +444,11 @@ class ShotImpact {
     bool clearTargetBull = false,
     int? rawScoreValue,
     ScoreDisposition? scoreDisposition,
+    ImpactPlacementMethod? placementMethod,
+    String? visionAnalysisId,
+    bool clearVisionAnalysis = false,
+    double? positionalUncertaintyMm,
+    bool clearPositionalUncertainty = false,
   }) => ShotImpact(
     id: id,
     xMm: xMm ?? this.xMm,
@@ -450,6 +468,13 @@ class ShotImpact {
     targetBullId: clearTargetBull ? null : targetBullId ?? this.targetBullId,
     rawScoreValue: rawScoreValue ?? this.rawScoreValue,
     scoreDisposition: scoreDisposition ?? this.scoreDisposition,
+    placementMethod: placementMethod ?? this.placementMethod,
+    visionAnalysisId: clearVisionAnalysis
+        ? null
+        : visionAnalysisId ?? this.visionAnalysisId,
+    positionalUncertaintyMm: clearPositionalUncertainty
+        ? null
+        : positionalUncertaintyMm ?? this.positionalUncertaintyMm,
   );
 }
 

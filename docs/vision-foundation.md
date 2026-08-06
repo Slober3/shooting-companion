@@ -1,184 +1,172 @@
-# Experimental vision foundation
+# Experimentele fotoscore
 
-## Status and safety boundary
+## Productgrens
 
-The vision foundation is an offline experiment. It proposes image geometry and
-impact candidates; it never writes a `ShotImpact`, score, series or database
-record. The existing manual editor remains the only confirmation boundary.
+Versie 0.6 bevat een volledig lokale, experimentele fotoscore voor één
+ondersteunde combinatie:
 
-There is no model, network access, model download or on-device training. A
-candidate is not a confirmed hit. An engine or target-profile update must never
-rewrite a confirmed historical score.
+- ISSF 25 m Precision / 50 m Pistol;
+- .22 LR;
+- één achteraffoto van een relatief schone kaart;
+- expliciete controle en correctie door de gebruiker.
 
-The default CI verification deliberately disables OpenCV. This keeps the
-fallback contract continuously buildable on Linux and proves that a release
-cannot accidentally turn an unavailable detector into fabricated candidates.
-The current Windows development environment also does not contain OpenCV, so
-the locally verified build is the same honest geometry-only backend:
+De native detector maakt alleen voorstellen. Een `VisionCandidateImpact` is
+nooit een bevestigde `ShotImpact`. Alleen de bestaande Dart-score-engine
+berekent ringwaarden en totalen nadat de gebruiker de zichtbare selectie heeft
+bevestigd. Een update van een detector herberekent nooit historische scores.
 
-- PGM pixels can be evaluated for deterministic resolution, contrast, clipping
-  and Laplacian-variance quality metrics.
-- JPEG and PNG dimensions can be probed without decoding their pixels.
-- Homographies can be calculated and tested from four explicit point pairs.
-- Registration and impact detection return `unsupported` or `notAnalyzed`.
-- Unsupported results always contain an empty `candidateImpacts` list.
+De app gebruikt geen ML, OCR, internet, modeldownload, telemetrie of on-device
+training. Exact overlappende schoten, missers buiten het papier en het
+onderscheid tussen oude en nieuwe gaten blijven handmatige beslissingen.
 
-`src/opencv_backend.cpp` is an optional, compile-time research prototype. It
-is included only when CMake finds OpenCV `core`, `imgproc` and `imgcodecs`.
-Its presence is exposed through capabilities and provenance; it must be
-validated on real target fixtures before it may be enabled in an application
-release.
-
-The repository does not yet contain a Dart FFI adapter, a scan/review screen or
-database persistence for a vision analysis. `packages/vision_api` and the C ABI
-define and test the boundary only. This is intentional: application integration
-starts after the registration proof and closed validation set exist.
-
-## Boundaries
+## Architectuur
 
 ```text
-mobile or vision_cli
+image_picker en interne opslag
         |
         v
-packages/vision_api        immutable schema-v1 JSON contracts
+packages/vision_api          schema-v2 contracten
         |
         v
-stable C ABI v1            version, capabilities, request struct, owned JSON
+packages/vision_ffi          isolate, cancellation en C-binding
         |
         v
-native/vision_core         quality, geometry, optional OpenCV backend
+stabiele C ABI v2            create/run/cancel/destroy job
         |
         v
-candidate review           explicit user confirmation in the manual editor
+native/vision_core           C++17 en OpenCV 4.13.0
+        |
+        v
+VisionScanDraft              duurzaam concept en review
+        |
+        v
+handmatige review-editor     enige bevestigingsgrens
+        |
+        v
+Dart-score-engine            autoritatieve score
 ```
 
-`packages/vision_api` may use domain `TargetProfile` snapshots but has no
-Flutter, database, file-writing or FFI dependency. Native output uses the same
-enum names and JSON fields. The checked-in native unsupported-result fixture is
-parsed by the Dart contract tests to catch wire-format drift.
+OpenCV wordt bij Android-builds uit de officiële, vastgezette 4.13.0 SDK
+statisch in `libshooting_companion_vision.so` gelinkt. Alleen `core`, `imgproc`
+en `imgcodecs` worden gebruikt. Release bouwt voor `arm64-v8a`; debug ondersteunt
+ook `x86_64`. Wanneer de native library of de OpenCV-capability ontbreekt, stopt
+de analyse eerlijk met een begrijpelijke melding. De geometry-only backend mag
+nooit automatische kandidaten voorstellen.
 
-## Provenance
+## Contract en coördinaten
 
-Every result records:
+Visioncontract v2 gebruikt ondubbelzinnige coördinaten:
 
-- contract schema version;
-- C ABI version;
-- engine version;
-- backend (`geometryOnly` or `openCv`);
-- advertised capabilities;
-- version per algorithm stage;
-- optional model version, which is `null` in this foundation;
-- quality, registration, warnings and diagnostic metrics;
-- a confidence band and evidence reasons for every candidate.
+- `sourceImageXNormalized` en `sourceImageYNormalized` verwijzen naar de
+  originele, EXIF-vrije foto;
+- `cardXMm` en `cardYMm` verwijzen naar fysieke millimeters op het kaartvlak;
+- `orderedSourceCornersNormalized` bewaart de vier bronhoeken;
+- `sourceNormalizedToCardMmHomography` maakt de omzetting reproduceerbaar.
 
-The application must persist provenance alongside an accepted experimental
-analysis if database integration is added later. Reanalysis creates new
-provenance; it does not replace an earlier confirmed result.
+Bij handmatige heruitlijning worden kandidaten opnieuw vanuit hun originele
+fotocoördinaten naar millimeters geprojecteerd. Hun scoregrenswaarschuwing wordt
+eveneens opnieuw berekend. Zoom en pan wijzigen nooit deze brongegevens.
 
-## Build and test
+Iedere analyse bewaart provenance:
 
-With CMake:
+- contractschema, C-ABI en engineversie;
+- backend en capabilities;
+- algoritmeversies voor kwaliteit, registratie en detectie;
+- kwaliteitsmetingen, registratie en waarschuwingen;
+- vertrouwen, redenen en positionele onzekerheid per kandidaat;
+- alle reviewbeslissingen.
+
+## Native jobmodel
+
+De ABI biedt `createJob`, `runJob`, `cancelJob` en `destroyJob`. De pipeline
+controleert annulering tussen kwaliteitscontrole, registratie, perspective
+warp en kandidatendetectie. Bij navigeren uit de flow worden late resultaten
+genegeerd, tijdelijke gegevens opgeruimd en geen gedeeltelijke analyse
+opgeslagen.
+
+Resultaatstrings hebben expliciet C-ABI-eigenaarschap. De FFI-adapter verstuurt
+alleen serializeerbare waarden over de isolategrens en reconstrueert de
+Dart-contracten aan de ontvangende kant.
+
+## Beeldverwerking
+
+De klassieke pipeline voert uit:
+
+1. resolutie-, scherpte-, contrast- en belichtingscontrole;
+2. zoeken naar papiercontour, vierhoek en scoringsringen;
+3. profielcontrole en homografie;
+4. canonieke warp met vaste pixels per millimeter;
+5. profielgebaseerd masker voor gedrukte ringlijnen;
+6. onafhankelijke signalen voor donkere kern, vezelrand, lokaal contrast,
+   morfologie, vorm en bekende .22-diameter;
+7. confidenceclassificatie met controleerbare redenen.
+
+Hoge en middelmatige kandidaten worden aanvankelijk opgenomen maar blijven
+zichtbaar gemarkeerd. Lage kandidaten zijn standaard niet opgenomen. Kandidaten
+bij een scoringslijn krijgen altijd een grenswaarschuwing. De detector maakt
+geen kunstmatige gaten om een verwacht aantal te bereiken.
+
+## Concepten en transactioneel koppelen
+
+Een originele scan wordt onmiddellijk duurzaam en EXIF-vrij opgeslagen. Een
+concept bewaart foto, profiel, kwaliteit, registratie, kandidaten en review.
+Appsluiting of analysefout verliest dit concept niet.
+
+`commitReviewedVisionScan` valideert doel, kaliber en bestemming en schrijft in
+één transactie de sessie/reeks, scorefoto, uitlijning, analyse, review,
+bevestigde impacts en scoreaggregaten. Bij een fout blijven conceptscan, foto en
+bestaande sessies intact. Bevestigde impacts registreren of zij ongewijzigd of
+bewerkt uit een voorstel kwamen.
+
+## Build
+
+Zet voor een Android-build:
 
 ```powershell
-cmake -S native/vision_core -B native/vision_core/build_verify_test `
-  -DSC_VISION_ENABLE_OPENCV=OFF `
-  -DSC_VISION_BUILD_TESTS=ON `
-  -DSC_VISION_WARNINGS_AS_ERRORS=ON `
-  -DCMAKE_BUILD_TYPE=Release
-cmake --build native/vision_core/build_verify_test --config Release --parallel
-ctest --test-dir native/vision_core/build_verify_test `
-  --build-config Release `
-  --output-on-failure
+$env:OPENCV_ANDROID_SDK = 'C:\pad\naar\OpenCV-android-sdk'
+flutter build apk --release --target-platform android-arm64
 ```
 
-Without CMake, the geometry-only sources are standard C++17 and can be compiled
-directly with MinGW. Native tests deliberately use only a synthetic PGM
-checkerboard. The fixture demonstrates quality/probing behavior only; it is not
-registration or detection evidence.
+De SDK-versie is 4.13.0. De verwachte SHA-256 van het officiële Android-archief
+is:
 
-The CLI is deterministic and prints a single JSON result:
-
-```powershell
-vision_cli analyze `
-  --image synthetic.pgm `
-  --card-width-mm 550 `
-  --card-height-mm 550 `
-  --projectile-diameter-mm 5.6 `
-  --minimum-long-side-px 2000
+```text
+edfda20fdf65d0bd45391d168ec5261dd30b600b00279c4d910d7f1c3e020f0f
 ```
 
-Exit code `0` includes honest `unsupported` and `notAnalyzed` outcomes, because
-these are valid analysis results. Invalid arguments return `2`; unreadable
-input returns `3` and a structured failed result.
+CI downloadt dit archief, controleert de hash, bouwt de APK en verifieert dat de
+native arm64-library aanwezig is. De app downloadt OpenCV nooit tijdens gebruik.
 
-CI performs three independent checks on Ubuntu:
+De geometry-only C++-tests blijven afzonderlijk bestaan om contract- en
+homografielogica te testen zonder OpenCV. Zij zijn geen bewijs van
+detectienauwkeurigheid.
 
-- C++ unit and homography/quality tests;
-- a C-only ABI consumer linked to the shared library;
-- a CLI JSON assertion that the forced fallback reports backend
-  `geometryOnly`, status `unsupported`, warning `openCvUnavailable` and zero
-  candidates.
+## Privacy en auteursrecht
 
-The Dart contract tests also parse a checked-in unsupported native-result
-fixture. The native CI job verifies the live executable separately; the fixture
-is not treated as proof that the current binary was executed.
+- Geen persoonlijke kaartfoto's, exports of back-ups worden gecommit.
+- Foto's staan alleen in interne appopslag en worden niet geüpload.
+- EXIF en GPS worden bij import verwijderd.
+- Afgeleide masks en tijdelijke warps zijn geen autoritatieve data en gaan niet
+  in de back-up.
+- De app bevat geen doelkaartfoto; zij gebruikt declaratieve ISSF-geometrie.
 
-## Experimental release gates
+## Validatie en eerlijke claim
 
-The OpenCV adapter must remain disabled in stable UI until an independent,
-closed test set demonstrates all applicable gates:
+De technische integratie maakt de detector nog niet bewezen betrouwbaar. Voor
+publieke activering zijn minimaal 100 onafhankelijke foto's, 500 geannoteerde
+.22-gaten en drie Androidtoestellen nodig. De experimentele ondergrenzen zijn:
 
-- at least 99% registration success for images accepted by quality control;
-- median impact-position error at most 0.75 mm;
-- P95 impact-position error at most 1.5 mm;
-- at least 98% precision and recall for isolated supported holes;
-- at least 95% exact visible-shot count on supported clean targets;
-- at least 97% exact series score in supported non-overlapping cases;
-- every remaining potential scoring-line error is marked uncertain;
-- no low-confidence candidate is silently confirmed;
-- P95 processing time at most eight seconds on the reference mid-range device;
-- manual correction remains available for every result.
+- registratie minstens 95% op door kwaliteitscontrole geaccepteerde foto's;
+- mediane positionele fout maximaal 1,5 mm;
+- precisie minstens 90% en recall minstens 85% voor geïsoleerde gaten;
+- geen lage kandidaat die stil meetelt;
+- P95 maximaal acht seconden op het primaire Samsungtoestel.
 
-Required evidence includes real ISSF 25 m Precision / 50 m Pistol targets,
-.22 LR holes in white and black regions, several Android cameras, varied light
-and perspective, line cases and a sealed test split. Synthetic images may test
-geometry and regressions but never replace real validation data.
+Tot die set is verzameld en gemeten, blijft de UI `Experimenteel` tonen, worden
+geen nauwkeurigheidsclaims gemaakt en blijft handmatige scoring de betrouwbaarste
+route. Synthetische fixtures bewijzen regressies en geometrie, maar vervangen
+geen echte validatiefoto's.
 
-If any gate fails, the backend remains an explicitly experimental assistant.
-Documentation and UI must not describe it as automatic or reliable scoring.
-
-## Research export, data and copyright
-
-No personal target photographs, exports or production backups belong in the
-repository. `packages/vision_research` implements the explicit local
-`.scvision` research container. It:
-
-- accepts an already selected target crop, never an unrestricted gallery;
-- decodes and re-encodes supported JPEG/PNG input to remove EXIF and GPS;
-- uses an allow-listed manifest without session names, notes, locations or
-  firearm identifiers;
-- includes profile geometry, calibre, confirmed manual impacts, alignment,
-  quality labels and an explicit consent record;
-- authenticates every entry hash and encrypts the container with AES-256-GCM
-  using an Argon2id password-derived key;
-- never uploads, syncs or requests network access.
-
-The current service is deliberately bounded in memory and rejects oversized
-input. It is not yet connected to app UI, consent presentation, dataset intake
-or annotation tooling. The crop must already be chosen by the caller. Those
-integration steps require a separate privacy and re-identification review.
-
-## Research-gated gaps
-
-The following roadmap work is explicitly not claimed by this foundation:
-
-- validated ISSF card/ring registration across real cameras and lighting;
-- production-quality white- and black-zone hole detection;
-- EXIF rotation, reflection, multiple-card and clipped-ring handling in the
-  native pipeline;
-- a sealed dataset, annotation workflow and measured accuracy/latency report;
-- Flutter FFI, review UI and persisted `VisionAnalysis` provenance;
-- BR50 detection, OCR-based checks or an ONNX/ML fallback.
-
-Until these gaps and the gates above are satisfied, OpenCV output is a research
-proposal only and manual point placement remains the product path.
+Buiten de eerste scope vallen BR50, andere kaartprofielen en kalibers, ML, OCR,
+voor/na-vergelijking, wedstrijdcertificering en automatische reconstructie van
+exact overlappende schoten.

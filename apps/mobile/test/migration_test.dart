@@ -11,6 +11,7 @@ import 'generated/schema/schema_v2.dart' as v2;
 import 'generated/schema/schema_v3.dart' as v3;
 import 'generated/schema/schema_v4.dart' as v4;
 import 'generated/schema/schema_v5.dart' as v5;
+import 'generated/schema/schema_v6.dart' as v6;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -20,17 +21,17 @@ void main() {
     verifier = SchemaVerifier(GeneratedHelper());
   });
 
-  test('empty v1 schema migrates exactly to v6', () async {
+  test('empty v1 schema migrates exactly to v7', () async {
     final schema = await verifier.schemaAt(1);
     final database = AppDatabase.forTesting(schema.newConnection());
 
-    await verifier.migrateAndValidate(database, 6);
+    await verifier.migrateAndValidate(database, 7);
 
     await database.close();
     schema.close();
   });
 
-  test('v1 sessions, impacts and photos survive the v6 migration', () async {
+  test('v1 sessions, impacts and photos survive the v7 migration', () async {
     final schema = await verifier.schemaAt(1);
     final old = v1.DatabaseAtV1(schema.newConnection());
     final timestamp =
@@ -138,7 +139,7 @@ void main() {
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 6);
+    await verifier.migrateAndValidate(database, 7);
 
     final session = await database
         .select(database.trainingSessions)
@@ -171,6 +172,10 @@ void main() {
     );
     expect(
       impacts.every((impact) => impact.scoreDisposition == 'counted'),
+      isTrue,
+    );
+    expect(
+      impacts.every((impact) => impact.placementMethod == 'manual'),
       isTrue,
     );
     expect(
@@ -239,7 +244,7 @@ void main() {
       await old.close();
 
       final database = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(database, 6);
+      await verifier.migrateAndValidate(database, 7);
 
       final migrated = await database
           .select(database.shootingSeries)
@@ -283,7 +288,7 @@ void main() {
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 6);
+    await verifier.migrateAndValidate(database, 7);
 
     final cartridge = await database.select(database.cartridges).getSingle();
     final ammo = await database.select(database.ammoLots).getSingle();
@@ -301,7 +306,7 @@ void main() {
     schema.close();
   });
 
-  test('v3 score records migrate to v6 without recalculation', () async {
+  test('v3 score records migrate to v7 without recalculation', () async {
     final schema = await verifier.schemaAt(3);
     final old = v3.DatabaseAtV3(schema.newConnection());
     final timestamp =
@@ -352,7 +357,7 @@ void main() {
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 6);
+    await verifier.migrateAndValidate(database, 7);
     final series = await database.select(database.shootingSeries).getSingle();
     final impact = await database.select(database.shotImpacts).getSingle();
 
@@ -373,7 +378,7 @@ void main() {
     schema.close();
   });
 
-  test('v4 percentage goals migrate to typed v6 goals', () async {
+  test('v4 percentage goals migrate to typed v7 goals', () async {
     final schema = await verifier.schemaAt(4);
     final old = v4.DatabaseAtV4(schema.newConnection());
 
@@ -388,7 +393,7 @@ void main() {
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 6);
+    await verifier.migrateAndValidate(database, 7);
 
     final goal = await database.select(database.goals).getSingle();
     expect(goal.id, 'legacy-goal');
@@ -407,27 +412,106 @@ void main() {
     schema.close();
   });
 
-  test('v5 data migrates to v6 with empty training storage', () async {
-    final schema = await verifier.schemaAt(5);
-    final old = v5.DatabaseAtV5(schema.newConnection());
+  test(
+    'v5 data migrates to v7 with empty training and vision storage',
+    () async {
+      final schema = await verifier.schemaAt(5);
+      final old = v5.DatabaseAtV5(schema.newConnection());
 
-    expect(old.schemaVersion, 5);
+      expect(old.schemaVersion, 5);
+      await old.close();
+
+      final database = AppDatabase.forTesting(schema.newConnection());
+      await verifier.migrateAndValidate(database, 7);
+
+      expect(await database.select(database.trainingActivities).get(), isEmpty);
+      expect(
+        await database.select(database.trainingActivitySeriesLinks).get(),
+        isEmpty,
+      );
+      expect(await database.select(database.shotTimerEvents).get(), isEmpty);
+      expect(await database.select(database.timerPresets).get(), isEmpty);
+      expect(
+        await database.select(database.acousticCalibrationProfiles).get(),
+        isEmpty,
+      );
+      expect(await database.select(database.visionScanDrafts).get(), isEmpty);
+      expect(await database.select(database.visionAnalyses).get(), isEmpty);
+      expect(
+        await database.customSelect('PRAGMA foreign_key_check').get(),
+        isEmpty,
+      );
+
+      await database.close();
+      schema.close();
+    },
+  );
+
+  test('v6 data migrates to v7 without changing scores', () async {
+    final schema = await verifier.schemaAt(6);
+    final old = v6.DatabaseAtV6(schema.newConnection());
+    final timestamp =
+        DateTime.utc(2026, 8, 6, 10).millisecondsSinceEpoch ~/ 1000;
+    final target = IssfTargetProfiles.precision25m50m;
+
+    await old
+        .into(old.trainingSessions)
+        .insert(
+          v6.TrainingSessionsCompanion.insert(
+            id: 'v6-session',
+            status: 'completed',
+            startedAtUtc: timestamp,
+            localUtcOffsetMinutes: 120,
+            updatedAtUtc: timestamp,
+          ),
+        );
+    await old
+        .into(old.shootingSeries)
+        .insert(
+          v6.ShootingSeriesCompanion.insert(
+            id: 'v6-series',
+            sessionId: 'v6-session',
+            sequenceNumber: 1,
+            status: 'confirmed',
+            targetProfileVersionedId: target.versionedId,
+            targetProfileJson: target.toJsonString(),
+            distanceMeters: 25,
+            projectileDiameterMm: 5.6,
+            shotCount: const Value(1),
+            maximumPossibleScore: const Value(10),
+            totalScore: const Value(9),
+            createdAtUtc: timestamp,
+            updatedAtUtc: timestamp,
+          ),
+        );
+    await old
+        .into(old.shotImpacts)
+        .insert(
+          v6.ShotImpactsCompanion.insert(
+            id: 'v6-impact',
+            seriesId: 'v6-series',
+            xMm: 15,
+            yMm: 0,
+            scoreValue: 9,
+            rawScoreValue: const Value(9),
+          ),
+        );
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 6);
+    await verifier.migrateAndValidate(database, 7);
 
-    expect(await database.select(database.trainingActivities).get(), isEmpty);
-    expect(
-      await database.select(database.trainingActivitySeriesLinks).get(),
-      isEmpty,
-    );
-    expect(await database.select(database.shotTimerEvents).get(), isEmpty);
-    expect(await database.select(database.timerPresets).get(), isEmpty);
-    expect(
-      await database.select(database.acousticCalibrationProfiles).get(),
-      isEmpty,
-    );
+    final series = await database.select(database.shootingSeries).getSingle();
+    final impact = await database.select(database.shotImpacts).getSingle();
+    expect(series.totalScore, 9);
+    expect(series.maximumPossibleScore, 10);
+    expect(impact.scoreValue, 9);
+    expect(impact.rawScoreValue, 9);
+    expect(impact.placementMethod, 'manual');
+    expect(impact.visionAnalysisId, null);
+    expect(impact.positionalUncertaintyMm, null);
+    expect(await database.select(database.visionScanDrafts).get(), isEmpty);
+    expect(await database.select(database.visionAnalyses).get(), isEmpty);
     expect(
       await database.customSelect('PRAGMA foreign_key_check').get(),
       isEmpty,

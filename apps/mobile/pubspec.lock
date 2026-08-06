@@ -893,6 +893,20 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  shooting_companion_vision_api:
+    dependency: "direct main"
+    description:
+      path: "../../packages/vision_api"
+      relative: true
+    source: path
+    version: "0.1.0"
+  shooting_companion_vision_ffi:
+    dependency: "direct main"
+    description:
+      path: "../../packages/vision_ffi"
+      relative: true
+    source: path
+    version: "0.1.0"
   sky_engine:
     dependency: transitive
     description: flutter

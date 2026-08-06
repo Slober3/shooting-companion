@@ -2931,6 +2931,11 @@ class ShootingRepository {
               scoreDisposition: Value(shot.disposition.name),
               isInnerTen: Value(shot.isInnerTen),
               isBoundaryUncertain: Value(shot.isBoundaryUncertain),
+              placementMethod: Value(shot.impact.placementMethod.name),
+              visionAnalysisId: Value(shot.impact.visionAnalysisId),
+              positionalUncertaintyMm: Value(
+                shot.impact.positionalUncertaintyMm,
+              ),
             ),
           );
     }
@@ -3405,7 +3410,10 @@ class ShootingRepository {
       existing.imageYNormalized == resulting.imageYNormalized &&
       existing.multiplicity == resulting.multiplicity &&
       existing.isMiss == resulting.isMiss &&
-      existing.isPositionUncertain == resulting.isPositionUncertain;
+      existing.isPositionUncertain == resulting.isPositionUncertain &&
+      existing.placementMethod == resulting.placementMethod.name &&
+      existing.visionAnalysisId == resulting.visionAnalysisId &&
+      existing.positionalUncertaintyMm == resulting.positionalUncertaintyMm;
 
   bool _sameStoredImpact(ImpactRecord existing, domain.ShotImpact resulting) =>
       _sameImpactMetadata(existing, resulting) &&
