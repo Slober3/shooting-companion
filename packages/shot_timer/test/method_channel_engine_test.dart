@@ -6,6 +6,39 @@ import 'package:shooting_companion_shot_timer/shot_timer.dart';
 
 void main() {
   test(
+    'platform controller forwards capabilities and selected signals',
+    () async {
+      final calls = <(String, Object?)>[];
+      final controller = ShotTimerPlatformController(
+        methodChannel: _FakeMethodChannel((method, arguments) async {
+          calls.add((method, arguments));
+          if (method == 'getCapabilities') {
+            return <Object?, Object?>{
+              'hasMicrophone': true,
+              'nativeSampleRate': 48000,
+            };
+          }
+          return null;
+        }),
+      );
+
+      final capabilities = await controller.getCapabilities();
+      await controller.testSignals({
+        ShotTimerOutputSignal.sound,
+        ShotTimerOutputSignal.haptic,
+      });
+
+      expect(capabilities['hasMicrophone'], isTrue);
+      expect(capabilities['nativeSampleRate'], 48000);
+      expect(calls.first.$1, 'getCapabilities');
+      expect(calls.last.$1, 'testSignals');
+      expect(calls.last.$2, <String, Object?>{
+        'outputSignals': <String>['sound', 'haptic'],
+      });
+    },
+  );
+
+  test(
     'start response does not regress native running state or drop events',
     () async {
       final platformEvents = StreamController<Object?>.broadcast(sync: true);

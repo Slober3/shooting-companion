@@ -17,6 +17,30 @@ class ShotTimerPlatformException implements Exception {
   String toString() => 'ShotTimerPlatformException($code, $message)';
 }
 
+/// Small device-facing API used by the guided setup before a timer run starts.
+class ShotTimerPlatformController {
+  const ShotTimerPlatformController({MethodChannel? methodChannel})
+    : _methods =
+          methodChannel ??
+          const MethodChannel(MethodChannelShotTimerEngine.methodChannelName);
+
+  final MethodChannel _methods;
+
+  Future<Map<String, Object?>> getCapabilities() async {
+    final raw = await _methods.invokeMethod<Map<Object?, Object?>>(
+      'getCapabilities',
+    );
+    return (raw ?? const <Object?, Object?>{}).map(
+      (key, value) => MapEntry(key.toString(), value),
+    );
+  }
+
+  Future<void> testSignals(Set<ShotTimerOutputSignal> signals) =>
+      _methods.invokeMethod<void>('testSignals', {
+        'outputSignals': signals.map((value) => value.wireName).toList(),
+      });
+}
+
 /// Android acoustic timer adapter.
 ///
 /// Only structured status, level and impulse events cross the platform channel;

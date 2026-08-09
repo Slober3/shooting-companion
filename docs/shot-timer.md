@@ -3,14 +3,10 @@
 ## Product boundary
 
 The timer is an offline training aid. It is not certified match equipment.
-Version `0.5.0+1` publicly exposes par, cadence and manually entered external
-timer runs only. Acoustic live fire is compile-time disabled by default, has no
-reachable route in the stable UI and is absent from the release manifest.
-
-Internal development/profile builds may opt in with
-`--dart-define=SC_ENABLE_ACOUSTIC_TIMER=true`. Those builds are solely for
-physical validation. They do not claim to isolate one shooter on a busy shared
-range and must not be distributed as a stable release.
+Version `0.5.1+3` exposes acoustic live fire through a guided first-use flow.
+The user explicitly activates the microphone, verifies the chosen start signal
+and then reviews every detected event before saving. The app does not claim to
+isolate one shooter on a busy shared range.
 
 Raw audio is never stored. The Android engine turns microphone frames into
 relative impulse timestamps on a native worker thread and sends only states,
@@ -19,8 +15,9 @@ after the user reviews the run.
 
 ## Timing modes
 
-- `acousticLiveFire`: development-only native start signal, impulse detection,
-  first shot, last shot, splits, sensitivity and echo lockout;
+- `acousticLiveFire`: native start signal, in-memory microphone capture,
+  impulse detection, first shot, last shot, splits, sensitivity and echo
+  lockout;
 - `par`: fixed or random delay followed by one to three par signals;
 - `cadence`: fixed or progressive signal intervals with repetitions and rest;
 - `externalManual`: validated times copied from a dedicated external timer.
@@ -29,7 +26,7 @@ All modes use relative microseconds as their authoritative timing data. UTC is
 stored only to place the activity in the logbook. Timer events never change a
 series score, impact count or free-form note.
 
-## Development-only Android lifecycle
+## Android lifecycle
 
 The native engine uses `AudioTrack` and `AudioRecord` timestamps mapped to a
 monotonic clock. It warms the output route before a delayed start and suppresses
@@ -39,10 +36,8 @@ the capture pipeline reports an input or permission error. An interrupted run
 is not silently completed.
 
 Active audio-route and audio-focus monitoring is not implemented yet. A route
-change (for example connecting Bluetooth) therefore remains a validation
-blocker: internal testers must stop the run and recalibrate after any route
-change. Stable acoustic publication requires this lifecycle handling in
-addition to the physical accuracy gate below.
+change (for example connecting Bluetooth) therefore requires stopping the run
+and testing the device signals again.
 
 The app keeps the screen awake only while a run is active. There is no
 foreground service and no background microphone capture.
@@ -62,9 +57,8 @@ linked to one series.
 
 ## Reliability and validation
 
-There is no public acoustic path in `0.5.0+1`. A later stable supported profile
-requires comparison against a dedicated reference timer with all of these
-conditions met:
+Device- or calibre-specific accuracy claims require comparison against a
+dedicated reference timer with all of these conditions met:
 
 - at least three recent Android devices, including the primary Samsung device;
 - indoor and outdoor results reported separately;
@@ -76,10 +70,9 @@ conditions met:
 - every uncertain or false event remains reviewable.
 
 The first intended validation profiles are `.22 LR` and `9x19 mm`. Results are
-reported per device, audio route and environment. Other calibres may be used in
-internal validation but receive no accuracy claim until the same gate is
-passed. If any gate fails, the stable release remains permission-free and keeps
-acoustic UI inaccessible.
+reported per device, audio route and environment. Other calibres may be used,
+but receive no accuracy claim until the same gate is passed. Every run remains
+editable and explicitly labelled as a training measurement.
 
 ## Privacy and exports
 

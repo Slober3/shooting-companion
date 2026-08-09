@@ -4,19 +4,19 @@ Shooting Companion is local-only. It has no account, cloud backend, telemetry,
 advertising SDK or internet permission. It does not automatically collect GPS or
 firearm serial numbers.
 
-The stable `0.5.0+1` release does not declare `RECORD_AUDIO` and exposes no
-microphone workflow. Par, cadence and manual external-timer modes work without
-microphone access.
+Version `0.5.1+3` declares `RECORD_AUDIO` for the live-fire shot timer. Android
+asks for microphone access only after the user explicitly opens and activates
+that tool. Refusing access does not block scoring, photos, analysis, coaching,
+par timing, cadence timing or external timer entry.
 
-Acoustic timing exists only in explicitly opted-in development/profile builds
-created with `SC_ENABLE_ACOUSTIC_TIMER=true`. In those internal builds,
-microphone access is requested only after the acoustic tool is opened. Samples
-are analysed in memory while the timer screen is visible. The app stores only
-confirmed relative event times, detector-quality flags and the selected
-configuration; it never writes raw PCM, a waveform or an audio recording to app
+During an active live-fire run, Android `AudioRecord` captures microphone
+frames and the native detector analyses them in memory. The app stores only
+user-reviewed relative event times, detector-quality flags and the selected
+configuration. It never writes raw PCM, a waveform or an audio recording to app
 storage, diagnostics, exports or backups. Leaving the timer, backgrounding the
 app or revoking permission releases the microphone and marks an active run as
-interrupted. This development path is not a public accuracy claim.
+interrupted. Acoustic results are training measurements, not certified match
+timing or a guarantee that nearby shooters can be distinguished.
 
 Imported photos are decoded, orientation-corrected and re-encoded as JPEG so
 source EXIF is not retained. Images and database records live in Android internal

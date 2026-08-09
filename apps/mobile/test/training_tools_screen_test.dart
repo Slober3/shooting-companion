@@ -39,21 +39,20 @@ void main() {
     expect(find.text('Drills'), findsOneWidget);
   });
 
-  testWidgets('opens the structured shot timer setup', (tester) async {
+  testWidgets('opens the guided acoustic live-fire setup', (tester) async {
     await tester.pumpWidget(_app(const TrainingToolsScreen()));
 
     expect(
       find.byKey(const ValueKey('training-tool-calibration-profiles')),
-      findsNothing,
+      findsOneWidget,
     );
     await tester.tap(find.byKey(const ValueKey('training-tool-shot-timer')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Timer instellen'), findsOneWidget);
-    expect(find.text('Akoestische live fire'), findsNothing);
-    expect(find.text('Live-firedetectie'), findsNothing);
-    expect(find.text('Par timer'), findsOneWidget);
-    expect(find.byKey(const ValueKey('start-shot-timer')), findsOneWidget);
+    expect(find.text('Live-fire timer'), findsOneWidget);
+    expect(find.text('Eenvoudig live-fire meten'), findsOneWidget);
+    expect(find.text('Akoestische registratie'), findsOneWidget);
+    expect(find.byKey(const ValueKey('start-live-fire-setup')), findsOneWidget);
   });
 
   testWidgets('creates a balanced ABBA plan and explains minimum data', (

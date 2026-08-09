@@ -43,21 +43,20 @@ verklaarbare analyse, optionele coaching en gestructureerde trainingstools toe:
 - optionele vijfsecondenreflectie, persoonlijke doelen en volledig uit te
   schakelen coachmodus;
 - een offline drillbibliotheek, A/B-experimentplanner en viziercalculator;
-- een offline timer met par-, cadans- en externe invoermodus, reviewbare events,
-  presets, lokale geschiedenis en optionele reekskoppeling;
+- een begeleide akoestische live-firetimer plus par-, cadans- en externe
+  invoermodus, reviewbare events, lokale geschiedenis en reekskoppeling;
 - gestructureerde timerexports en compacte timerinformatie in het PDF-rapport;
 - systeem/licht/donker met vier lokaal opgeslagen kleurpaletten;
 - CSV, Unicode-PDF met ingebedde fonts en AES-256-GCM/Argon2id-back-up;
 - migratie en back-upcompatibiliteit voor lokale gegevens uit versie 0.1;
 - databaseschema 6 en back-upmanifest 6, met import van v1-v5-back-ups.
 
-De akoestische live-firetimer zit als ontwikkelbasis in de broncode, maar is in
-de stabiele `0.5.0+1`-build compile-time uitgeschakeld. Er is geen zichtbare
-akoestische route en de release vraagt geen microfoontoegang. Publieke activatie
-volgt pas na de volledige fysieke vergelijking met een referentietimer die in
-[`docs/shot-timer.md`](docs/shot-timer.md) is vastgelegd. De geplande
-analysehotfix `0.4.2` is niet afzonderlijk gepubliceerd; hij is in deze
-`0.5.0`-release geïntegreerd.
+De live-firetimer vraagt microfoontoegang pas nadat de gebruiker de begeleide
+toestelcontrole start. Audio wordt tijdens de zichtbare run in het geheugen
+verwerkt; alleen gecontroleerde eventtijden worden opgeslagen. De meting is een
+trainingshulpmiddel, geen gecertificeerde wedstrijdtimer. De fysieke
+validatiematrix en grenzen staan in
+[`docs/shot-timer.md`](docs/shot-timer.md).
 
 Er is nog geen automatische trefferdetectie in de app. De schutter duidt iedere
 treffer of misser expliciet aan; de deterministische score-engine berekent daarna
@@ -83,8 +82,9 @@ flutter test
 flutter run
 ```
 
-De stabiele app declareert alleen cameratoegang. Microfoontoegang is in
-`0.5.0+1` verboden in het release-APK. Controleer voor een release:
+De app declareert camera- en microfoontoegang. Microfoontoegang wordt pas in de
+begeleide live-firetimer gevraagd en de audiostroom wordt uitsluitend tijdens
+de zichtbare run in het geheugen verwerkt. Controleer voor een release:
 
 ```powershell
 flutter build apk --release
@@ -92,18 +92,10 @@ flutter build apk --release
   build/app/outputs/flutter-apk/app-release.apk
 ```
 
-De tweede opdracht mag `CAMERA` en Androids interne receiver-permission tonen,
-maar geen `RECORD_AUDIO`, `INTERNET`, opslag- of netwerkstatuspermission.
-
-Interne akoestische validatie kan uitsluitend in een development/profile build:
-
-```powershell
-flutter run --dart-define=SC_ENABLE_ACOUSTIC_TIMER=true
-```
-
-De debug- en profile-manifests bevatten daarvoor microfoontoegang; het
-release-manifest bewust niet. Dit opt-inpad is geen nauwkeurigheidsclaim en mag
-niet als stabiele APK worden verspreid.
+De tweede opdracht moet `CAMERA` en `RECORD_AUDIO` tonen en mag Androids interne
+receiver- en vibratiepermission tonen. `INTERNET`, opslag-, locatie- en
+netwerkstatuspermissions blijven verboden. De timer is een controleerbaar
+trainingshulpmiddel en geen gecertificeerde wedstrijdtimer.
 
 ## Monorepo
 

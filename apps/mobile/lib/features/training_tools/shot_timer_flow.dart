@@ -5,7 +5,7 @@ import 'package:shooting_companion_shot_timer/shot_timer.dart';
 import '../../app/providers.dart';
 import '../../data/shooting_repository.dart';
 import '../../widgets/app_notice.dart';
-import 'shot_timer_release_gate.dart';
+import 'live_fire_timer_screen.dart';
 import 'shot_timer_screens.dart';
 
 /// Opens the timer workflow and persists the reviewed result.
@@ -19,13 +19,13 @@ Future<String?> launchShotTimerFlow({
   String? sessionId,
   String? seriesId,
 }) async {
-  final releasedMode =
-      !acousticShotTimerEnabled && initialMode == ShotTimerMode.acousticLiveFire
-      ? ShotTimerMode.par
-      : initialMode;
+  final acoustic =
+      initialMode == null || initialMode == ShotTimerMode.acousticLiveFire;
   final draft = await Navigator.of(context).push<ShotTimerDraft>(
     MaterialPageRoute(
-      builder: (_) => ShotTimerSetupScreen(initialMode: releasedMode),
+      builder: (_) => acoustic
+          ? const LiveFireShotTimerScreen()
+          : ShotTimerSetupScreen(initialMode: initialMode),
     ),
   );
   if (draft == null || !context.mounted) return null;

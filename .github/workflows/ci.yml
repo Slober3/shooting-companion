@@ -95,10 +95,11 @@ jobs:
           APK="apps/mobile/build/app/outputs/flutter-apk/app-release.apk"
           PERMISSIONS="$($ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer manifest permissions "$APK")"
           echo "$PERMISSIONS"
-          if echo "$PERMISSIONS" | grep -E "android.permission.(INTERNET|RECORD_AUDIO|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|ACCESS_NETWORK_STATE)"; then
+          if echo "$PERMISSIONS" | grep -E "android.permission.(INTERNET|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|ACCESS_NETWORK_STATE)"; then
             echo "Forbidden Android permission found in release APK" >&2
             exit 1
           fi
+          echo "$PERMISSIONS" | grep "android.permission.RECORD_AUDIO"
 
   native-vision-fallback:
     runs-on: ubuntu-latest

@@ -132,15 +132,24 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                     ),
                   ),
                 ),
-                FilledButton.icon(
-                  onPressed: _isCompleting ? null : () => _openDraft(value),
-                  icon: Icon(
-                    value.draftSeries == null ? Icons.add : Icons.play_arrow,
-                  ),
-                  label: Text(
-                    value.draftSeries == null
-                        ? 'Nieuwe reeks'
-                        : 'Verdergaan met reeks',
+                Semantics(
+                  button: true,
+                  label: value.draftSeries == null
+                      ? 'Nieuwe reeks starten'
+                      : 'Verdergaan met huidige reeks',
+                  child: ExcludeSemantics(
+                    child: FilledButton.icon(
+                      onPressed: _isCompleting ? null : () => _openDraft(value),
+                      icon: Icon(
+                        value.draftSeries == null
+                            ? Icons.add
+                            : Icons.play_arrow,
+                      ),
+                      label: Text(
+                        value.draftSeries == null ? 'Nieuwe reeks' : 'Doorgaan',
+                        maxLines: 1,
+                      ),
+                    ),
                   ),
                 ),
               ],

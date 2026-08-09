@@ -7,7 +7,6 @@ import '../../widgets/compact_page_scaffold.dart';
 import 'drill_screens.dart';
 import 'experiment_planner_screen.dart';
 import 'shot_timer_flow.dart';
-import 'shot_timer_release_gate.dart';
 import 'sight_calculator_screen.dart';
 import 'timer_history_screen.dart';
 
@@ -49,9 +48,8 @@ class TrainingToolsScreen extends ConsumerWidget {
           key: const ValueKey('training-tool-shot-timer'),
           icon: Icons.timer_outlined,
           title: 'Shot timer',
-          description: acousticShotTimerEnabled
-              ? 'Meet live-firetijden en splits, of neem een externe timer over.'
-              : 'Gebruik par, cadans of neem tijden van een externe timer over.',
+          description:
+              'Meet live-firetijden en splits met een begeleide microfoonsetup.',
           onTap: () => launchShotTimerFlow(context: context, ref: ref),
         ),
         const SizedBox(height: 12),
@@ -79,22 +77,20 @@ class TrainingToolsScreen extends ConsumerWidget {
             MaterialPageRoute(builder: (_) => const TimerHistoryScreen()),
           ),
         ),
-        if (acousticShotTimerEnabled) ...[
-          const SizedBox(height: 12),
-          _ToolCard(
-            key: const ValueKey('training-tool-calibration-profiles'),
-            icon: Icons.graphic_eq,
-            title: 'Akoestische profielen',
-            description:
-                'Beheer lokale gevoeligheid en echofilters per omgeving.',
-            onTap: () => Navigator.push<void>(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const AcousticCalibrationProfilesScreen(),
-              ),
+        const SizedBox(height: 12),
+        _ToolCard(
+          key: const ValueKey('training-tool-calibration-profiles'),
+          icon: Icons.graphic_eq,
+          title: 'Akoestische profielen',
+          description:
+              'Beheer lokale gevoeligheid en echofilters per omgeving.',
+          onTap: () => Navigator.push<void>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AcousticCalibrationProfilesScreen(),
             ),
           ),
-        ],
+        ),
         const SizedBox(height: 20),
         Text('Andere tools', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
@@ -153,14 +149,9 @@ class TrainingToolsScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    acousticShotTimerEnabled
-                        ? 'Alle berekeningen en timerdetecties gebeuren lokaal. '
-                              'Er worden geen audio-opnames bewaard. Een '
-                              'timerresultaat wijzigt nooit automatisch een '
-                              'score of treffer.'
-                        : 'Alle timers werken volledig offline. Deze stabiele '
-                              'build gebruikt geen microfoon. Een timerresultaat '
-                              'wijzigt nooit automatisch een score of treffer.',
+                    'Alle berekeningen en timerdetecties gebeuren lokaal. '
+                    'Er worden geen audio-opnames bewaard. Een timerresultaat '
+                    'wijzigt nooit automatisch een score of treffer.',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),

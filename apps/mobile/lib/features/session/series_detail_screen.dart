@@ -22,6 +22,7 @@ import '../scoring/transformable_scoring_viewport.dart';
 import '../training_tools/shot_timer_flow.dart';
 import '../training_tools/timer_history_screen.dart';
 import 'manual_series_screen.dart';
+import 'series_reflection_sheet.dart';
 
 class SeriesDetailScreen extends ConsumerWidget {
   const SeriesDetailScreen({required this.seriesId, super.key});
@@ -211,6 +212,8 @@ class _SeriesDetailBody extends ConsumerWidget {
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        SeriesReflectionCard(seriesId: series.id),
         const SizedBox(height: 12),
         _SeriesTimerActivities(seriesId: series.id),
         const SizedBox(height: 20),

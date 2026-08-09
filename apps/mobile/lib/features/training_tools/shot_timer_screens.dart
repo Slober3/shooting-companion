@@ -14,7 +14,6 @@ import '../../widgets/app_form_scaffold.dart';
 import '../../widgets/app_notice.dart';
 import '../../widgets/app_select_field.dart';
 import 'external_timer_input.dart';
-import 'shot_timer_release_gate.dart';
 
 class ShotTimerDraft {
   const ShotTimerDraft({
@@ -68,14 +67,7 @@ class _ShotTimerSetupScreenState extends ConsumerState<ShotTimerSetupScreen> {
   void initState() {
     super.initState();
     final requestedMode = widget.initialMode;
-    _mode =
-        !acousticShotTimerEnabled &&
-            requestedMode == ShotTimerMode.acousticLiveFire
-        ? ShotTimerMode.par
-        : requestedMode ??
-              (acousticShotTimerEnabled
-                  ? ShotTimerMode.acousticLiveFire
-                  : ShotTimerMode.par);
+    _mode = requestedMode ?? ShotTimerMode.par;
   }
 
   @override
@@ -107,7 +99,7 @@ class _ShotTimerSetupScreenState extends ConsumerState<ShotTimerSetupScreen> {
     final storedPresets =
         ref.watch(timerPresetsProvider).valueOrNull ??
         const <TimerPresetRecord>[];
-    final presets = acousticShotTimerEnabled
+    final presets = widget.initialMode == ShotTimerMode.acousticLiveFire
         ? storedPresets
         : storedPresets
               .where((preset) => preset.mode != 'acousticLiveFire')
@@ -145,24 +137,24 @@ class _ShotTimerSetupScreenState extends ConsumerState<ShotTimerSetupScreen> {
             AppSelectField<ShotTimerMode>(
               label: 'Modus',
               initialValue: _mode,
-              options: const [
-                if (acousticShotTimerEnabled)
-                  AppSelectOption(
+              options: [
+                if (widget.initialMode == ShotTimerMode.acousticLiveFire)
+                  const AppSelectOption(
                     value: ShotTimerMode.acousticLiveFire,
                     label: 'Akoestische live fire',
                     subtitle: 'Registreert schoten en splits via de microfoon',
                   ),
-                AppSelectOption(
+                const AppSelectOption(
                   value: ShotTimerMode.par,
                   label: 'Par timer',
                   subtitle: 'Start- en eindsignalen zonder microfoon',
                 ),
-                AppSelectOption(
+                const AppSelectOption(
                   value: ShotTimerMode.cadence,
                   label: 'Cadans',
                   subtitle: 'Vaste of progressieve ritmesignalen',
                 ),
-                AppSelectOption(
+                const AppSelectOption(
                   value: ShotTimerMode.externalManual,
                   label: 'Externe timer invoeren',
                   subtitle: 'Neem tijden over van een afzonderlijke timer',
@@ -512,10 +504,6 @@ class _ShotTimerSetupScreenState extends ConsumerState<ShotTimerSetupScreen> {
       final map = (jsonDecode(preset.configurationJson) as Map)
           .cast<Object?, Object?>();
       final configuration = ShotTimerConfiguration.fromMap(map);
-      if (!acousticShotTimerEnabled &&
-          configuration.mode == ShotTimerMode.acousticLiveFire) {
-        return;
-      }
       setState(() {
         _selectedPresetId = presetId;
         _mode = configuration.mode;
@@ -1086,7 +1074,15 @@ class _ShotTimerRunScreenState extends State<ShotTimerRunScreen>
 
   void _handleSnapshot(ShotTimerSnapshot snapshot) {
     if (!mounted) return;
+    final previousState = _snapshot.state;
     setState(() => _snapshot = snapshot);
+    if (previousState != ShotTimerState.running &&
+        snapshot.state == ShotTimerState.running &&
+        widget.configuration.outputSignals.contains(
+          ShotTimerOutputSignal.flash,
+        )) {
+      _pulseFlash();
+    }
     if (snapshot.state == ShotTimerState.running &&
         !_displayStopwatch.isRunning) {
       _displayStopwatch
@@ -1408,6 +1404,8 @@ class _TimerBoundaryNotice extends StatelessWidget {
 class _FlutterSignalOutput implements ShotTimerSignalOutput {
   const _FlutterSignalOutput({required this.onFlash});
 
+  static const _platform = ShotTimerPlatformController();
+
   final VoidCallback onFlash;
 
   @override
@@ -1415,11 +1413,17 @@ class _FlutterSignalOutput implements ShotTimerSignalOutput {
     ShotTimerSignalKind kind,
     Set<ShotTimerOutputSignal> outputs,
   ) async {
-    if (outputs.contains(ShotTimerOutputSignal.sound)) {
-      await SystemSound.play(SystemSoundType.alert);
-    }
-    if (outputs.contains(ShotTimerOutputSignal.haptic)) {
-      await HapticFeedback.mediumImpact();
+    try {
+      await _platform.testSignals(outputs);
+    } on Object {
+      // Desktop/widget tests and unsupported platforms retain a best-effort
+      // fallback. Android release builds use the native timer signal.
+      if (outputs.contains(ShotTimerOutputSignal.sound)) {
+        await SystemSound.play(SystemSoundType.alert);
+      }
+      if (outputs.contains(ShotTimerOutputSignal.haptic)) {
+        await HapticFeedback.mediumImpact();
+      }
     }
     if (outputs.contains(ShotTimerOutputSignal.flash)) onFlash();
   }

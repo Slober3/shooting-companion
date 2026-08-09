@@ -12,7 +12,11 @@ import android.media.AudioTrack
 import android.media.MediaRecorder
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.Build
 import android.os.SystemClock
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -59,6 +63,7 @@ internal class AcousticShotTimerEngine(
             stopInternal(emitReviewing = false)
             configuration = value
             val selectedSampleRate = value.sampleRate ?: nativeInputSampleRate()
+            verifyAudioInput(selectedSampleRate)
             detector =
                 ImpulseDetector(
                     ImpulseDetectorConfiguration(
@@ -98,6 +103,18 @@ internal class AcousticShotTimerEngine(
         synchronized(stateLock) {
             check(!disposed) { "The native shot timer has been disposed." }
             stopInternal(emitReviewing = true)
+        }
+    }
+
+    fun testSignals(outputs: Set<String>) {
+        synchronized(stateLock) {
+            check(!disposed) { "The native shot timer has been disposed." }
+            require(outputs.all { it in setOf("sound", "haptic", "flash") }) {
+                "Unknown timer output signal."
+            }
+            check(!captureRunning.get()) { "Stop the active timer before testing signals." }
+            if ("sound" in outputs) playTestBeep()
+            if ("haptic" in outputs) vibrate()
         }
     }
 
@@ -189,6 +206,35 @@ internal class AcousticShotTimerEngine(
         return create(MediaRecorder.AudioSource.VOICE_RECOGNITION)
     }
 
+    /**
+     * Opens the selected input route once during the guided device check.
+     * This verifies more than permission presence: Android must initialize and
+     * start the actual AudioRecord source before the UI reports it as ready.
+     * No frames are read or persisted during this short probe.
+     */
+    private fun verifyAudioInput(sampleRate: Int) {
+        val minBytes =
+            AudioRecord.getMinBufferSize(
+                sampleRate,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+            )
+        check(minBytes > 0) { "AudioRecord reported an invalid buffer size." }
+        val record = buildAudioRecord(sampleRate, maxOf(minBytes * 2, sampleRate / 5 * 2))
+        try {
+            check(record.state == AudioRecord.STATE_INITIALIZED) {
+                "The microphone could not be initialized."
+            }
+            record.startRecording()
+            check(record.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                "The microphone could not start recording."
+            }
+        } finally {
+            runCatching { record.stop() }
+            runCatching { record.release() }
+        }
+    }
+
     private fun captureLoop(
         record: AudioRecord,
         sampleRate: Int,
@@ -261,33 +307,23 @@ internal class AcousticShotTimerEngine(
         synchronized(stateLock) {
             if (!captureRunning.get() || disposed) return
             val value = configuration ?: return
-            val sampleRate = nativeOutputSampleRate()
-            val beep = createBeep(sampleRate)
-            val track =
-                AudioTrack.Builder()
-                    .setAudioAttributes(
-                        AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .build(),
-                    ).setAudioFormat(
-                        AudioFormat.Builder()
-                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .setSampleRate(sampleRate)
-                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                            .build(),
-                    ).setTransferMode(AudioTrack.MODE_STATIC)
-                    .setBufferSizeInBytes(beep.size * 2)
-                    .build()
-            audioTrack = track
-            check(track.write(beep, 0, beep.size, AudioTrack.WRITE_BLOCKING) >= 0) {
-                "The start signal could not be loaded."
-            }
             val fallbackStart = SystemClock.elapsedRealtimeNanos()
-            track.play()
-            val signalStart = resolvePlaybackStartNanos(track, sampleRate, fallbackStart)
+            var signalStart = fallbackStart
+            var beepNanos = 0L
+            if ("sound" in value.outputSignals) {
+                val sampleRate = nativeOutputSampleRate()
+                val beep = createBeep(sampleRate)
+                val track = buildAudioTrack(sampleRate, beep.size)
+                audioTrack = track
+                check(track.write(beep, 0, beep.size, AudioTrack.WRITE_BLOCKING) >= 0) {
+                    "The start signal could not be loaded."
+                }
+                track.play()
+                signalStart = resolvePlaybackStartNanos(track, sampleRate, fallbackStart)
+                beepNanos = beep.size * 1_000_000_000L / sampleRate
+            }
+            if ("haptic" in value.outputSignals) vibrate()
             runStartNanos = signalStart
-            val beepNanos = beep.size * 1_000_000_000L / sampleRate
             detector?.setBlankUntil(
                 signalStart + beepNanos + value.beepBlankingMicros * 1_000,
             )
@@ -299,6 +335,57 @@ internal class AcousticShotTimerEngine(
             )
             resetInactivityTimeout(value)
         }
+    }
+
+    private fun playTestBeep() {
+        val sampleRate = nativeOutputSampleRate()
+        val beep = createBeep(sampleRate)
+        val track = buildAudioTrack(sampleRate, beep.size)
+        check(track.write(beep, 0, beep.size, AudioTrack.WRITE_BLOCKING) >= 0) {
+            "The test signal could not be loaded."
+        }
+        track.play()
+        controlHandler.postDelayed(
+            {
+                runCatching { track.stop() }
+                runCatching { track.release() }
+            },
+            START_BEEP_DURATION_MILLIS + 100L,
+        )
+    }
+
+    private fun buildAudioTrack(
+        sampleRate: Int,
+        sampleCount: Int,
+    ): AudioTrack =
+        AudioTrack.Builder()
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build(),
+            ).setAudioFormat(
+                AudioFormat.Builder()
+                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                    .setSampleRate(sampleRate)
+                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                    .build(),
+            ).setTransferMode(AudioTrack.MODE_STATIC)
+            .setBufferSizeInBytes(sampleCount * 2)
+            .build()
+
+    @Suppress("DEPRECATION")
+    private fun vibrate() {
+        val vibrator =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                context.getSystemService(VibratorManager::class.java)?.defaultVibrator
+            } else {
+                context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            }
+        if (vibrator?.hasVibrator() != true) return
+        vibrator.vibrate(
+            VibrationEffect.createOneShot(70, VibrationEffect.DEFAULT_AMPLITUDE),
+        )
     }
 
     private fun resolvePlaybackStartNanos(

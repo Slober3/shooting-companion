@@ -85,6 +85,15 @@ class ShootingCompanionShotTimerPlugin :
         try {
             when (call.method) {
                 "getCapabilities" -> result.success(capabilities())
+                "testSignals" -> {
+                    val outputs =
+                        (argumentsMap(call.arguments)["outputSignals"] as? List<*>)
+                            ?.mapNotNull { it as? String }
+                            ?.toSet()
+                            ?: setOf("sound")
+                    requireEngine().testSignals(outputs)
+                    result.success(null)
+                }
                 "prepare" -> {
                     val configuration = NativeTimerConfiguration.fromMap(argumentsMap(call.arguments))
                     prepareWithPermission(configuration, result)

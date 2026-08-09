@@ -2,7 +2,42 @@
 
 All notable changes follow [Semantic Versioning](https://semver.org/).
 
+## 0.5.1 - 2026-08-05
+
+### Build 3 guided live-fire timer and series reflection
+
+- Replaced the technical shot-timer entry flow with a short guided live-fire
+  setup, a reusable quick-start profile and an explicit microphone and signal
+  check before the first run.
+- Enabled native Android acoustic capture during visible live-fire runs. The
+  detector processes microphone frames in memory and stores only reviewed
+  event times; it never persists the audio stream.
+- Made sound, vibration and optional screen flash real device outputs and
+  added a test action so the user can verify them before starting.
+- Added the stored coach-mode self-evaluation to series detail, including
+  quality, context tags and an edit action.
+- Shortened the active-session action to `Doorgaan` and made action docks stack
+  earlier when two labels cannot remain comfortably readable.
+- Added `RECORD_AUDIO` and `VIBRATE` to the Android release manifest while
+  retaining the hard ban on internet, location and external-storage access.
+
+### Boundary
+
+- Acoustic timing is a user-reviewed training aid, not certified match timing.
+  A shared range with simultaneous nearby shooters remains outside guaranteed
+  detection conditions until the documented physical validation matrix passes.
+- Closing or backgrounding the active timer releases the microphone. Raw PCM,
+  waveforms and audio recordings are not written to storage, exports, backups
+  or diagnostics.
+
 ## 0.5.0 - 2026-08-05
+
+### Build 2 UX hotfix
+
+- Prevented series settings from opening with incomplete asynchronous library
+  data and hardened select fields against missing values.
+- Made advanced analysis metric rows responsive so long direction labels and
+  values remain readable on narrow screens and at large text sizes.
 
 ### Added
 
@@ -33,7 +68,7 @@ All notable changes follow [Semantic Versioning](https://semver.org/).
 
 ### Privacy and validation boundaries
 
-- The stable 0.5.0+1 release does not expose acoustic timing and does not
+- The stable 0.5.0+2 release does not expose acoustic timing and does not
   declare microphone permission. Par, cadence and external input remain fully
   available without microphone access.
 - Acoustic timing can be compiled into internal development/profile builds for

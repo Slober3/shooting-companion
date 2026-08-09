@@ -11,6 +11,7 @@ internal data class NativeTimerConfiguration(
     val sensitivity: Double,
     val echoLockoutMicros: Long,
     val beepBlankingMicros: Long,
+    val outputSignals: Set<String>,
 ) {
     init {
         require(delayMode in setOf("immediate", "fixed", "random"))
@@ -23,6 +24,7 @@ internal data class NativeTimerConfiguration(
         require(sensitivity in 0.0..1.0)
         require(echoLockoutMicros >= 0)
         require(beepBlankingMicros >= 0)
+        require(outputSignals.all { it in setOf("sound", "haptic", "flash") })
     }
 
     fun actualDelayMicros(randomLong: (Long, Long) -> Long): Long =
@@ -45,6 +47,11 @@ internal data class NativeTimerConfiguration(
                 "The Android audio engine only supports acousticLiveFire."
             }
             val calibration = map["calibration"] as? Map<String, Any?>
+            val outputSignals =
+                (map["outputSignals"] as? List<*>)
+                    ?.mapNotNull { it as? String }
+                    ?.toSet()
+                    ?: setOf("sound")
             return NativeTimerConfiguration(
                 delayMode = map["delayMode"] as? String ?: "immediate",
                 fixedDelayMicros = (map["fixedDelayMicros"] as? Number)?.toLong() ?: 0,
@@ -62,6 +69,7 @@ internal data class NativeTimerConfiguration(
                     (calibration?.get("echoLockoutMicros") as? Number)?.toLong() ?: 80_000,
                 beepBlankingMicros =
                     (calibration?.get("beepBlankingMicros") as? Number)?.toLong() ?: 160_000,
+                outputSignals = outputSignals,
             )
         }
     }

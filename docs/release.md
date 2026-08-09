@@ -2,29 +2,22 @@
 
 1. Run formatting, analysis, Flutter tests and all pure Dart package tests.
 2. Build a release APK with Android SDK 33 minimum.
-3. Inspect the merged manifest and reject `android.permission.INTERNET`,
-   `android.permission.RECORD_AUDIO`, external-storage and network-state
-   permissions for the stable `0.5.0+1` build.
+3. Inspect the merged manifest. Require `android.permission.CAMERA` and
+   `android.permission.RECORD_AUDIO`; reject `android.permission.INTERNET`,
+   location, external-storage and network-state permissions.
 4. Configure signing through GitHub encrypted secrets; never commit keystores.
 5. Generate SHA-256 and an SBOM.
 6. Tag with SemVer and attach APK, checksum, SBOM and limitations.
 
-Version `0.5.0+1` includes par, cadence and external timer input. The planned
-`0.4.2+3` analysis hotfix was not separately published and is integrated into
-this release. Public GitHub artifacts require a dedicated release key and
-protected workflow.
+Version `0.5.1+3` adds the guided acoustic live-firetimer, real native output
+signals, visible per-series coach reflections and shorter responsive actions.
+Public GitHub artifacts still require a dedicated release key and protected
+workflow.
 
-## Acoustic release gate
+## Acoustic validation gate
 
-Acoustic live fire is disabled by default through
-`SC_ENABLE_ACOUSTIC_TIMER=false` and is absent from the release manifest. It may
-be enabled only for internal debug/profile validation with:
-
-```powershell
-flutter run --profile --dart-define=SC_ENABLE_ACOUSTIC_TIMER=true
-```
-
-Do not enable it in a stable release until all conditions pass:
+The UI describes acoustic timing as a user-reviewed training measurement. Do
+not make device- or calibre-specific accuracy claims until all conditions pass:
 
 - at least three recent Android devices including the primary Samsung;
 - indoor and outdoor validation reported separately;
@@ -33,8 +26,8 @@ Do not enable it in a stable release until all conditions pass:
 - median timing error at most 20 ms and P95 at most 50 ms;
 - no start-signal double registrations and all questionable events reviewable.
 
-Until then CI must reject `RECORD_AUDIO` in the release APK. Debug/profile
-manifests may contain the permission solely for the gated validation flow.
+Until then public release notes must preserve the shared-range limitation and
+must not describe the phone as certified match equipment.
 
 ## Toolchain note
 
