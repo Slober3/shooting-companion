@@ -22,11 +22,12 @@ experimentele fotoscoreflow toe:
   nieuwe treffer onderschept;
 - pinch-zoom, pan, zoomknoppen, precisiekruis, puntenlijst en echte undo;
 - visueel plaatsen, verslepen en vermenigvuldigen van treffers en missers;
-- versioned ISSF 2026-profielen voor 25 m Precision / 50 m Pistol en 25 m Rapid Fire;
+- geversioneerde ISSF-profielen (Edition 2025, Second Print 07/2026) voor 25 m Precision / 50 m Pistol en 25 m Rapid Fire;
 - een ingebouwd WRABF BR50-profiel met 25 handmatig scorebare wedstrijdroosjes,
   proefroosjes, laagste-scorebeleid, X-count en straf voor extra schoten;
 - scores en maximum op basis van het werkelijk geregistreerde schotaantal;
-- handmatig scoren op een getekende kaart of een zelf uitgelijnde kaartfoto;
+- handmatig scoren op een getekende kaart of een kaartfoto met vierhoeks- of
+  ring-assisted uitlijning, kwartslagrotatie en controleerbare ringoverlay;
 - meerdere sessie- en reeksfoto's met een onveranderlijk origineel;
 - compacte Logboekfilters en één geaggregeerde SQLite-query zonder query per rij;
 - groepsanalyse met centroid, bias, extreme spread, mean radius, R50/R90,
@@ -50,13 +51,14 @@ experimentele fotoscoreflow toe:
 - `Meer > Experimentele fotoscore` voor één schone ISSF Precision-kaart met
   .22 LR, met lokale kwaliteitscontrole, automatische kaartregistratie,
   klassieke OpenCV-gatkandidaten en verplichte menselijke review;
-- hervatbare conceptscans, handmatige vierpuntsfallback en transactionele
+- hervatbare conceptscans, handmatige vierpunts- en ring-assisted fallback en transactionele
   koppeling aan een actieve of nieuwe snelle sessie;
-- candidate-provenance, onzekerheid en reviewbeslissingen in schema/back-up 7;
+- candidate-provenance, onzekerheid, rotatie, alignmentankers, residualen en
+  reviewbeslissingen in schema/back-up 8;
 - systeem/licht/donker met vier lokaal opgeslagen kleurpaletten;
 - CSV, Unicode-PDF met ingebedde fonts en AES-256-GCM/Argon2id-back-up;
 - migratie en back-upcompatibiliteit voor lokale gegevens uit versie 0.1;
-- databaseschema 7 en back-upmanifest 7, met import van v1-v6-back-ups.
+- databaseschema 8 en back-upmanifest 8, met import van v1-v7-back-ups.
 
 De live-firetimer vraagt microfoontoegang pas nadat de gebruiker de begeleide
 toestelcontrole start. Audio wordt tijdens de zichtbare run in het geheugen
@@ -121,13 +123,19 @@ receiver- en vibratiepermission tonen. `INTERNET`, opslag-, locatie- en
 netwerkstatuspermissions blijven verboden. De timer is een controleerbaar
 trainingshulpmiddel en geen gecertificeerde wedstrijdtimer.
 
+Het gebundelde [releasecontract](docs/release-integrity.md) voorkomt dat
+appversie, database, back-up, routes, permissies en native engines ongemerkt uit
+elkaar lopen. Echte vision-validatiefoto’s blijven uitsluitend in de genegeerde
+[lokale validatiewerkruimte](docs/vision-validation-privacy.md).
+
 ## Monorepo
 
 - `apps/mobile` — Flutter Android-app en Drift-database.
 - `packages/domain` — platformonafhankelijke domeintypen.
 - `packages/scoring` — deterministische score- en spreidingsberekening.
 - `packages/target_profiles` — officiële, versioned kaartdefinities.
-- `packages/photo_geometry` — reproduceerbare vierpuntsuitlijning en homografie.
+- `packages/photo_geometry` — reproduceerbare vierpunts- en ring-assisted
+  uitlijning, rotatie, homografie en residualcontrole.
 - `packages/analysis` — pure, afgeleide groeps- en cohortanalyse.
 - `packages/coaching` — lokale, bewijsgebonden coachregels zonder generatief model.
 - `packages/training` — versioned drills, experimentplanning en vizierberekening.
@@ -149,7 +157,7 @@ kaart wordt als `Misser / 0` geregistreerd.
 De broncode is MIT. Ingebedde Noto Sans-fonts vallen onder de SIL Open Font
 License 1.1; zie `THIRD_PARTY_NOTICES.md`. Doelkaartafmetingen zijn vastgelegd
 als feitelijke geometrie uit het
-[ISSF Rule Book 2026](https://backoffice.issf-sports.org/getfile.aspx?file=ISSF-Rule-Book-2026-Edition-2025-First-Print-12-2025-Effective-1-January-2026.pdf&inst=455&mod=docf&pane=1).
+[ISSF Edition 2025, Second Print 07/2026](https://backoffice.issf-sports.org/getfile.aspx?file=ISSF-Rule-Book-2026-Edition-2025-Second-Print-07-2026-Effective-1-July-2026.pdf&inst=455&mod=docf&pane=1).
 ISSF-beeldmateriaal of logo's worden niet meegeleverd. De BR50-weergave gebruikt
 uitsluitend een neutrale geometrische trainingsrenderer op basis van de
 [WRABF-regels](https://www.wrabf.com/WRABF%20Rules.htm) en

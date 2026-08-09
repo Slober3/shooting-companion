@@ -4,6 +4,39 @@ All notable changes follow [Semantic Versioning](https://semver.org/).
 
 ## 0.6.0 - 2026-08-06
 
+### Build 2 recovery, scoring and photo geometry
+
+- Recovered and integrated every Build `0.5.1+3` change before extending the
+  vision branch, including the guided acoustic timer, saved coach reflection,
+  reliable asynchronous series settings and responsive analysis metrics.
+- Added a source/APK release contract that ties app version, commit SHA,
+  database, backup manifest, required routes, permissions and native engine
+  versions together in CI and in the in-app build information screen.
+- Hardened ISSF line-breaking at exact tangency for .22 LR, 9×19 mm, .38
+  Special and .357 Magnum, with independent boundary fixtures in every
+  quadrant and mandatory runtime validation beyond debug assertions.
+- Made BR50 bull assignment geometric and explicit, including strict sighter,
+  miss, multiplicity, duplicate and penalty semantics.
+- Upgraded photo alignment with quarter-turn rotation, auditable anchors,
+  residual quality, matrix consistency checks and ring-assisted alignment for
+  useful central crops where the paper corners are not visible.
+- Added a complete projected scoring overlay with opacity/blink comparison and
+  repository-authoritative recalculation of every photo-dependent impact.
+- Replaced the single global threshold with separate light/dark target-zone
+  evidence, ring/print/patch suppression and explicit overlap warnings.
+- Added schema and encrypted backup manifest 8, including migration fixtures
+  from every prior schema and preservation of alignment rotation/evidence.
+- Added a private, offline validation wizard that re-encodes target crops
+  without EXIF/GPS and stores only ignored local annotations and hashes.
+
+### Build 2 safety boundaries
+
+- Automatic proposals remain experimental and restricted to ISSF Precision
+  with .22 LR; other configured calibres support alignment and manual scoring.
+- Rejected geometry never produces photo-based millimetre coordinates.
+- No automatic proposal becomes a score without explicit user review.
+- Existing profile snapshots and confirmed historical scores remain immutable.
+
 ### Added
 
 - Added `Meer > Experimentele fotoscore` for one ISSF 25 m Precision / 50 m
@@ -289,7 +322,7 @@ All notable changes follow [Semantic Versioning](https://semver.org/).
 - Deterministic integer and inner-ten scoring with line-breaking rules.
 - Manual target editor, camera/gallery intake, history and analytics.
 - CSV, PDF and encrypted backup creation and full replacement restore.
-- Versioned ISSF 2026 target geometry.
+- Versioned ISSF Edition 2025, Second Print 07/2026 target geometry.
 - Vision API, safe native fallback and dataset evaluation tooling.
 
 ### Known limitations

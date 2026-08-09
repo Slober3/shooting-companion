@@ -17,7 +17,7 @@ Pure Dart packages are also tested independently. Acceptance covers:
 - scoring boundaries, non-ten target maxima, misses and multiplicity;
 - BR50 A3 geometry, 25 record bulls, sighters, duplicate shots, X ties,
   incomplete cards, multiplicity, fixed maximum and excess-shot penalties;
-- v1/v2/v3/v4/v5/v6-to-v7 migration and all seven backup manifest versions;
+- v1/v2/v3/v4/v5/v6/v7-to-v8 migration and all eight backup manifest versions;
 - contextual series, session and historical-comparison analysis, including
   strict cohorts, visit-date chronology and archived material references;
 - metric explanation and chart accessibility at narrow widths and large text;
@@ -26,7 +26,9 @@ Pure Dart packages are also tested independently. Acceptance covers:
 - one-active-session and one-draft-series invariants;
 - draft autosave, confirm/edit replacement and sequence renumbering;
 - image staging, missing-file deletion and primary-image replacement;
-- homography identity, rotation, perspective and roundtrip precision;
+- four-corner and ring-assisted homography identity, all quarter-turns,
+  perspective, conditioning, anchor/matrix cross-checking and roundtrip
+  precision;
 - place/edit hit testing at 0, 5, 15 and 25 dp, exact overlaps, zoomed inverse
   transforms, precision placement and one-step drag undo;
 - 320, 360 and 412 dp widths at 1.0, 1.3 and 2.0 text scales;
@@ -44,7 +46,13 @@ Pure Dart packages are also tested independently. Acceptance covers:
   raw audio enters storage, diagnostics, export or backup.
 - vision contract/ABI compatibility, cancellation, manual candidate
   reprojection, low-confidence defaults and atomic reviewed-scan commit;
-- v7 vision draft/analysis/media backup roundtrips and invalid provenance;
+- v8 vision draft/analysis/media/alignment backup roundtrips, legacy adapters,
+  runtime target/impact validation and invalid provenance;
+- independent ISSF boundary goldens for both built-in pistol profiles and
+  .22 LR, 9x19 mm, .38 Special and .357 Magnum, including exact tangency and
+  +/-0.01 mm in every axis and diagonal direction;
+- release-contract source and APK checks, private-data leak prevention and a
+  Windows native build from checkout and build paths containing spaces;
 
 Device-only camera permission and navigation-mode checks are documented as a
 manual gate when no Android device is connected to CI.

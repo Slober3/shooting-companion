@@ -6,6 +6,7 @@
 .appdata/
 .localappdata/
 .local-appdata/
+.local/vision-validation/
 
 # Flutter / Dart
 .dart_tool/

@@ -13,6 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Release contract and privacy unit tests
+        run: python -m unittest discover -s tools/tests -p "test_*.py"
+      - name: Verify release contract against source
+        run: python tools/verify_release_contract.py
+      - name: Reject private validation data and release artifacts
+        run: python tools/check_privacy_leaks.py
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.44.8
@@ -108,23 +114,29 @@ jobs:
         working-directory: apps/mobile
         env:
           OPENCV_ANDROID_SDK: ${{ github.workspace }}/.tooling/opencv-4.13.0/OpenCV-android-sdk
-        run: flutter build apk --release --target-platform android-arm64
-      - name: Reject forbidden permissions in built APK
+        run: >-
+          flutter build apk --release --target-platform android-arm64
+          --dart-define=GIT_COMMIT=${{ github.sha }}
+      - name: Verify release contract against built APK
+        run: >-
+          python tools/verify_release_contract.py --apk
+          apps/mobile/build/app/outputs/flutter-apk/app-release.apk
+          --apkanalyzer
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer"
+      - name: Name release artifact and generate SHA-256
         shell: bash
         run: |
-          APK="apps/mobile/build/app/outputs/flutter-apk/app-release.apk"
-          PERMISSIONS="$($ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer manifest permissions "$APK")"
-          echo "$PERMISSIONS"
-          if echo "$PERMISSIONS" | grep -E "android.permission.(INTERNET|READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE|ACCESS_NETWORK_STATE)"; then
-            echo "Forbidden Android permission found in release APK" >&2
-            exit 1
-          fi
-          echo "$PERMISSIONS" | grep "android.permission.RECORD_AUDIO"
-      - name: Verify packaged arm64 vision library
-        shell: bash
-        run: |
-          APK="apps/mobile/build/app/outputs/flutter-apk/app-release.apk"
-          unzip -l "$APK" | grep -F "lib/arm64-v8a/libshooting_companion_vision.so"
+          short_sha="${GITHUB_SHA:0:7}"
+          artifact="shooting-companion-0.6.0+2-${short_sha}-arm64-release.apk"
+          mkdir -p release-artifacts
+          cp apps/mobile/build/app/outputs/flutter-apk/app-release.apk \
+            "release-artifacts/${artifact}"
+          (cd release-artifacts && sha256sum "${artifact}" > "${artifact}.sha256")
+      - name: Upload validated release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: shooting-companion-arm64-release
+          path: release-artifacts/
 
   native-vision-fallback:
     runs-on: ubuntu-latest
@@ -159,3 +171,28 @@ jobs:
             (.candidateImpacts | length) == 0 and
             ([.warnings[].code] | index("openCvUnavailable") != null)
           '
+
+  native-vision-windows-spaced-path:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: shooting companion
+      - name: Configure native core from a checkout path with spaces
+        shell: pwsh
+        run: >-
+          cmake -S "shooting companion/native/vision_core"
+          -B "shooting companion/native/vision_core/build spaced path"
+          -DSC_VISION_ENABLE_OPENCV=OFF
+          -DSC_VISION_BUILD_TESTS=ON
+          -DSC_VISION_WARNINGS_AS_ERRORS=ON
+      - name: Build native core from a checkout path with spaces
+        shell: pwsh
+        run: >-
+          cmake --build "shooting companion/native/vision_core/build spaced path"
+          --config Release --parallel
+      - name: Test native core from a checkout path with spaces
+        shell: pwsh
+        run: >-
+          ctest --test-dir "shooting companion/native/vision_core/build spaced path"
+          --build-config Release --output-on-failure
