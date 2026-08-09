@@ -17,6 +17,7 @@ import '../../widgets/app_action_dock.dart';
 import '../../widgets/app_notice.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
 import '../photo/four_point_alignment_editor.dart';
+import '../photo/ring_assisted_alignment_editor.dart';
 import 'vision_candidate_geometry.dart';
 import 'vision_review_screen.dart';
 
@@ -417,50 +418,79 @@ class _VisionScanFlowScreenState extends ConsumerState<VisionScanFlowScreen> {
   }
 
   Future<void> _manualAlignment(VisionScanDraftRecord draft) async {
-    final existing = _registration(draft);
-    geo.NormalizedQuad? initial;
-    if (existing != null &&
-        existing.orderedSourceCornersNormalized.length == 4) {
-      initial = geo.NormalizedQuad(
-        topLeft: geo.NormalizedPoint(
-          existing.orderedSourceCornersNormalized[0].x,
-          existing.orderedSourceCornersNormalized[0].y,
-        ),
-        topRight: geo.NormalizedPoint(
-          existing.orderedSourceCornersNormalized[1].x,
-          existing.orderedSourceCornersNormalized[1].y,
-        ),
-        bottomRight: geo.NormalizedPoint(
-          existing.orderedSourceCornersNormalized[2].x,
-          existing.orderedSourceCornersNormalized[2].y,
-        ),
-        bottomLeft: geo.NormalizedPoint(
-          existing.orderedSourceCornersNormalized[3].x,
-          existing.orderedSourceCornersNormalized[3].y,
-        ),
-      );
-    }
     final target = domain.TargetProfile.fromJsonString(draft.targetProfileJson);
+    final initialAlignment = _alignmentFromDraft(draft, target);
+    final alignmentMode = await _chooseAlignmentMode(
+      target,
+      initialAlignment?.alignmentMode,
+    );
+    if (alignmentMode == null || !mounted) return;
+    final ringRadiiMm =
+        target.rings
+            .map((ring) => ring.outerDiameterMm / 2)
+            .where((radius) => radius > 0 && radius.isFinite)
+            .toSet()
+            .toList()
+          ..sort((a, b) => b.compareTo(a));
     final alignment = await Navigator.of(context)
         .push<geo.ManualPhotoAlignment>(
           MaterialPageRoute(
             fullscreenDialog: true,
             builder: (routeContext) => Scaffold(
-              appBar: AppBar(title: const Text('Kaart uitlijnen')),
+              appBar: AppBar(
+                title: Text(
+                  alignmentMode == geo.PhotoAlignmentMode.ringAssisted
+                      ? 'Ringen uitlijnen'
+                      : 'Kaart uitlijnen',
+                ),
+              ),
               body: SafeArea(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
-                  child: FourPointAlignmentEditor(
-                    imageProvider: FileImage(File(draft.originalImagePath)),
-                    imagePixelSize: Size(
-                      draft.width.toDouble(),
-                      draft.height.toDouble(),
-                    ),
-                    cardWidthMm: target.physicalCardWidthMm,
-                    cardHeightMm: target.physicalCardHeightMm,
-                    initialCorners: initial,
-                    onConfirmed: (value) => Navigator.pop(routeContext, value),
-                  ),
+                  child: alignmentMode == geo.PhotoAlignmentMode.ringAssisted
+                      ? RingAssistedAlignmentEditor(
+                          imageProvider: FileImage(
+                            File(draft.originalImagePath),
+                          ),
+                          imagePixelSize: Size(
+                            draft.width.toDouble(),
+                            draft.height.toDouble(),
+                          ),
+                          cardWidthMm: target.physicalCardWidthMm,
+                          cardHeightMm: target.physicalCardHeightMm,
+                          ringRadiiMm: ringRadiiMm,
+                          initialAlignment:
+                              initialAlignment?.alignmentMode == alignmentMode
+                              ? initialAlignment
+                              : null,
+                          initialRotationQuarterTurns:
+                              initialAlignment?.rotationQuarterTurns ??
+                              draft.rotationQuarterTurns,
+                          targetProfile: target,
+                          onConfirmed: (value) =>
+                              Navigator.pop(routeContext, value),
+                        )
+                      : FourPointAlignmentEditor(
+                          imageProvider: FileImage(
+                            File(draft.originalImagePath),
+                          ),
+                          imagePixelSize: Size(
+                            draft.width.toDouble(),
+                            draft.height.toDouble(),
+                          ),
+                          cardWidthMm: target.physicalCardWidthMm,
+                          cardHeightMm: target.physicalCardHeightMm,
+                          initialCorners:
+                              initialAlignment?.alignmentMode == alignmentMode
+                              ? initialAlignment?.corners
+                              : null,
+                          initialRotationQuarterTurns:
+                              initialAlignment?.rotationQuarterTurns ??
+                              draft.rotationQuarterTurns,
+                          targetProfile: target,
+                          onConfirmed: (value) =>
+                              Navigator.pop(routeContext, value),
+                        ),
                 ),
               ),
             ),
@@ -485,7 +515,7 @@ class _VisionScanFlowScreenState extends ConsumerState<VisionScanFlowScreen> {
         abiVersion: 2,
         engineVersion: draft.engineVersion ?? 'manual-registration-v2',
         capabilities: const ['manualRegistration'],
-        algorithmVersions: const {'registration': 'manual-homography-v1'},
+        algorithmVersions: {'registration': alignment.algorithmVersion},
         analyzedAtUtc: DateTime.now().toUtc(),
       ),
       registrationResult: VisionRegistrationResult(
@@ -521,7 +551,129 @@ class _VisionScanFlowScreenState extends ConsumerState<VisionScanFlowScreen> {
     );
     await ref
         .read(visionScanRepositoryProvider)
-        .saveAnalysisResult(widget.scanId, result);
+        .saveAnalysisResult(
+          widget.scanId,
+          result,
+          confirmedAlignment: domain.StoredPhotoAlignment(
+            imageId: widget.scanId,
+            orderedCorners: alignment.corners.points
+                .map((point) => domain.NormalizedPoint(x: point.x, y: point.y))
+                .toList(growable: false),
+            homographyMatrix: alignment.homographyMatrix,
+            algorithmVersion: alignment.algorithmVersion,
+            rotationQuarterTurns: alignment.rotationQuarterTurns,
+            alignmentMode:
+                alignment.alignmentMode == geo.PhotoAlignmentMode.fourCorners
+                ? 'fullCard'
+                : 'ringAssisted',
+            anchorsJson: jsonEncode(
+              alignment.anchors.map((anchor) => anchor.toJson()).toList(),
+            ),
+            reprojectionRmsMm: alignment.residuals.rmsMm,
+            reprojectionMaxMm: alignment.residuals.maximumMm,
+            planarityStatus: _alignmentPlanarityStatus(alignment),
+            confirmedAtUtc: DateTime.now().toUtc(),
+            updatedAtUtc: DateTime.now().toUtc(),
+          ),
+        );
+  }
+
+  geo.ManualPhotoAlignment? _alignmentFromDraft(
+    VisionScanDraftRecord draft,
+    domain.TargetProfile target,
+  ) {
+    final registration = _registration(draft);
+    final corners = registration?.orderedSourceCornersNormalized;
+    final matrix = registration?.sourceNormalizedToCardMmHomography;
+    if (corners == null || corners.length != 4 || matrix == null) return null;
+    try {
+      final decodedAnchors = draft.anchorsJson == null
+          ? null
+          : jsonDecode(draft.anchorsJson!);
+      return geo.ManualPhotoAlignment.fromJson({
+        'schemaVersion': geo.photoAlignmentSchemaVersion,
+        'algorithmVersion':
+            draft.alignmentAlgorithmVersion ??
+            registration?.algorithmVersion ??
+            geo.manualHomographyV2AlgorithmVersion,
+        'alignmentMode': draft.alignmentMode == 'fullCard'
+            ? geo.PhotoAlignmentMode.fourCorners.name
+            : draft.alignmentMode,
+        'anchors': ?decodedAnchors,
+        'cardWidthMm': target.physicalCardWidthMm,
+        'cardHeightMm': target.physicalCardHeightMm,
+        'corners': geo.NormalizedQuad.fromOrderedPoints(
+          corners
+              .map((point) => geo.NormalizedPoint(point.x, point.y))
+              .toList(growable: false),
+        ).toJson(),
+        'homographyMatrix': matrix,
+        'rotationQuarterTurns': draft.rotationQuarterTurns,
+      });
+    } on Object {
+      return null;
+    }
+  }
+
+  Future<geo.PhotoAlignmentMode?> _chooseAlignmentMode(
+    domain.TargetProfile target,
+    geo.PhotoAlignmentMode? currentMode,
+  ) async {
+    final supportsRingAssisted =
+        target.targetKind == domain.TargetKind.concentricRings &&
+        target.rings.map((ring) => ring.outerDiameterMm).toSet().length >= 2;
+    if (!supportsRingAssisted) return geo.PhotoAlignmentMode.fourCorners;
+    return showSafeModalSheet<geo.PhotoAlignmentMode>(
+      context: context,
+      presentation: SafeSheetPresentation.compact,
+      builder: (sheetContext) => SafeSheetScaffold(
+        title: 'Uitlijningsmethode',
+        contentSized: true,
+        actions: const [],
+        body: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.crop_free),
+              title: const Text('Volledige kaart'),
+              subtitle: const Text('Lijn de vier zichtbare kaarthoeken uit.'),
+              trailing: currentMode == geo.PhotoAlignmentMode.fourCorners
+                  ? const Icon(Icons.check)
+                  : null,
+              onTap: () => Navigator.pop(
+                sheetContext,
+                geo.PhotoAlignmentMode.fourCorners,
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.radio_button_checked),
+              title: const Text('Alleen ringen zichtbaar'),
+              subtitle: const Text(
+                'Gebruik richtpunt en twee ringen als de hoeken zijn afgesneden.',
+              ),
+              trailing: currentMode == geo.PhotoAlignmentMode.ringAssisted
+                  ? const Icon(Icons.check)
+                  : null,
+              onTap: () => Navigator.pop(
+                sheetContext,
+                geo.PhotoAlignmentMode.ringAssisted,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _alignmentPlanarityStatus(geo.ManualPhotoAlignment alignment) {
+    final residuals = alignment.residuals;
+    if (residuals.rmsMm <= 0.75 && residuals.maximumMm <= 1.5) {
+      return 'accepted';
+    }
+    if (residuals.rmsMm <= 1.5 && residuals.maximumMm <= 3.0) {
+      return 'manualReviewOnly';
+    }
+    return 'rejected';
   }
 
   void _openReviewAfterFrame() {

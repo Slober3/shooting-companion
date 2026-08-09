@@ -90,19 +90,39 @@ class _VisionReviewScreenState extends ConsumerState<VisionReviewScreen> {
       (jsonDecode(draft.registrationJson!) as Map).cast<String, Object?>(),
     );
     final corners = registration.orderedSourceCornersNormalized;
-    if (corners.length != 4) {
+    final matrix = registration.sourceNormalizedToCardMmHomography;
+    if (corners.length != 4 || matrix == null) {
       _initialized = false;
       return;
     }
-    final result = geo.ManualPhotoAlignment.build(
-      corners: geo.NormalizedQuad.fromOrderedPoints(
-        corners.map((point) => geo.NormalizedPoint(point.x, point.y)).toList(),
-      ),
-      cardWidthMm: _target!.physicalCardWidthMm,
-      cardHeightMm: _target!.physicalCardHeightMm,
-    );
-    _alignment = result.alignment;
-    if (_alignment == null) return;
+    try {
+      final decodedAnchors = draft.anchorsJson == null
+          ? null
+          : jsonDecode(draft.anchorsJson!);
+      _alignment = geo.ManualPhotoAlignment.fromJson({
+        'schemaVersion': geo.photoAlignmentSchemaVersion,
+        'algorithmVersion':
+            draft.alignmentAlgorithmVersion ??
+            registration.algorithmVersion ??
+            geo.manualHomographyV2AlgorithmVersion,
+        'alignmentMode': draft.alignmentMode == 'fullCard'
+            ? geo.PhotoAlignmentMode.fourCorners.name
+            : draft.alignmentMode,
+        'anchors': ?decodedAnchors,
+        'cardWidthMm': _target!.physicalCardWidthMm,
+        'cardHeightMm': _target!.physicalCardHeightMm,
+        'corners': geo.NormalizedQuad.fromOrderedPoints(
+          corners
+              .map((point) => geo.NormalizedPoint(point.x, point.y))
+              .toList(),
+        ).toJson(),
+        'homographyMatrix': matrix,
+        'rotationQuarterTurns': draft.rotationQuarterTurns,
+      });
+    } on Object {
+      _initialized = false;
+      return;
+    }
     if (draft.reviewJson != null) {
       try {
         final map = (jsonDecode(draft.reviewJson!) as Map)
@@ -127,9 +147,16 @@ class _VisionReviewScreenState extends ConsumerState<VisionReviewScreen> {
         .toList();
     _entries = [
       for (final candidate in candidates)
-        _ReviewEntry.fromCandidate(widget.scanId, candidate),
+        _ReviewEntry.fromCandidate(
+          widget.scanId,
+          candidate,
+          registrationUncertaintyMm: draft.reprojectionRmsMm ?? 0,
+        ),
     ];
   }
+
+  double get _manualPhotoUncertaintyMm =>
+      0.75 + (_draft?.reprojectionRmsMm ?? 0);
 
   Widget _buildEditor(BuildContext context) {
     final score = _score;
@@ -229,6 +256,7 @@ class _VisionReviewScreenState extends ConsumerState<VisionReviewScreen> {
                       _draft!.height.toDouble(),
                     ),
                     alignment: _alignment!,
+                    targetProfile: _target,
                     impacts: _canvasImpacts(score),
                     projectileDiameterMm: _draft!.projectileDiameterMm,
                     tool: _tool,
@@ -420,6 +448,7 @@ class _VisionReviewScreenState extends ConsumerState<VisionReviewScreen> {
             imageXNormalized: position.normalized.x,
             imageYNormalized: position.normalized.y,
             placementMethod: domain.ImpactPlacementMethod.assistedEdited,
+            positionalUncertaintyMm: _manualPhotoUncertaintyMm,
           ),
         ),
       );
@@ -436,9 +465,19 @@ class _VisionReviewScreenState extends ConsumerState<VisionReviewScreen> {
       );
       return;
     }
-    final point = geo.NormalizedPoint(normalized.dx, normalized.dy);
-    final physical = _alignment!.normalizedToPhysical(point);
-    _addPoint(PhotoCanvasPosition(normalized: point, physicalMm: physical));
+    final displayed = geo.NormalizedPoint(normalized.dx, normalized.dy);
+    final source = geo.unrotateNormalizedPoint(
+      displayed,
+      _alignment!.rotationQuarterTurns,
+    );
+    final physical = _alignment!.normalizedToPhysical(displayed);
+    _addPoint(
+      PhotoCanvasPosition(
+        normalized: source,
+        displayedNormalized: displayed,
+        physicalMm: physical,
+      ),
+    );
   }
 
   void _movePoint(String id, PhotoCanvasPosition position) {
@@ -454,6 +493,7 @@ class _VisionReviewScreenState extends ConsumerState<VisionReviewScreen> {
           imageXNormalized: position.normalized.x,
           imageYNormalized: position.normalized.y,
           placementMethod: domain.ImpactPlacementMethod.assistedEdited,
+          positionalUncertaintyMm: _manualPhotoUncertaintyMm,
         ),
       );
     });
@@ -955,12 +995,14 @@ class _ReviewEntry {
     this.candidateId,
     this.confidenceBand,
     this.reasons = const [],
+    this.detectorEvidence,
   });
 
   factory _ReviewEntry.fromCandidate(
     String scanId,
-    VisionCandidateImpact candidate,
-  ) {
+    VisionCandidateImpact candidate, {
+    double registrationUncertaintyMm = 0,
+  }) {
     final accepted = visionCandidateAcceptedByDefault(candidate);
     return _ReviewEntry(
       id: '$scanId-${candidate.id}',
@@ -971,6 +1013,7 @@ class _ReviewEntry {
           candidate.nearScoringBoundary,
       confidenceBand: candidate.confidenceBand,
       reasons: candidate.reasons,
+      detectorEvidence: candidate.detectorEvidence,
       impact: domain.ShotImpact(
         id: '$scanId-${candidate.id}',
         xMm: candidate.cardXMm,
@@ -981,7 +1024,8 @@ class _ReviewEntry {
             candidate.confidenceBand != VisionConfidenceBand.high ||
             candidate.nearScoringBoundary,
         placementMethod: domain.ImpactPlacementMethod.assistedAccepted,
-        positionalUncertaintyMm: candidate.boundaryUncertaintyMm,
+        positionalUncertaintyMm:
+            candidate.boundaryUncertaintyMm + registrationUncertaintyMm,
       ),
     );
   }
@@ -993,6 +1037,7 @@ class _ReviewEntry {
   final bool needsReview;
   final VisionConfidenceBand? confidenceBand;
   final List<VisionCandidateReason> reasons;
+  final VisionDetectorEvidence? detectorEvidence;
 
   String get confidenceLabel => switch (confidenceBand) {
     VisionConfidenceBand.high => 'Hoge zekerheid',
@@ -1003,9 +1048,16 @@ class _ReviewEntry {
   };
 
   String get explanation {
-    if (reasons.isEmpty) return confidenceLabel;
-    final details = reasons.map(_reasonLabel).join(', ');
-    return '$confidenceLabel · $details';
+    final parts = <String>[
+      confidenceLabel,
+      if (reasons.isNotEmpty) reasons.map(_reasonLabel).join(', '),
+      if (detectorEvidence case final evidence?)
+        '${evidence.zone == 'black' ? 'zwarte' : 'lichte'} zone · '
+            'diameter ${evidence.diameterRatio.toStringAsFixed(2)}× · '
+            'contrast ${(evidence.localContrast * 100).toStringAsFixed(0)}%'
+            '${evidence.possibleOverlap ? ' · mogelijke overlap' : ''}',
+    ];
+    return parts.join(' · ');
   }
 
   _ReviewEntry copy() => _ReviewEntry(
@@ -1016,6 +1068,7 @@ class _ReviewEntry {
     needsReview: needsReview,
     confidenceBand: confidenceBand,
     reasons: reasons,
+    detectorEvidence: detectorEvidence,
   );
 
   _ReviewEntry copyWith({domain.ShotImpact? impact, bool? accepted}) =>
@@ -1027,6 +1080,7 @@ class _ReviewEntry {
         needsReview: needsReview,
         confidenceBand: confidenceBand,
         reasons: reasons,
+        detectorEvidence: detectorEvidence,
       );
 
   Map<String, Object?> toJson() => {
@@ -1036,6 +1090,7 @@ class _ReviewEntry {
     'needsReview': needsReview,
     'confidenceBand': confidenceBand?.name,
     'reasons': reasons.map((reason) => reason.name).toList(),
+    'detectorEvidence': detectorEvidence?.toJson(),
     'impact': {
       'id': impact.id,
       'xMm': impact.xMm,
@@ -1066,6 +1121,11 @@ class _ReviewEntry {
           .whereType<String>()
           .map(VisionCandidateReason.values.byName)
           .toList(growable: false),
+      detectorEvidence: json['detectorEvidence'] == null
+          ? null
+          : VisionDetectorEvidence.fromJson(
+              (json['detectorEvidence']! as Map).cast<String, Object?>(),
+            ),
       impact: domain.ShotImpact(
         id: impact['id']! as String,
         xMm: (impact['xMm']! as num).toDouble(),

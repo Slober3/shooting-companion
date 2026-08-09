@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
@@ -9,6 +10,7 @@ import 'package:shooting_companion/data/shooting_repository.dart';
 import 'package:shooting_companion/data/vision_scan_repository.dart';
 import 'package:shooting_companion/services/image_storage_service.dart';
 import 'package:shooting_companion_domain/domain.dart';
+import 'package:shooting_companion_photo_geometry/photo_geometry.dart' as geo;
 import 'package:shooting_companion_vision_api/vision_api.dart';
 
 void main() {
@@ -161,6 +163,94 @@ void main() {
       expect(await database.select(database.visionAnalyses).get(), isEmpty);
     },
   );
+
+  test(
+    'confirmed rotation keeps candidate coordinates in original image space',
+    () async {
+      final image = await _storedImage(documents, 'rotated.jpg');
+      final scanId = await repository.createDraft(image: image);
+      final confirmedAt = DateTime.utc(2026, 8, 9, 12);
+      await repository.saveAnalysisResult(
+        scanId,
+        _completedAnalysis(sourceX: 0.25, sourceY: 0.5, cardX: 999, cardY: 999),
+        confirmedAlignment: _confirmedAlignment(
+          scanId,
+          rotationQuarterTurns: 1,
+          confirmedAtUtc: confirmedAt,
+        ),
+      );
+
+      var draft = (await repository.getDraft(scanId))!;
+      expect(draft.rotationQuarterTurns, 1);
+      expect(draft.alignmentMode, 'fullCard');
+      expect(draft.planarityStatus, 'accepted');
+      expect(draft.alignmentConfirmedAtUtc?.toUtc(), confirmedAt);
+      var candidates = (jsonDecode(draft.candidatesJson!) as List)
+          .map(
+            (value) => VisionCandidateImpact.fromJson(
+              (value as Map).cast<String, Object?>(),
+            ),
+          )
+          .toList(growable: false);
+      expect(candidates.single.sourceImageXNormalized, 0.25);
+      expect(candidates.single.sourceImageYNormalized, 0.5);
+      expect(candidates.single.cardXMm, closeTo(0, 1e-9));
+      expect(candidates.single.cardYMm, closeTo(-171.875, 1e-9));
+
+      // A detector rerun must retain the confirmed view rotation instead of
+      // silently interpreting source coordinates in an unrotated viewport.
+      await repository.saveAnalysisResult(
+        scanId,
+        _completedAnalysis(
+          sourceX: 0.25,
+          sourceY: 0.5,
+          cardX: -999,
+          cardY: -999,
+        ),
+      );
+      draft = (await repository.getDraft(scanId))!;
+      expect(draft.rotationQuarterTurns, 1);
+      expect(draft.alignmentConfirmedAtUtc?.toUtc(), confirmedAt);
+      candidates = (jsonDecode(draft.candidatesJson!) as List)
+          .map(
+            (value) => VisionCandidateImpact.fromJson(
+              (value as Map).cast<String, Object?>(),
+            ),
+          )
+          .toList(growable: false);
+      expect(candidates.single.sourceImageXNormalized, 0.25);
+      expect(candidates.single.sourceImageYNormalized, 0.5);
+      expect(candidates.single.cardXMm, closeTo(0, 1e-9));
+      expect(candidates.single.cardYMm, closeTo(-171.875, 1e-9));
+
+      final result = await repository.commitReviewedVisionScan(
+        scanId: scanId,
+        destination: VisionScanDestination.newQuickSession,
+        confirmedImpacts: const [
+          ShotImpact(
+            id: 'candidate-rotated',
+            xMm: 0,
+            yMm: -171.875,
+            imageXNormalized: 0.25,
+            imageYNormalized: 0.5,
+            placementMethod: ImpactPlacementMethod.assistedAccepted,
+          ),
+        ],
+        review: const {'decisions': <Object?>[]},
+      );
+      final impact = (await database.select(database.shotImpacts).get()).single;
+      expect(impact.seriesId, result.seriesId);
+      expect(impact.imageXNormalized, 0.25);
+      expect(impact.imageYNormalized, 0.5);
+      expect(impact.xMm, closeTo(0, 1e-9));
+      expect(impact.yMm, closeTo(-171.875, 1e-9));
+      final storedAlignment =
+          (await database.select(database.photoAlignments).get()).single;
+      expect(storedAlignment.rotationQuarterTurns, 1);
+      expect(storedAlignment.alignmentMode, 'fullCard');
+      expect(storedAlignment.planarityStatus, 'accepted');
+    },
+  );
 }
 
 Future<StoredImage> _storedImage(Directory documents, String name) async {
@@ -179,7 +269,12 @@ Future<StoredImage> _storedImage(Directory documents, String name) async {
   );
 }
 
-AnalyzeTargetResult _completedAnalysis() => AnalyzeTargetResult(
+AnalyzeTargetResult _completedAnalysis({
+  double sourceX = 0.5,
+  double sourceY = 0.5,
+  double cardX = 0,
+  double cardY = 0,
+}) => AnalyzeTargetResult(
   status: VisionAnalysisStatus.completed,
   engineVersion: 'vision-core-test',
   provenance: VisionProvenance(
@@ -201,7 +296,17 @@ AnalyzeTargetResult _completedAnalysis() => AnalyzeTargetResult(
       VisionPoint(x: 0.95, y: 0.95),
       VisionPoint(x: 0.05, y: 0.95),
     ],
-    sourceNormalizedToCardMmHomography: const [1, 0, 0, 0, 1, 0, 0, 0, 1],
+    sourceNormalizedToCardMmHomography: const [
+      611.1111111111111,
+      0,
+      -305.55555555555554,
+      0,
+      611.1111111111111,
+      -305.55555555555554,
+      0,
+      0,
+      1,
+    ],
     reprojectionErrorPx: 0.4,
     estimatedPerspectiveAngleDegrees: 3,
     algorithmVersion: 'registration-v2',
@@ -214,14 +319,37 @@ AnalyzeTargetResult _completedAnalysis() => AnalyzeTargetResult(
   candidateImpacts: [
     VisionCandidateImpact(
       id: 'candidate-1',
-      sourceImageXNormalized: 0.5,
-      sourceImageYNormalized: 0.5,
-      cardXMm: 0,
-      cardYMm: 0,
+      sourceImageXNormalized: sourceX,
+      sourceImageYNormalized: sourceY,
+      cardXMm: cardX,
+      cardYMm: cardY,
       estimatedDiameterMm: 5.6,
       confidenceBand: VisionConfidenceBand.high,
       reasons: const [VisionCandidateReason.diameterMatchesProjectile],
       boundaryUncertaintyMm: 0.4,
     ),
   ],
+);
+
+StoredPhotoAlignment _confirmedAlignment(
+  String imageId, {
+  required int rotationQuarterTurns,
+  required DateTime confirmedAtUtc,
+}) => StoredPhotoAlignment(
+  imageId: imageId,
+  orderedCorners: const [
+    NormalizedPoint(x: 0.1, y: 0.1),
+    NormalizedPoint(x: 0.9, y: 0.1),
+    NormalizedPoint(x: 0.9, y: 0.9),
+    NormalizedPoint(x: 0.1, y: 0.9),
+  ],
+  homographyMatrix: const [687.5, 0, -343.75, 0, 687.5, -343.75, 0, 0, 1],
+  algorithmVersion: geo.manualHomographyV2AlgorithmVersion,
+  rotationQuarterTurns: rotationQuarterTurns,
+  alignmentMode: 'fullCard',
+  reprojectionRmsMm: 0,
+  reprojectionMaxMm: 0,
+  planarityStatus: 'accepted',
+  confirmedAtUtc: confirmedAtUtc,
+  updatedAtUtc: confirmedAtUtc,
 );

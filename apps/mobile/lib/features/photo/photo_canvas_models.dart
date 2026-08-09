@@ -29,10 +29,16 @@ class PhotoCanvasPosition {
   const PhotoCanvasPosition({
     required this.normalized,
     required this.physicalMm,
+    this.displayedNormalized,
   });
 
+  /// Coordinate in the immutable, EXIF-normalized source image. This is the
+  /// value persisted on impacts and remains stable when the viewer rotates.
   final NormalizedPoint normalized;
   final PhysicalPointMm physicalMm;
+
+  /// Coordinate in the currently displayed quarter-turn orientation.
+  final NormalizedPoint? displayedNormalized;
 }
 
 typedef PhotoImpactMoved =

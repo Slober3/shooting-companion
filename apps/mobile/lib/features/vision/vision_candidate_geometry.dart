@@ -19,9 +19,12 @@ List<VisionCandidateImpact> reprojectVisionCandidates({
 }) => candidates
     .map((candidate) {
       final physical = alignment.normalizedToPhysical(
-        geo.NormalizedPoint(
-          candidate.sourceImageXNormalized,
-          candidate.sourceImageYNormalized,
+        geo.rotateNormalizedPoint(
+          geo.NormalizedPoint(
+            candidate.sourceImageXNormalized,
+            candidate.sourceImageYNormalized,
+          ),
+          alignment.rotationQuarterTurns,
         ),
       );
       final radius = math.sqrt(

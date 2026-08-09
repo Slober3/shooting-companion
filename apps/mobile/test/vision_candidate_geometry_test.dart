@@ -111,4 +111,47 @@ void main() {
       isNot(contains(VisionCandidateReason.nearScoringLine)),
     );
   });
+
+  test('candidate source coordinates remain original across rotation', () {
+    final target = IssfTargetProfiles.precision25m50m;
+    const originalCorners = [
+      NormalizedPoint(0, 0),
+      NormalizedPoint(1, 0),
+      NormalizedPoint(1, 1),
+      NormalizedPoint(0, 1),
+    ];
+    final rotated = originalCorners
+        .map((point) => rotateNormalizedPoint(point, 1))
+        .toList(growable: false);
+    final result = ManualPhotoAlignment.build(
+      corners: NormalizedQuad.fromOrderedPoints(rotated),
+      cardWidthMm: target.physicalCardWidthMm,
+      cardHeightMm: target.physicalCardHeightMm,
+      rotationQuarterTurns: 1,
+    );
+    expect(result.isValid, isTrue);
+    final candidate = VisionCandidateImpact(
+      id: 'rotated',
+      sourceImageXNormalized: 0.25,
+      sourceImageYNormalized: 0.40,
+      cardXMm: 999,
+      cardYMm: 999,
+      estimatedDiameterMm: 5.6,
+      confidenceBand: VisionConfidenceBand.high,
+      reasons: const [VisionCandidateReason.darkCore],
+      boundaryUncertaintyMm: 0.4,
+    );
+
+    final reprojected = reprojectVisionCandidates(
+      candidates: [candidate],
+      alignment: result.alignment!,
+      target: target,
+      projectileDiameterMm: 5.6,
+    ).single;
+
+    expect(reprojected.cardXMm, closeTo(-137.5, 1e-7));
+    expect(reprojected.cardYMm, closeTo(-55, 1e-7));
+    expect(reprojected.sourceImageXNormalized, 0.25);
+    expect(reprojected.sourceImageYNormalized, 0.40);
+  });
 }

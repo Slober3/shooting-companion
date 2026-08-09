@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:shooting_companion_domain/domain.dart' as domain;
 import 'package:shooting_companion_photo_geometry/photo_geometry.dart';
 
 import '../scoring/transformable_scoring_viewport.dart';
 import '../../widgets/app_notice.dart';
+import 'photo_overlay_canvas.dart';
 
 /// Manual target-card alignment. Points are always selected in target-relative
 /// TL, TR, BR, BL order; this also supports a rotated card photo.
@@ -16,7 +18,11 @@ class FourPointAlignmentEditor extends StatefulWidget {
     required this.cardHeightMm,
     required this.onConfirmed,
     this.initialCorners,
+    this.initialRotationQuarterTurns = 0,
+    this.targetProfile,
+    this.overlayOpacity = 0.72,
     this.onCornersChanged,
+    this.onRotationChanged,
     this.onUseAsAttachment,
     this.minimumAreaFraction = QuadValidator.defaultMinimumAreaFraction,
     this.maximumImageHeight = 560,
@@ -25,6 +31,9 @@ class FourPointAlignmentEditor extends StatefulWidget {
        assert(imagePixelSize.height > 0),
        assert(cardWidthMm > 0),
        assert(cardHeightMm > 0),
+       assert(
+         initialRotationQuarterTurns >= 0 && initialRotationQuarterTurns <= 3,
+       ),
        assert(maximumImageHeight > 0);
 
   final ImageProvider<Object> imageProvider;
@@ -32,9 +41,13 @@ class FourPointAlignmentEditor extends StatefulWidget {
   final double cardWidthMm;
   final double cardHeightMm;
   final NormalizedQuad? initialCorners;
+  final int initialRotationQuarterTurns;
+  final domain.TargetProfile? targetProfile;
+  final double overlayOpacity;
   final double minimumAreaFraction;
   final double maximumImageHeight;
   final ValueChanged<List<NormalizedPoint>>? onCornersChanged;
+  final ValueChanged<int>? onRotationChanged;
   final ValueChanged<ManualPhotoAlignment> onConfirmed;
   final VoidCallback? onUseAsAttachment;
 
@@ -55,20 +68,37 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
   final _viewportController = ScoringViewportController();
   bool _precisionMode = false;
   int? _selectedCornerIndex;
+  late int _rotationQuarterTurns;
   DateTime? _lastInvalidFeedbackAt;
 
   @override
   void initState() {
     super.initState();
+    _rotationQuarterTurns = widget.initialRotationQuarterTurns;
     _points = widget.initialCorners?.points.toList() ?? [];
   }
 
   @override
   void didUpdateWidget(covariant FourPointAlignmentEditor oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.initialCorners != widget.initialCorners) {
+    final cornersChanged = oldWidget.initialCorners != widget.initialCorners;
+    final rotationChanged =
+        oldWidget.initialRotationQuarterTurns !=
+        widget.initialRotationQuarterTurns;
+
+    if (cornersChanged && rotationChanged) {
+      _points = widget.initialCorners?.points.toList() ?? [];
+      _rotationQuarterTurns = widget.initialRotationQuarterTurns;
+      _selectedCornerIndex = null;
+      return;
+    }
+
+    if (cornersChanged) {
       _points = widget.initialCorners?.points.toList() ?? [];
       _selectedCornerIndex = null;
+    }
+    if (rotationChanged) {
+      _setRotation(widget.initialRotationQuarterTurns, notify: false);
     }
   }
 
@@ -88,6 +118,13 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(_instructionText(buildResult), style: theme.textTheme.bodyMedium),
+        const SizedBox(height: 8),
+        _RotationControls(
+          rotationQuarterTurns: _rotationQuarterTurns,
+          onRotateLeft: () => _setRotation(_rotationQuarterTurns - 1),
+          onRotateRight: () => _setRotation(_rotationQuarterTurns + 1),
+          onReset: () => _setRotation(0),
+        ),
         const SizedBox(height: 12),
         LayoutBuilder(
           builder: (context, constraints) {
@@ -100,8 +137,7 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
                   size: size,
                   child: TransformableScoringViewport(
                     aspectRatio:
-                        widget.imagePixelSize.width /
-                        widget.imagePixelSize.height,
+                        _displayImageSize.width / _displayImageSize.height,
                     controller: _viewportController,
                     accessMode: CanvasAccessMode.editable,
                     tool: ScoringTool.edit,
@@ -136,21 +172,24 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
                     contentBuilder: (context, contentSize, zoom) => Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image(
-                          image: widget.imageProvider,
-                          fit: BoxFit.fill,
-                          filterQuality: FilterQuality.medium,
-                          errorBuilder: (context, error, stackTrace) =>
-                              ColoredBox(
-                                color:
-                                    theme.colorScheme.surfaceContainerHighest,
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.broken_image_outlined,
-                                    size: 48,
+                        RotatedBox(
+                          quarterTurns: _rotationQuarterTurns,
+                          child: Image(
+                            image: widget.imageProvider,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.medium,
+                            errorBuilder: (context, error, stackTrace) =>
+                                ColoredBox(
+                                  color:
+                                      theme.colorScheme.surfaceContainerHighest,
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.broken_image_outlined,
+                                      size: 48,
+                                    ),
                                   ),
                                 ),
-                              ),
+                          ),
                         ),
                         IgnorePointer(
                           child: CustomPaint(
@@ -161,6 +200,16 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
                             ),
                           ),
                         ),
+                        if (buildResult?.alignment case final alignment?)
+                          PhotoAlignmentGeometryOverlay(
+                            key: const ValueKey(
+                              'four-point-projected-target-overlay',
+                            ),
+                            alignment: alignment,
+                            renderedRotationQuarterTurns: _rotationQuarterTurns,
+                            targetProfile: widget.targetProfile,
+                            opacity: widget.overlayOpacity,
+                          ),
                       ],
                     ),
                   ),
@@ -210,7 +259,7 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
                   ? null
                   : () => widget.onConfirmed(buildResult!.alignment!),
               icon: const Icon(Icons.check),
-              label: const Text('Uitlijning gebruiken'),
+              label: const Text('Uitlijning klopt'),
             ),
           ],
         ),
@@ -224,6 +273,7 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
       corners: NormalizedQuad.fromOrderedPoints(_points),
       cardWidthMm: widget.cardWidthMm,
       cardHeightMm: widget.cardHeightMm,
+      rotationQuarterTurns: _rotationQuarterTurns,
       minimumAreaFraction: widget.minimumAreaFraction,
     );
   }
@@ -303,18 +353,42 @@ class _FourPointAlignmentEditorState extends State<FourPointAlignmentEditor> {
     widget.onCornersChanged?.call(const []);
   }
 
+  void _setRotation(int requested, {bool notify = true}) {
+    final next = requested % 4;
+    final normalizedNext = next < 0 ? next + 4 : next;
+    if (normalizedNext == _rotationQuarterTurns) return;
+    final oldRotation = _rotationQuarterTurns;
+    final rotatedPoints = _points
+        .map(
+          (point) => rotateNormalizedPoint(
+            unrotateNormalizedPoint(point, oldRotation),
+            normalizedNext,
+          ),
+        )
+        .toList(growable: false);
+    setState(() {
+      _rotationQuarterTurns = normalizedNext;
+      _points = rotatedPoints;
+    });
+    widget.onCornersChanged?.call(List.unmodifiable(_points));
+    if (notify) widget.onRotationChanged?.call(_rotationQuarterTurns);
+    _viewportController.fitToView();
+  }
+
+  Size get _displayImageSize => _rotationQuarterTurns.isOdd
+      ? Size(widget.imagePixelSize.height, widget.imagePixelSize.width)
+      : widget.imagePixelSize;
+
   Size _containedSize(double availableWidth) {
     final naturalHeight =
-        availableWidth *
-        widget.imagePixelSize.height /
-        widget.imagePixelSize.width;
+        availableWidth * _displayImageSize.height / _displayImageSize.width;
     if (naturalHeight <= widget.maximumImageHeight) {
       return Size(availableWidth, naturalHeight);
     }
     final width =
         widget.maximumImageHeight *
-        widget.imagePixelSize.width /
-        widget.imagePixelSize.height;
+        _displayImageSize.width /
+        _displayImageSize.height;
     return Size(math.min(width, availableWidth), widget.maximumImageHeight);
   }
 }
@@ -443,4 +517,46 @@ class _CornerMarker extends StatelessWidget {
       ),
     );
   }
+}
+
+class _RotationControls extends StatelessWidget {
+  const _RotationControls({
+    required this.rotationQuarterTurns,
+    required this.onRotateLeft,
+    required this.onRotateRight,
+    required this.onReset,
+  });
+
+  final int rotationQuarterTurns;
+  final VoidCallback onRotateLeft;
+  final VoidCallback onRotateRight;
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    label: 'Fotostand ${rotationQuarterTurns * 90} graden',
+    child: Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        IconButton.outlined(
+          tooltip: '90 graden linksom',
+          onPressed: onRotateLeft,
+          icon: const Icon(Icons.rotate_left),
+        ),
+        IconButton.outlined(
+          tooltip: '90 graden rechtsom',
+          onPressed: onRotateRight,
+          icon: const Icon(Icons.rotate_right),
+        ),
+        TextButton.icon(
+          onPressed: rotationQuarterTurns == 0 ? null : onReset,
+          icon: const Icon(Icons.photo_size_select_actual_outlined),
+          label: const Text('Originele stand'),
+        ),
+      ],
+    ),
+  );
 }

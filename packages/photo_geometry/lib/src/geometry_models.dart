@@ -35,6 +35,32 @@ class NormalizedPoint {
   String toString() => 'NormalizedPoint($x, $y)';
 }
 
+NormalizedPoint rotateNormalizedPoint(
+  NormalizedPoint point,
+  int rotationQuarterTurns,
+) {
+  if (rotationQuarterTurns < 0 || rotationQuarterTurns > 3) {
+    throw RangeError.range(rotationQuarterTurns, 0, 3, 'rotationQuarterTurns');
+  }
+  return switch (rotationQuarterTurns) {
+    0 => point,
+    1 => NormalizedPoint(1 - point.y, point.x),
+    2 => NormalizedPoint(1 - point.x, 1 - point.y),
+    3 => NormalizedPoint(point.y, 1 - point.x),
+    _ => throw StateError('Unreachable rotation.'),
+  };
+}
+
+NormalizedPoint unrotateNormalizedPoint(
+  NormalizedPoint point,
+  int rotationQuarterTurns,
+) {
+  if (rotationQuarterTurns < 0 || rotationQuarterTurns > 3) {
+    throw RangeError.range(rotationQuarterTurns, 0, 3, 'rotationQuarterTurns');
+  }
+  return rotateNormalizedPoint(point, (4 - rotationQuarterTurns) % 4);
+}
+
 /// A position in the target card's physical coordinate system.
 ///
 /// The target centre is `(0, 0)`. Positive x points right; positive y points
@@ -151,4 +177,156 @@ class NormalizedQuad {
       bottomLeft: points[3],
     );
   }
+}
+
+enum PhotoAlignmentMode { fourCorners, ringAssisted }
+
+enum PhotoAlignmentAnchorRole {
+  cornerTopLeft,
+  cornerTopRight,
+  cornerBottomRight,
+  cornerBottomLeft,
+  targetCenter,
+  topDirection,
+  ringTop,
+  ringRight,
+  ringBottom,
+  ringLeft,
+}
+
+enum AlignmentQualityGrade {
+  excellent,
+  acceptable,
+  reviewRequired,
+  legacyUnverified,
+}
+
+class PhotoAlignmentAnchor {
+  const PhotoAlignmentAnchor({
+    required this.id,
+    required this.role,
+    required this.sourcePoint,
+    this.physicalPointMm,
+    this.seriesId,
+    this.ringRadiusMm,
+  });
+
+  final String id;
+  final PhotoAlignmentAnchorRole role;
+  final NormalizedPoint sourcePoint;
+  final PhysicalPointMm? physicalPointMm;
+  final String? seriesId;
+  final double? ringRadiusMm;
+
+  bool get contributesToFit => physicalPointMm != null;
+
+  Map<String, Object> toJson() => {
+    'id': id,
+    'role': role.name,
+    'sourcePoint': sourcePoint.toJson(),
+    if (physicalPointMm != null) 'physicalPointMm': physicalPointMm!.toJson(),
+    'seriesId': ?seriesId,
+    'ringRadiusMm': ?ringRadiusMm,
+  };
+
+  factory PhotoAlignmentAnchor.fromJson(Map<String, Object?> json) {
+    final rawPhysical = json['physicalPointMm'];
+    return PhotoAlignmentAnchor(
+      id: json['id']! as String,
+      role: PhotoAlignmentAnchorRole.values.byName(json['role']! as String),
+      sourcePoint: NormalizedPoint.fromJson(
+        (json['sourcePoint']! as Map).cast<String, Object?>(),
+      ),
+      physicalPointMm: rawPhysical == null
+          ? null
+          : PhysicalPointMm.fromJson(
+              (rawPhysical as Map).cast<String, Object?>(),
+            ),
+      seriesId: json['seriesId'] as String?,
+      ringRadiusMm: (json['ringRadiusMm'] as num?)?.toDouble(),
+    );
+  }
+}
+
+class RingAnchorSeries {
+  const RingAnchorSeries({
+    required this.id,
+    required this.radiusMm,
+    required this.top,
+    required this.right,
+    required this.bottom,
+    required this.left,
+  });
+
+  final String id;
+  final double radiusMm;
+  final NormalizedPoint top;
+  final NormalizedPoint right;
+  final NormalizedPoint bottom;
+  final NormalizedPoint left;
+
+  List<NormalizedPoint> get points =>
+      List.unmodifiable([top, right, bottom, left]);
+
+  List<PhotoAlignmentAnchor> toAlignmentAnchors() => [
+    PhotoAlignmentAnchor(
+      id: '$id.top',
+      role: PhotoAlignmentAnchorRole.ringTop,
+      sourcePoint: top,
+      physicalPointMm: PhysicalPointMm(0, -radiusMm),
+      seriesId: id,
+      ringRadiusMm: radiusMm,
+    ),
+    PhotoAlignmentAnchor(
+      id: '$id.right',
+      role: PhotoAlignmentAnchorRole.ringRight,
+      sourcePoint: right,
+      physicalPointMm: PhysicalPointMm(radiusMm, 0),
+      seriesId: id,
+      ringRadiusMm: radiusMm,
+    ),
+    PhotoAlignmentAnchor(
+      id: '$id.bottom',
+      role: PhotoAlignmentAnchorRole.ringBottom,
+      sourcePoint: bottom,
+      physicalPointMm: PhysicalPointMm(0, radiusMm),
+      seriesId: id,
+      ringRadiusMm: radiusMm,
+    ),
+    PhotoAlignmentAnchor(
+      id: '$id.left',
+      role: PhotoAlignmentAnchorRole.ringLeft,
+      sourcePoint: left,
+      physicalPointMm: PhysicalPointMm(-radiusMm, 0),
+      seriesId: id,
+      ringRadiusMm: radiusMm,
+    ),
+  ];
+}
+
+class AlignmentResiduals {
+  const AlignmentResiduals({
+    required this.anchorResidualsMm,
+    required this.rmsMm,
+    required this.maximumMm,
+    required this.conditionEstimate,
+  });
+
+  final List<double> anchorResidualsMm;
+  final double rmsMm;
+  final double maximumMm;
+
+  /// A deterministic numerical-conditioning estimate based on solver pivots.
+  /// It is useful for warnings, but is not a formal matrix condition number.
+  final double conditionEstimate;
+
+  int get fittedAnchorCount => anchorResidualsMm.length;
+
+  Map<String, Object> toJson() => {
+    'anchorResidualsMm': anchorResidualsMm,
+    'conditionEstimate': conditionEstimate,
+    'fittedAnchorCount': fittedAnchorCount,
+    'maximumMm': maximumMm,
+    'rmsMm': rmsMm,
+  };
 }

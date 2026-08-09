@@ -67,6 +67,14 @@ Bij handmatige heruitlijning worden kandidaten opnieuw vanuit hun originele
 fotocoördinaten naar millimeters geprojecteerd. Hun scoregrenswaarschuwing wordt
 eveneens opnieuw berekend. Zoom en pan wijzigen nooit deze brongegevens.
 
+Alignment schema 2 ondersteunt kwartslagrotatie en twee bewijsroutes. Een
+volledige kaart gebruikt vier papierhoeken; een centrale crop kan het richtpunt,
+bovenrichting en cardinal points op minstens twee bekende scoringsringen
+gebruiken. Ankers, matrix, RMS/max-residu en kwaliteitsstatus worden samen
+opgeslagen en bij het laden opnieuw gecontroleerd. De repository herberekent
+foto-afhankelijke impacts autoritatief; een UI-preview die meer dan 0,05 mm
+afwijkt wordt geweigerd.
+
 Iedere analyse bewaart provenance:
 
 - contractschema, C-ABI en engineversie;
@@ -96,9 +104,11 @@ De klassieke pipeline voert uit:
 2. zoeken naar papiercontour, vierhoek en scoringsringen;
 3. profielcontrole en homografie;
 4. canonieke warp met vaste pixels per millimeter;
-5. profielgebaseerd masker voor gedrukte ringlijnen;
-6. onafhankelijke signalen voor donkere kern, vezelrand, lokaal contrast,
-   morfologie, vorm en bekende .22-diameter;
+5. profielgebaseerd masker voor gedrukte ringlijnen en onderdrukking van lange
+   printcomponenten, cijfers en grote egale afplakkers;
+6. afzonderlijke licht- en zwartzonedetectors met onafhankelijke signalen voor
+   donkere kern, vezelrand, lokaal contrast, morfologie, vorm en bekende
+   .22-diameter;
 7. confidenceclassificatie met controleerbare redenen.
 
 Hoge en middelmatige kandidaten worden aanvankelijk opgenomen maar blijven
@@ -140,6 +150,11 @@ native arm64-library aanwezig is. De app downloadt OpenCV nooit tijdens gebruik.
 De geometry-only C++-tests blijven afzonderlijk bestaan om contract- en
 homografielogica te testen zonder OpenCV. Zij zijn geen bewijs van
 detectienauwkeurigheid.
+
+De privé-validatiewizard in `tools/vision_validation_wizard.html` draait zonder
+netwerkcode en exporteert alleen een via canvas opnieuw gecodeerde targetcrop
+plus JSON-ground-truth. Deze bestanden horen uitsluitend onder de genegeerde
+`.local/vision-validation/`-boom.
 
 ## Privacy en auteursrecht
 

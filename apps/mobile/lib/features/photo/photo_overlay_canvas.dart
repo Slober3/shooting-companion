@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:shooting_companion_domain/domain.dart' as domain;
 import 'package:shooting_companion_photo_geometry/photo_geometry.dart';
 
 import '../../app/theme.dart';
@@ -14,6 +15,10 @@ class PhotoOverlayCanvas extends StatelessWidget {
     required this.alignment,
     required this.impacts,
     this.projectileDiameterMm = 0,
+    this.targetProfile,
+    this.overlayOpacity = 0.72,
+    this.displayRotationQuarterTurns,
+    this.showAlignmentStatus = true,
     this.accessMode = CanvasAccessMode.editable,
     this.tool = ScoringTool.place,
     this.showOverlay = true,
@@ -38,6 +43,13 @@ class PhotoOverlayCanvas extends StatelessWidget {
   final ManualPhotoAlignment alignment;
   final List<PhotoCanvasImpact> impacts;
   final double projectileDiameterMm;
+  final domain.TargetProfile? targetProfile;
+  final double overlayOpacity;
+
+  /// Optional temporary viewer rotation. Stored alignment coordinates remain
+  /// authoritative and are transformed without modifying the original photo.
+  final int? displayRotationQuarterTurns;
+  final bool showAlignmentStatus;
   final CanvasAccessMode accessMode;
   final ScoringTool tool;
   final bool showOverlay;
@@ -57,6 +69,11 @@ class PhotoOverlayCanvas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final renderedRotation =
+        (displayRotationQuarterTurns ?? alignment.rotationQuarterTurns) % 4;
+    final displaySize = renderedRotation.isOdd
+        ? Size(imagePixelSize.height, imagePixelSize.width)
+        : imagePixelSize;
     final ordered = [...impacts]
       ..sort((first, second) {
         if (first.id == selectedImpactId) return 1;
@@ -70,7 +87,7 @@ class PhotoOverlayCanvas extends StatelessWidget {
           'Doelkaartfoto met ${impacts.length} gemarkeerde treffers',
       image: true,
       child: TransformableScoringViewport(
-        aspectRatio: imagePixelSize.width / imagePixelSize.height,
+        aspectRatio: displaySize.width / displaySize.height,
         controller: viewportController,
         accessMode: accessMode,
         tool: tool,
@@ -107,11 +124,15 @@ class PhotoOverlayCanvas extends StatelessWidget {
                 for (final impact in ordered)
                   ScoringViewportMarker(
                     id: impact.id,
-                    normalizedPosition: _normalizedForImpact(impact),
+                    normalizedPosition: _normalizedForImpact(
+                      impact,
+                      renderedRotation,
+                    ),
                     semanticsLabel:
                         'Treffer ${impact.sequenceNumber}, ${impact.scoreLabel ?? 'onbekende score'}, multipliciteit ${impact.multiplicity}',
                     selectionPriority: impact.sequenceNumber,
                     child: _PhotoMarker(
+                      key: ValueKey('photo-impact-marker-${impact.id}'),
                       impact: impact,
                       selected: impact.id == selectedImpactId,
                     ),
@@ -121,28 +142,34 @@ class PhotoOverlayCanvas extends StatelessWidget {
         contentBuilder: (context, size, zoom) => Stack(
           fit: StackFit.expand,
           children: [
-            Image(
-              image: imageProvider,
-              fit: BoxFit.fill,
-              filterQuality: FilterQuality.high,
-              errorBuilder: (context, error, stackTrace) => ColoredBox(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: const Center(
-                  child: Icon(Icons.broken_image_outlined, size: 48),
+            RotatedBox(
+              quarterTurns: renderedRotation,
+              child: Image(
+                image: imageProvider,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
+                errorBuilder: (context, error, stackTrace) => ColoredBox(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: const Center(
+                    child: Icon(Icons.broken_image_outlined, size: 48),
+                  ),
                 ),
               ),
             ),
             if (showOverlay)
-              IgnorePointer(
-                child: CustomPaint(
-                  painter: _AlignmentOutlinePainter(
-                    alignment: alignment,
-                    impacts: impacts,
-                    projectileDiameterMm: projectileDiameterMm,
-                    color: Theme.of(context).colorScheme.primary,
-                    impactColor: AppContrastTokens.of(context).positive,
-                  ),
-                ),
+              PhotoAlignmentGeometryOverlay(
+                alignment: alignment,
+                renderedRotationQuarterTurns: renderedRotation,
+                targetProfile: targetProfile,
+                impacts: impacts,
+                projectileDiameterMm: projectileDiameterMm,
+                opacity: overlayOpacity,
+              ),
+            if (showOverlay && showAlignmentStatus)
+              Positioned(
+                left: 8,
+                bottom: 8,
+                child: _AlignmentQualityBadge(alignment: alignment),
               ),
           ],
         ),
@@ -150,13 +177,26 @@ class PhotoOverlayCanvas extends StatelessWidget {
     );
   }
 
-  Offset _normalizedForImpact(PhotoCanvasImpact impact) {
-    final normalized = alignment.physicalToNormalized(impact.positionMm);
+  Offset _normalizedForImpact(PhotoCanvasImpact impact, int renderedRotation) {
+    final normalized = _fromAlignmentCoordinates(
+      alignment.physicalToNormalized(impact.positionMm),
+      renderedRotation,
+    );
     return Offset(normalized.x, normalized.y);
   }
 
   PhotoCanvasPosition? _positionFromNormalized(Offset normalized) {
-    final imagePoint = NormalizedPoint(normalized.dx, normalized.dy);
+    final displayedPoint = NormalizedPoint(normalized.dx, normalized.dy);
+    final renderedRotation =
+        (displayRotationQuarterTurns ?? alignment.rotationQuarterTurns) % 4;
+    final sourcePoint = unrotateNormalizedPoint(
+      displayedPoint,
+      renderedRotation,
+    );
+    final imagePoint = _toAlignmentCoordinates(
+      displayedPoint,
+      renderedRotation,
+    );
     if (!imagePoint.isInsideImage) return null;
     late final PhysicalPointMm physical;
     try {
@@ -175,17 +215,74 @@ class PhotoOverlayCanvas extends StatelessWidget {
       return null;
     }
     return PhotoCanvasPosition(
-      normalized: imagePoint,
+      normalized: sourcePoint,
+      displayedNormalized: displayedPoint,
       physicalMm: PhysicalPointMm(
         physical.x.clamp(-halfWidth, halfWidth).toDouble(),
         physical.y.clamp(-halfHeight, halfHeight).toDouble(),
       ),
     );
   }
+
+  NormalizedPoint _toAlignmentCoordinates(
+    NormalizedPoint displayed,
+    int renderedRotation,
+  ) => rotateNormalizedPoint(
+    unrotateNormalizedPoint(displayed, renderedRotation),
+    alignment.rotationQuarterTurns,
+  );
+
+  NormalizedPoint _fromAlignmentCoordinates(
+    NormalizedPoint stored,
+    int renderedRotation,
+  ) => rotateNormalizedPoint(
+    unrotateNormalizedPoint(stored, alignment.rotationQuarterTurns),
+    renderedRotation,
+  );
+}
+
+/// Reusable projection layer for alignment editors and read-only viewers.
+///
+/// The painter always projects from physical card millimetres through the
+/// stored homography. [renderedRotationQuarterTurns] only controls the current
+/// display orientation and never mutates the immutable source photo.
+class PhotoAlignmentGeometryOverlay extends StatelessWidget {
+  const PhotoAlignmentGeometryOverlay({
+    required this.alignment,
+    required this.renderedRotationQuarterTurns,
+    this.targetProfile,
+    this.impacts = const [],
+    this.projectileDiameterMm = 0,
+    this.opacity = 0.72,
+    super.key,
+  });
+
+  final ManualPhotoAlignment alignment;
+  final int renderedRotationQuarterTurns;
+  final domain.TargetProfile? targetProfile;
+  final List<PhotoCanvasImpact> impacts;
+  final double projectileDiameterMm;
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    child: CustomPaint(
+      painter: _TargetGeometryOverlayPainter(
+        alignment: alignment,
+        renderedRotationQuarterTurns: renderedRotationQuarterTurns % 4,
+        targetProfile: targetProfile,
+        impacts: impacts,
+        projectileDiameterMm: projectileDiameterMm,
+        color: Theme.of(context).colorScheme.primary,
+        impactColor: AppContrastTokens.of(context).positive,
+        opacity: opacity.clamp(0.05, 1),
+      ),
+    ),
+  );
 }
 
 class _PhotoMarker extends StatelessWidget {
-  const _PhotoMarker({required this.impact, required this.selected});
+  const _PhotoMarker({required this.impact, required this.selected, super.key});
 
   final PhotoCanvasImpact impact;
   final bool selected;
@@ -325,80 +422,315 @@ class _DashedCirclePainter extends CustomPainter {
       oldDelegate.color != color;
 }
 
-class _AlignmentOutlinePainter extends CustomPainter {
-  const _AlignmentOutlinePainter({
+class _TargetGeometryOverlayPainter extends CustomPainter {
+  const _TargetGeometryOverlayPainter({
     required this.alignment,
+    required this.renderedRotationQuarterTurns,
+    required this.targetProfile,
     required this.impacts,
     required this.projectileDiameterMm,
     required this.color,
     required this.impactColor,
+    required this.opacity,
   });
 
   final ManualPhotoAlignment alignment;
+  final int renderedRotationQuarterTurns;
+  final domain.TargetProfile? targetProfile;
   final List<PhotoCanvasImpact> impacts;
   final double projectileDiameterMm;
   final Color color;
   final Color impactColor;
+  final double opacity;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final path = _physicalPolygon(
+      [
+        PhysicalPointMm(
+          -alignment.cardWidthMm / 2,
+          -alignment.cardHeightMm / 2,
+        ),
+        PhysicalPointMm(alignment.cardWidthMm / 2, -alignment.cardHeightMm / 2),
+        PhysicalPointMm(alignment.cardWidthMm / 2, alignment.cardHeightMm / 2),
+        PhysicalPointMm(-alignment.cardWidthMm / 2, alignment.cardHeightMm / 2),
+      ],
+      size,
+      close: true,
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2
+        ..color = color.withValues(alpha: opacity),
+    );
+
+    _paintAxes(canvas, size);
+    final target = targetProfile;
+    if (target != null) _paintTarget(canvas, size, target);
+    _paintAnchors(canvas, size);
+
+    if (projectileDiameterMm <= 0) return;
+    final radius = projectileDiameterMm / 2;
+    for (final impact in impacts) {
+      final projectilePath = _physicalCircle(
+        PhysicalPointMm(impact.positionMm.x, impact.positionMm.y),
+        radius,
+        size,
+      );
+      canvas.drawPath(
+        projectilePath,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4
+          ..color = impactColor.withValues(alpha: opacity),
+      );
+    }
+  }
+
+  void _paintTarget(Canvas canvas, Size size, domain.TargetProfile target) {
+    if (target.targetKind == domain.TargetKind.multiBullConcentric &&
+        target.bulls.isNotEmpty) {
+      for (final bull in target.bulls) {
+        _paintBull(
+          canvas,
+          size,
+          target,
+          PhysicalPointMm(bull.centerXMm, bull.centerYMm),
+          isSighter: bull.role == domain.TargetBullRole.sighter,
+        );
+      }
+    } else {
+      _paintBull(canvas, size, target, const PhysicalPointMm(0, 0));
+    }
+  }
+
+  void _paintBull(
+    Canvas canvas,
+    Size size,
+    domain.TargetProfile target,
+    PhysicalPointMm center, {
+    bool isSighter = false,
+  }) {
+    final blackDiameter = target.blackOuterDiameterMm;
+    if (blackDiameter != null && blackDiameter > 0) {
+      canvas.drawPath(
+        _physicalCircle(center, blackDiameter / 2, size),
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = Colors.black.withValues(
+            alpha: (isSighter ? 0.035 : 0.075) * opacity,
+          ),
+      );
+      canvas.drawPath(
+        _physicalCircle(center, blackDiameter / 2, size),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.3
+          ..color = color.withValues(alpha: opacity),
+      );
+    }
+    for (final ring in target.rings) {
+      canvas.drawPath(
+        _physicalCircle(center, ring.outerDiameterMm / 2, size),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = isSighter ? 1 : 1.4
+          ..color = color.withValues(
+            alpha: (isSighter ? 0.42 : 0.78) * opacity,
+          ),
+      );
+    }
+    final innerTen = target.innerTenDiameterMm;
+    if (innerTen != null && innerTen > 0) {
+      canvas.drawPath(
+        _physicalCircle(center, innerTen / 2, size),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.1
+          ..color = color.withValues(alpha: 0.62 * opacity),
+      );
+    }
+    final renderedCenter = _projectPhysical(center, size);
+    canvas.drawLine(
+      renderedCenter - const Offset(7, 0),
+      renderedCenter + const Offset(7, 0),
+      Paint()
+        ..strokeWidth = 1.5
+        ..color = color.withValues(alpha: opacity),
+    );
+    canvas.drawLine(
+      renderedCenter - const Offset(0, 7),
+      renderedCenter + const Offset(0, 7),
+      Paint()
+        ..strokeWidth = 1.5
+        ..color = color.withValues(alpha: opacity),
+    );
+  }
+
+  void _paintAxes(Canvas canvas, Size size) {
+    final axisPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = color.withValues(alpha: 0.5 * opacity);
+    canvas.drawPath(
+      _physicalPolygon([
+        PhysicalPointMm(-alignment.cardWidthMm / 2, 0),
+        PhysicalPointMm(alignment.cardWidthMm / 2, 0),
+      ], size),
+      axisPaint,
+    );
+    canvas.drawPath(
+      _physicalPolygon([
+        PhysicalPointMm(0, -alignment.cardHeightMm / 2),
+        PhysicalPointMm(0, alignment.cardHeightMm / 2),
+      ], size),
+      axisPaint,
+    );
+  }
+
+  void _paintAnchors(Canvas canvas, Size size) {
+    final anchors = alignment.anchors;
+    for (var index = 0; index < anchors.length; index++) {
+      final displayed = _fromAlignmentCoordinates(anchors[index].sourcePoint);
+      final point = Offset(displayed.x * size.width, displayed.y * size.height);
+      canvas.drawCircle(
+        point,
+        5,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = color.withValues(alpha: 0.88 * opacity),
+      );
+      canvas.drawCircle(
+        point,
+        7,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5
+          ..color = Colors.white.withValues(alpha: 0.9 * opacity),
+      );
+    }
+  }
+
+  Path _physicalCircle(PhysicalPointMm center, double radius, Size size) {
+    const segments = 96;
+    final points = <PhysicalPointMm>[
+      for (var index = 0; index <= segments; index++)
+        PhysicalPointMm(
+          center.x + math.cos(index * math.pi * 2 / segments) * radius,
+          center.y + math.sin(index * math.pi * 2 / segments) * radius,
+        ),
+    ];
+    return _physicalPolygon(points, size, close: true);
+  }
+
+  Path _physicalPolygon(
+    List<PhysicalPointMm> points,
+    Size size, {
+    bool close = false,
+  }) {
     final path = Path();
-    for (var index = 0; index < alignment.corners.points.length; index++) {
-      final point = alignment.corners.points[index];
-      final rendered = Offset(point.x * size.width, point.y * size.height);
+    for (var index = 0; index < points.length; index++) {
+      final rendered = _projectPhysical(points[index], size);
       if (index == 0) {
         path.moveTo(rendered.dx, rendered.dy);
       } else {
         path.lineTo(rendered.dx, rendered.dy);
       }
     }
-    path.close();
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = color,
-    );
-    if (projectileDiameterMm <= 0) return;
-    final radius = projectileDiameterMm / 2;
-    for (final impact in impacts) {
-      const segments = 40;
-      final projectilePath = Path();
-      for (var index = 0; index <= segments; index++) {
-        final angle = index * math.pi * 2 / segments;
-        final normalized = alignment.physicalToNormalized(
-          PhysicalPointMm(
-            impact.positionMm.x + math.cos(angle) * radius,
-            impact.positionMm.y + math.sin(angle) * radius,
-          ),
-        );
-        final rendered = Offset(
-          normalized.x * size.width,
-          normalized.y * size.height,
-        );
-        if (index == 0) {
-          projectilePath.moveTo(rendered.dx, rendered.dy);
-        } else {
-          projectilePath.lineTo(rendered.dx, rendered.dy);
-        }
-      }
-      projectilePath.close();
-      canvas.drawPath(
-        projectilePath,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.2
-          ..color = impactColor.withValues(alpha: 0.65),
-      );
-    }
+    if (close) path.close();
+    return path;
   }
 
+  Offset _projectPhysical(PhysicalPointMm point, Size size) {
+    final stored = alignment.physicalToNormalized(point);
+    final displayed = _fromAlignmentCoordinates(stored);
+    return Offset(displayed.x * size.width, displayed.y * size.height);
+  }
+
+  NormalizedPoint _fromAlignmentCoordinates(NormalizedPoint stored) =>
+      rotateNormalizedPoint(
+        unrotateNormalizedPoint(stored, alignment.rotationQuarterTurns),
+        renderedRotationQuarterTurns,
+      );
+
   @override
-  bool shouldRepaint(covariant _AlignmentOutlinePainter oldDelegate) =>
+  bool shouldRepaint(covariant _TargetGeometryOverlayPainter oldDelegate) =>
       oldDelegate.alignment != alignment ||
+      oldDelegate.renderedRotationQuarterTurns !=
+          renderedRotationQuarterTurns ||
+      oldDelegate.targetProfile != targetProfile ||
       oldDelegate.impacts != impacts ||
       oldDelegate.projectileDiameterMm != projectileDiameterMm ||
       oldDelegate.color != color ||
-      oldDelegate.impactColor != impactColor;
+      oldDelegate.impactColor != impactColor ||
+      oldDelegate.opacity != opacity;
+}
+
+class _AlignmentQualityBadge extends StatelessWidget {
+  const _AlignmentQualityBadge({required this.alignment});
+
+  final ManualPhotoAlignment alignment;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final (icon, label, background, foreground) = switch (alignment.quality) {
+      AlignmentQualityGrade.excellent => (
+        Icons.verified_outlined,
+        'Uitlijning goed',
+        colors.primaryContainer,
+        colors.onPrimaryContainer,
+      ),
+      AlignmentQualityGrade.acceptable => (
+        Icons.check_circle_outline,
+        'Uitlijning bruikbaar',
+        colors.secondaryContainer,
+        colors.onSecondaryContainer,
+      ),
+      AlignmentQualityGrade.reviewRequired => (
+        Icons.warning_amber_rounded,
+        'Uitlijning controleren',
+        colors.errorContainer,
+        colors.onErrorContainer,
+      ),
+      AlignmentQualityGrade.legacyUnverified => (
+        Icons.help_outline,
+        'Oude uitlijning',
+        colors.surfaceContainerHighest,
+        colors.onSurfaceVariant,
+      ),
+    };
+    final residual = alignment.residuals;
+    final detail =
+        '$label · RMS ${residual.rmsMm.toStringAsFixed(2)} mm · max ${residual.maximumMm.toStringAsFixed(2)} mm';
+    return Semantics(
+      label: detail,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: background.withValues(alpha: 0.94),
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: const [BoxShadow(blurRadius: 4, color: Colors.black26)],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: foreground),
+              const SizedBox(width: 5),
+              Text(
+                '$label · ${residual.rmsMm.toStringAsFixed(2)} mm',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: foreground,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

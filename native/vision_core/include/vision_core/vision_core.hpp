@@ -91,6 +91,21 @@ struct RegistrationResult {
 };
 
 struct CandidateImpact {
+  struct Evidence {
+    double local_contrast = 0.0;
+    double dark_core_contrast = 0.0;
+    double fiber_edge_contrast = 0.0;
+    double diameter_ratio = 0.0;
+    double circularity = 0.0;
+    double raggedness = 0.0;
+    double ring_line_overlap_fraction = 0.0;
+    double uniform_patch_edge_overlap_fraction = 0.0;
+    double black_zone_fraction = 0.0;
+    int distance_transform_peak_count = 0;
+    bool possible_overlap = false;
+    std::string zone;
+  };
+
   std::string id;
   double source_image_x_normalized = 0.0;
   double source_image_y_normalized = 0.0;
@@ -101,6 +116,7 @@ struct CandidateImpact {
   std::vector<std::string> reasons;
   double boundary_uncertainty_mm = 0.0;
   bool near_scoring_boundary = false;
+  Evidence evidence;
 };
 
 struct Warning {

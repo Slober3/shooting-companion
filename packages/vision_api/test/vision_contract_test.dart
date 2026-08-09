@@ -93,6 +93,20 @@ void main() {
               VisionCandidateReason.diameterMatchesProjectile,
             ],
             boundaryUncertaintyMm: 0.8,
+            detectorEvidence: const VisionDetectorEvidence(
+              localContrast: 0.12,
+              darkCoreContrast: 0.18,
+              fiberEdgeContrast: 0.07,
+              diameterRatio: 1.02,
+              circularity: 0.81,
+              raggedness: 0.22,
+              ringLineOverlapFraction: 0.04,
+              uniformPatchEdgeOverlapFraction: 0.01,
+              blackZoneFraction: 0.92,
+              distanceTransformPeakCount: 2,
+              possibleOverlap: true,
+              zone: 'black',
+            ),
           ),
         ],
         warnings: const [
@@ -109,6 +123,10 @@ void main() {
       expect(restored.status, VisionAnalysisStatus.completed);
       expect(restored.modelVersion, isNull);
       expect(restored.candidateImpacts.single.id, 'candidate-1');
+      expect(
+        restored.candidateImpacts.single.detectorEvidence?.possibleOverlap,
+        isTrue,
+      );
       expect(
         restored.registrationResult.sourceNormalizedToCardMmHomography,
         hasLength(9),

@@ -62,6 +62,91 @@ enum VisionCandidateReason {
   geometryUnverified,
 }
 
+/// Numeric, detector-produced evidence retained for an auditable review.
+///
+/// It is deliberately descriptive: these values never decide the ring score
+/// and never become a confirmed impact without an explicit user decision.
+class VisionDetectorEvidence {
+  const VisionDetectorEvidence({
+    required this.localContrast,
+    required this.darkCoreContrast,
+    required this.fiberEdgeContrast,
+    required this.diameterRatio,
+    required this.circularity,
+    required this.raggedness,
+    required this.ringLineOverlapFraction,
+    required this.uniformPatchEdgeOverlapFraction,
+    required this.blackZoneFraction,
+    required this.distanceTransformPeakCount,
+    required this.possibleOverlap,
+    required this.zone,
+  });
+
+  final double localContrast;
+  final double darkCoreContrast;
+  final double fiberEdgeContrast;
+  final double diameterRatio;
+  final double circularity;
+  final double raggedness;
+  final double ringLineOverlapFraction;
+  final double uniformPatchEdgeOverlapFraction;
+  final double blackZoneFraction;
+  final int distanceTransformPeakCount;
+  final bool possibleOverlap;
+  final String zone;
+
+  Map<String, Object> toJson() => {
+    'localContrast': localContrast,
+    'darkCoreContrast': darkCoreContrast,
+    'fiberEdgeContrast': fiberEdgeContrast,
+    'diameterRatio': diameterRatio,
+    'circularity': circularity,
+    'raggedness': raggedness,
+    'ringLineOverlapFraction': ringLineOverlapFraction,
+    'uniformPatchEdgeOverlapFraction': uniformPatchEdgeOverlapFraction,
+    'blackZoneFraction': blackZoneFraction,
+    'distanceTransformPeakCount': distanceTransformPeakCount,
+    'possibleOverlap': possibleOverlap,
+    'zone': zone,
+  };
+
+  factory VisionDetectorEvidence.fromJson(Map<String, Object?> json) {
+    double value(String key) => (json[key]! as num).toDouble();
+    final evidence = VisionDetectorEvidence(
+      localContrast: value('localContrast'),
+      darkCoreContrast: value('darkCoreContrast'),
+      fiberEdgeContrast: value('fiberEdgeContrast'),
+      diameterRatio: value('diameterRatio'),
+      circularity: value('circularity'),
+      raggedness: value('raggedness'),
+      ringLineOverlapFraction: value('ringLineOverlapFraction'),
+      uniformPatchEdgeOverlapFraction: value('uniformPatchEdgeOverlapFraction'),
+      blackZoneFraction: value('blackZoneFraction'),
+      distanceTransformPeakCount: (json['distanceTransformPeakCount']! as num)
+          .toInt(),
+      possibleOverlap: json['possibleOverlap']! as bool,
+      zone: json['zone']! as String,
+    );
+    final numericValues = [
+      evidence.localContrast,
+      evidence.darkCoreContrast,
+      evidence.fiberEdgeContrast,
+      evidence.diameterRatio,
+      evidence.circularity,
+      evidence.raggedness,
+      evidence.ringLineOverlapFraction,
+      evidence.uniformPatchEdgeOverlapFraction,
+      evidence.blackZoneFraction,
+    ];
+    if (numericValues.any((item) => !item.isFinite) ||
+        evidence.distanceTransformPeakCount < 0 ||
+        evidence.zone.trim().isEmpty) {
+      throw const FormatException('Detector evidence is invalid.');
+    }
+    return evidence;
+  }
+}
+
 class VisionProcessingOptions {
   const VisionProcessingOptions({
     this.minimumLongSidePx = 2000,
@@ -395,6 +480,7 @@ class VisionCandidateImpact {
     required List<VisionCandidateReason> reasons,
     required this.boundaryUncertaintyMm,
     this.nearScoringBoundary = false,
+    this.detectorEvidence,
   }) : reasons = List.unmodifiable(reasons) {
     if (sourceImageXNormalized < 0 ||
         sourceImageXNormalized > 1 ||
@@ -426,6 +512,7 @@ class VisionCandidateImpact {
   final List<VisionCandidateReason> reasons;
   final double boundaryUncertaintyMm;
   final bool nearScoringBoundary;
+  final VisionDetectorEvidence? detectorEvidence;
 
   VisionCandidateImpact copyWith({
     double? cardXMm,
@@ -433,6 +520,7 @@ class VisionCandidateImpact {
     List<VisionCandidateReason>? reasons,
     double? boundaryUncertaintyMm,
     bool? nearScoringBoundary,
+    VisionDetectorEvidence? detectorEvidence,
   }) => VisionCandidateImpact(
     id: id,
     sourceImageXNormalized: sourceImageXNormalized,
@@ -444,6 +532,7 @@ class VisionCandidateImpact {
     reasons: reasons ?? this.reasons,
     boundaryUncertaintyMm: boundaryUncertaintyMm ?? this.boundaryUncertaintyMm,
     nearScoringBoundary: nearScoringBoundary ?? this.nearScoringBoundary,
+    detectorEvidence: detectorEvidence ?? this.detectorEvidence,
   );
 
   Map<String, Object> toJson() => {
@@ -457,6 +546,8 @@ class VisionCandidateImpact {
     'reasons': reasons.map((reason) => reason.name).toList(),
     'boundaryUncertaintyMm': boundaryUncertaintyMm,
     'nearScoringBoundary': nearScoringBoundary,
+    if (detectorEvidence != null)
+      'detectorEvidence': detectorEvidence!.toJson(),
   };
 
   factory VisionCandidateImpact.fromJson(
@@ -480,6 +571,9 @@ class VisionCandidateImpact {
         .toList(),
     boundaryUncertaintyMm: (json['boundaryUncertaintyMm']! as num).toDouble(),
     nearScoringBoundary: (json['nearScoringBoundary'] as bool?) ?? false,
+    detectorEvidence: json['detectorEvidence'] == null
+        ? null
+        : VisionDetectorEvidence.fromJson(_map(json['detectorEvidence'])),
   );
 }
 

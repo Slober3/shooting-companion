@@ -5,3 +5,4 @@ export 'photo_overlay_canvas.dart';
 export 'photo_overlay_viewer.dart';
 export 'photo_thumbnail_tile.dart';
 export 'photo_viewer_screen.dart';
+export 'ring_assisted_alignment_editor.dart';
