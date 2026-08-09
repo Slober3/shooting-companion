@@ -8,6 +8,7 @@ import 'package:crypto/crypto.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:shooting_companion_domain/domain.dart' as domain;
 
 import '../data/app_database.dart';
 import '../data/timer_preset_defaults.dart';
@@ -61,11 +62,11 @@ class NormalizedBackupPayload {
   );
 }
 
-/// Converts every supported SCB1 payload to the schema-7 JSON shape.
+/// Converts every supported SCB1 payload to the schema-8 JSON shape.
 class BackupPayloadAdapter {
   const BackupPayloadAdapter._();
 
-  static const currentFormatVersion = 7;
+  static const currentFormatVersion = 8;
   static const _formatName = 'shooting-companion-backup';
 
   static NormalizedBackupPayload normalize({
@@ -85,15 +86,22 @@ class BackupPayloadAdapter {
     }
 
     final normalized = switch (version) {
-      1 => _upgradeV7(
-        _upgradeV6(_upgradeV5(_upgradeV4(_upgradeV2(_upgradeV1(data))))),
+      1 => _upgradeV8(
+        _upgradeV7(
+          _upgradeV6(_upgradeV5(_upgradeV4(_upgradeV2(_upgradeV1(data))))),
+        ),
       ),
-      2 => _upgradeV7(_upgradeV6(_upgradeV5(_upgradeV4(_upgradeV2(data))))),
-      3 => _upgradeV7(_upgradeV6(_upgradeV5(_upgradeV4(_normalizeV3(data))))),
-      4 => _upgradeV7(_upgradeV6(_upgradeV5(_normalizeV4(data)))),
-      5 => _upgradeV7(_upgradeV6(_normalizeV5(data))),
-      6 => _upgradeV7(_normalizeV6(data)),
-      _ => _normalizeV7(data),
+      2 => _upgradeV8(
+        _upgradeV7(_upgradeV6(_upgradeV5(_upgradeV4(_upgradeV2(data))))),
+      ),
+      3 => _upgradeV8(
+        _upgradeV7(_upgradeV6(_upgradeV5(_upgradeV4(_normalizeV3(data))))),
+      ),
+      4 => _upgradeV8(_upgradeV7(_upgradeV6(_upgradeV5(_normalizeV4(data))))),
+      5 => _upgradeV8(_upgradeV7(_upgradeV6(_normalizeV5(data)))),
+      6 => _upgradeV8(_upgradeV7(_normalizeV6(data))),
+      7 => _upgradeV8(_normalizeV7(data)),
+      _ => _normalizeV8(data),
     };
     final sessionCount = _integer(manifest['sessionCount'], 'sessionCount');
     final seriesCount = _integer(manifest['seriesCount'], 'seriesCount');
@@ -105,6 +113,7 @@ class BackupPayloadAdapter {
         'Recordaantallen in het manifest komen niet overeen.',
       );
     }
+    _validateDomainRecords(normalized);
 
     return NormalizedBackupPayload(
       sourceFormatVersion: version,
@@ -165,6 +174,385 @@ class BackupPayloadAdapter {
     _validateVisionRelations(result);
     return result;
   }
+
+  static Map<String, dynamic> _normalizeV8(Map<String, dynamic> data) {
+    final result = _normalizeV7(data);
+    _validateAlignmentV8(result);
+    return result;
+  }
+
+  static Map<String, dynamic> _upgradeV8(Map<String, dynamic> data) {
+    final result = <String, dynamic>{
+      for (final entry in data.entries) entry.key: entry.value,
+    };
+    result['photoAlignments'] = (result['photoAlignments']! as List).map((
+      value,
+    ) {
+      final row = Map<String, dynamic>.from(value as Map);
+      return row
+        ..['rotationQuarterTurns'] = 0
+        ..['alignmentMode'] = 'fullCard'
+        ..['anchorsJson'] = row['cornersJson']
+        ..['reprojectionRmsMm'] = null
+        ..['reprojectionMaxMm'] = null
+        ..['planarityStatus'] = 'unknown'
+        ..['confirmedAtUtc'] = row['updatedAtUtc'];
+    }).toList();
+    result['visionScanDrafts'] = (result['visionScanDrafts']! as List).map((
+      value,
+    ) {
+      final row = Map<String, dynamic>.from(value as Map);
+      return row
+        ..['rotationQuarterTurns'] = 0
+        ..['alignmentMode'] = 'fullCard'
+        ..['anchorsJson'] = null
+        ..['reprojectionRmsMm'] = null
+        ..['reprojectionMaxMm'] = null
+        ..['planarityStatus'] = 'unknown'
+        ..['alignmentAlgorithmVersion'] = null
+        ..['alignmentConfirmedAtUtc'] = null;
+    }).toList();
+    _validateAlignmentV8(result);
+    return result;
+  }
+
+  static void _validateAlignmentV8(Map<String, dynamic> data) {
+    const modes = {'fullCard', 'ringAssisted', 'drawnTarget'};
+    const planarity = {'accepted', 'manualReviewOnly', 'rejected', 'unknown'};
+    for (final value in data['photoAlignments']! as List) {
+      final row = value as Map;
+      final rotation = row['rotationQuarterTurns'];
+      final mode = row['alignmentMode'];
+      final status = row['planarityStatus'];
+      if (rotation is! int ||
+          rotation < 0 ||
+          rotation > 3 ||
+          mode is! String ||
+          !modes.contains(mode) ||
+          status is! String ||
+          !planarity.contains(status) ||
+          !_nullableFiniteNonNegative(row['reprojectionRmsMm']) ||
+          !_nullableFiniteNonNegative(row['reprojectionMaxMm'])) {
+        throw const FormatException('Foto-uitlijning versie 8 is ongeldig.');
+      }
+    }
+    for (final value in data['visionScanDrafts']! as List) {
+      final row = value as Map;
+      final rotation = row['rotationQuarterTurns'];
+      final mode = row['alignmentMode'];
+      final status = row['planarityStatus'];
+      if (rotation is! int ||
+          rotation < 0 ||
+          rotation > 3 ||
+          mode is! String ||
+          !modes.contains(mode) ||
+          status is! String ||
+          !planarity.contains(status) ||
+          !_nullableFiniteNonNegative(row['reprojectionRmsMm']) ||
+          !_nullableFiniteNonNegative(row['reprojectionMaxMm'])) {
+        throw const FormatException('Visionconcept versie 8 is ongeldig.');
+      }
+    }
+  }
+
+  static bool _nullableFiniteNonNegative(Object? value) =>
+      value == null || (value is num && value.isFinite && value >= 0);
+
+  /// Enforces the same runtime invariants used by repositories and scoring at
+  /// the point where untrusted backup JSON enters the application.
+  ///
+  /// Historical v1 series snapshots did not yet contain the complete target
+  /// schema. Those snapshots retain a deliberately narrow compatibility path:
+  /// their ring values are validated, but absent geometry is never invented.
+  static void _validateDomainRecords(Map<String, dynamic> data) {
+    final profilesBySeries = <String, domain.TargetProfile?>{};
+    final seriesIds = <String>{};
+    for (final value in data['series']! as List) {
+      final row = value as Map;
+      final seriesId = row['id'];
+      if (seriesId is! String ||
+          seriesId.trim().isEmpty ||
+          !seriesIds.add(seriesId)) {
+        throw const FormatException('Reeks-ID is leeg of dubbel opgeslagen.');
+      }
+      final snapshot = row['targetProfileJson'];
+      final target = _validatedTargetSnapshot(
+        snapshot,
+        context: 'Reeks $seriesId',
+        allowLegacySnapshot: true,
+      );
+      final storedVersionedId = row['targetProfileVersionedId'];
+      if (storedVersionedId is! String ||
+          storedVersionedId.trim().isEmpty ||
+          (target != null && storedVersionedId != target.versionedId)) {
+        throw const FormatException(
+          'Reeks verwijst niet naar het opgeslagen doelprofielsnapshot.',
+        );
+      }
+      final distance = row['distanceMeters'];
+      final projectileDiameter = row['projectileDiameterMm'];
+      if (distance is! num ||
+          !distance.isFinite ||
+          distance <= 0 ||
+          projectileDiameter is! num ||
+          !projectileDiameter.isFinite ||
+          projectileDiameter <= 0) {
+        throw const FormatException(
+          'Reeks bevat een ongeldige afstand of projectieldiameter.',
+        );
+      }
+      profilesBySeries[seriesId] = target;
+    }
+
+    final targetProfileIds = <String>{};
+    for (final value in data['targetProfiles']! as List) {
+      final row = value as Map;
+      final versionedId = row['versionedId'];
+      if (versionedId is! String ||
+          versionedId.trim().isEmpty ||
+          !targetProfileIds.add(versionedId)) {
+        throw const FormatException(
+          'Doelprofiel-ID is leeg of dubbel opgeslagen.',
+        );
+      }
+      final target = _validatedTargetSnapshot(
+        row['profileJson'],
+        context: 'Bibliotheekprofiel $versionedId',
+      );
+      if (target == null ||
+          target.versionedId != versionedId ||
+          row['profileId'] != target.profileId ||
+          row['profileVersion'] != target.profileVersion) {
+        throw const FormatException(
+          'Bibliotheekprofiel en profielmetadata komen niet overeen.',
+        );
+      }
+    }
+
+    for (final value in data['visionScanDrafts']! as List) {
+      final row = value as Map;
+      _validatedTargetSnapshot(
+        row['targetProfileJson'],
+        context: 'Visionconcept ${row['id']}',
+      );
+      final projectileDiameter = row['projectileDiameterMm'];
+      if (projectileDiameter is! num ||
+          !projectileDiameter.isFinite ||
+          projectileDiameter <= 0) {
+        throw const FormatException(
+          'Visionconcept bevat een ongeldige projectieldiameter.',
+        );
+      }
+    }
+
+    final impactIds = <String>{};
+    for (final value in data['impacts']! as List) {
+      final row = value as Map;
+      final id = row['id'];
+      final seriesId = row['seriesId'];
+      if (id is! String || id.trim().isEmpty || !impactIds.add(id)) {
+        throw const FormatException('Treffer-ID is leeg of dubbel opgeslagen.');
+      }
+      if (seriesId is! String || !profilesBySeries.containsKey(seriesId)) {
+        throw const FormatException(
+          'Treffer verwijst naar een onbekende reeks.',
+        );
+      }
+
+      final impact = _validatedImpact(row);
+      final target = profilesBySeries[seriesId];
+      if (target == null) {
+        // A legacy v1 target has no bull geometry. Its impacts can therefore
+        // only be valid when they do not claim a bull assignment.
+        if (impact.targetBullId != null) {
+          throw const FormatException(
+            'Legacytreffer bevat een niet-controleerbaar doelroosje.',
+          );
+        }
+        continue;
+      }
+      _validateImpactBull(target, impact);
+    }
+  }
+
+  static domain.TargetProfile? _validatedTargetSnapshot(
+    Object? source, {
+    required String context,
+    bool allowLegacySnapshot = false,
+  }) {
+    if (source is! String) {
+      throw FormatException('$context bevat geen doelprofielsnapshot.');
+    }
+    Object? decoded;
+    try {
+      decoded = jsonDecode(source);
+    } on FormatException {
+      throw FormatException('$context bevat ongeldige doelprofiel-JSON.');
+    }
+    if (decoded is! Map) {
+      throw FormatException('$context bevat geen doelprofielobject.');
+    }
+    final json = decoded.cast<String, Object?>();
+    if (allowLegacySnapshot && !json.containsKey('schemaVersion')) {
+      _validateLegacyTargetSnapshot(json, context);
+      return null;
+    }
+
+    domain.TargetProfile target;
+    try {
+      target = domain.TargetProfile.fromJson(json);
+    } on Object {
+      throw FormatException(
+        '$context kan niet als doelprofiel worden gelezen.',
+      );
+    }
+    final validation = target.validateRuntime();
+    if (!validation.isValid) {
+      throw FormatException(
+        '$context is ongeldig: '
+        '${validation.issues.map((issue) => issue.toString()).join('; ')}',
+      );
+    }
+    return target;
+  }
+
+  static void _validateLegacyTargetSnapshot(
+    Map<String, Object?> json,
+    String context,
+  ) {
+    final rings = json['rings'];
+    if (rings is! List || rings.isEmpty) {
+      throw FormatException('$context bevat geen scoringsringen.');
+    }
+    final values = <int>{};
+    for (final value in rings) {
+      if (value is! Map) {
+        throw FormatException('$context bevat een ongeldige scoringsring.');
+      }
+      final score = value['value'];
+      if (score is! int || score <= 0 || !values.add(score)) {
+        throw FormatException(
+          '$context bevat ongeldige of dubbele ringwaarden.',
+        );
+      }
+      final diameter = value['outerDiameterMm'];
+      if (diameter != null &&
+          (diameter is! num || !diameter.isFinite || diameter <= 0)) {
+        throw FormatException('$context bevat een ongeldige ringdiameter.');
+      }
+    }
+  }
+
+  static domain.ShotImpact _validatedImpact(Map row) {
+    final xMm = _finiteDouble(row['xMm'], 'xMm');
+    final yMm = _finiteDouble(row['yMm'], 'yMm');
+    final multiplicity = row['multiplicity'];
+    final imageX = _nullableFiniteDouble(
+      row['imageXNormalized'],
+      'imageXNormalized',
+    );
+    final imageY = _nullableFiniteDouble(
+      row['imageYNormalized'],
+      'imageYNormalized',
+    );
+    final uncertainty = _nullableFiniteDouble(
+      row['positionalUncertaintyMm'],
+      'positionalUncertaintyMm',
+    );
+    final sourceImageId = row['sourceImageId'];
+    final visionAnalysisId = row['visionAnalysisId'];
+    final targetBullId = row['targetBullId'];
+    final rawScoreValue = row['rawScoreValue'];
+    if (multiplicity is! int ||
+        multiplicity < 1 ||
+        row['isMiss'] is! bool ||
+        row['isPositionUncertain'] is! bool ||
+        (sourceImageId != null && sourceImageId is! String) ||
+        (visionAnalysisId != null && visionAnalysisId is! String) ||
+        (targetBullId != null && targetBullId is! String) ||
+        (rawScoreValue != null && rawScoreValue is! int) ||
+        (imageX == null) != (imageY == null) ||
+        (imageX != null && (imageX < 0 || imageX > 1)) ||
+        (imageY != null && (imageY < 0 || imageY > 1)) ||
+        (uncertainty != null && uncertainty < 0)) {
+      throw const FormatException('Trefferrecord bevat ongeldige waarden.');
+    }
+
+    domain.ScoreDisposition disposition;
+    domain.ImpactPlacementMethod placementMethod;
+    try {
+      disposition = domain.ScoreDisposition.values.byName(
+        row['scoreDisposition'] as String,
+      );
+      placementMethod = domain.ImpactPlacementMethod.values.byName(
+        row['placementMethod'] as String,
+      );
+    } on Object {
+      throw const FormatException('Trefferrecord bevat een ongeldige status.');
+    }
+
+    final impact = domain.ShotImpact(
+      id: row['id']! as String,
+      xMm: xMm,
+      yMm: yMm,
+      sourceImageId: sourceImageId as String?,
+      imageXNormalized: imageX,
+      imageYNormalized: imageY,
+      multiplicity: multiplicity,
+      isMiss: row['isMiss']! as bool,
+      isPositionUncertain: row['isPositionUncertain']! as bool,
+      targetBullId: targetBullId as String?,
+      rawScoreValue: rawScoreValue as int?,
+      scoreDisposition: disposition,
+      placementMethod: placementMethod,
+      visionAnalysisId: visionAnalysisId as String?,
+      positionalUncertaintyMm: uncertainty,
+    );
+    final validation = impact.validateRuntime();
+    if (!validation.isValid) {
+      throw FormatException(
+        'Treffer ${impact.id} is ongeldig: '
+        '${validation.issues.map((issue) => issue.toString()).join('; ')}',
+      );
+    }
+    return impact;
+  }
+
+  static void _validateImpactBull(
+    domain.TargetProfile target,
+    domain.ShotImpact impact,
+  ) {
+    final bullId = impact.targetBullId;
+    if (target.targetKind != domain.TargetKind.multiBullConcentric) {
+      if (bullId != null) {
+        throw const FormatException(
+          'Treffer op een enkel doel bevat een doelroosje.',
+        );
+      }
+      return;
+    }
+    if (bullId == null) return;
+    final bull = target.bullById(bullId);
+    if (bull == null || bull.role != domain.TargetBullRole.record) {
+      throw const FormatException(
+        'Treffer verwijst niet naar een geldig wedstrijdroosje.',
+      );
+    }
+    if (!impact.isMiss &&
+        target.bullAt(impact.xMm, impact.yMm, recordOnly: true)?.id != bullId) {
+      throw const FormatException(
+        'Trefferpositie en opgeslagen doelroosje komen niet overeen.',
+      );
+    }
+  }
+
+  static double _finiteDouble(Object? value, String field) {
+    if (value is num && value.isFinite) return value.toDouble();
+    throw FormatException('Ongeldige eindige waarde voor $field.');
+  }
+
+  static double? _nullableFiniteDouble(Object? value, String field) =>
+      value == null ? null : _finiteDouble(value, field);
 
   static Map<String, dynamic> _upgradeV7(Map<String, dynamic> data) {
     final result = <String, dynamic>{
@@ -1322,6 +1710,36 @@ class BackupService {
     final createdAt = _now().toUtc();
     final archive = Archive();
     final files = <Map<String, dynamic>>[];
+    final databaseJson = <String, dynamic>{
+      'sessions': sessions.map((row) => row.toJson()).toList(),
+      'series': series.map((row) => row.toJson()).toList(),
+      'impacts': impacts.map((row) => row.toJson()).toList(),
+      'firearms': firearms.map((row) => row.toJson()).toList(),
+      'cartridges': cartridges.map((row) => row.toJson()).toList(),
+      'ammoLots': ammoLots.map((row) => row.toJson()).toList(),
+      'ranges': ranges.map((row) => row.toJson()).toList(),
+      'images': images.map((row) => row.toJson()).toList(),
+      'photoAlignments': alignments.map((row) => row.toJson()).toList(),
+      'goals': goals.map((row) => row.toJson()).toList(),
+      'seriesReflections': reflections.map((row) => row.toJson()).toList(),
+      'coachFeedback': coachFeedback.map((row) => row.toJson()).toList(),
+      'settings': settings.map((row) => row.toJson()).toList(),
+      'targetProfiles': targetProfiles.map((row) => row.toJson()).toList(),
+      'trainingActivities': trainingActivities
+          .map((row) => row.toJson())
+          .toList(),
+      'trainingActivitySeriesLinks': trainingActivitySeriesLinks
+          .map((row) => row.toJson())
+          .toList(),
+      'shotTimerEvents': shotTimerEvents.map((row) => row.toJson()).toList(),
+      'timerPresets': timerPresets.map((row) => row.toJson()).toList(),
+      'acousticCalibrationProfiles': acousticCalibrationProfiles
+          .map((row) => row.toJson())
+          .toList(),
+      'visionScanDrafts': visionScanDrafts.map((row) => row.toJson()).toList(),
+      'visionAnalyses': visionAnalyses.map((row) => row.toJson()).toList(),
+    };
+    BackupPayloadAdapter._validateDomainRecords(databaseJson);
 
     for (var index = 0; index < images.length; index++) {
       final image = images[index];
@@ -1376,8 +1794,8 @@ class BackupService {
         jsonEncode({
           'format': 'shooting-companion-backup',
           'formatVersion': BackupPayloadAdapter.currentFormatVersion,
-          'appVersion': '0.6.0+1',
-          'databaseSchemaVersion': 7,
+          'appVersion': '0.6.0+2',
+          'databaseSchemaVersion': 8,
           'minimumAppVersion': '0.2.0',
           'createdAtUtc': createdAt.toIso8601String(),
           'sessionCount': sessions.length,
@@ -1389,42 +1807,7 @@ class BackupService {
       ),
     );
     archive.addFile(
-      ArchiveFile.string(
-        'database.json',
-        jsonEncode({
-          'sessions': sessions.map((row) => row.toJson()).toList(),
-          'series': series.map((row) => row.toJson()).toList(),
-          'impacts': impacts.map((row) => row.toJson()).toList(),
-          'firearms': firearms.map((row) => row.toJson()).toList(),
-          'cartridges': cartridges.map((row) => row.toJson()).toList(),
-          'ammoLots': ammoLots.map((row) => row.toJson()).toList(),
-          'ranges': ranges.map((row) => row.toJson()).toList(),
-          'images': images.map((row) => row.toJson()).toList(),
-          'photoAlignments': alignments.map((row) => row.toJson()).toList(),
-          'goals': goals.map((row) => row.toJson()).toList(),
-          'seriesReflections': reflections.map((row) => row.toJson()).toList(),
-          'coachFeedback': coachFeedback.map((row) => row.toJson()).toList(),
-          'settings': settings.map((row) => row.toJson()).toList(),
-          'targetProfiles': targetProfiles.map((row) => row.toJson()).toList(),
-          'trainingActivities': trainingActivities
-              .map((row) => row.toJson())
-              .toList(),
-          'trainingActivitySeriesLinks': trainingActivitySeriesLinks
-              .map((row) => row.toJson())
-              .toList(),
-          'shotTimerEvents': shotTimerEvents
-              .map((row) => row.toJson())
-              .toList(),
-          'timerPresets': timerPresets.map((row) => row.toJson()).toList(),
-          'acousticCalibrationProfiles': acousticCalibrationProfiles
-              .map((row) => row.toJson())
-              .toList(),
-          'visionScanDrafts': visionScanDrafts
-              .map((row) => row.toJson())
-              .toList(),
-          'visionAnalyses': visionAnalyses.map((row) => row.toJson()).toList(),
-        }),
-      ),
+      ArchiveFile.string('database.json', jsonEncode(databaseJson)),
     );
     return archive;
   }

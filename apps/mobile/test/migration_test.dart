@@ -12,6 +12,7 @@ import 'generated/schema/schema_v3.dart' as v3;
 import 'generated/schema/schema_v4.dart' as v4;
 import 'generated/schema/schema_v5.dart' as v5;
 import 'generated/schema/schema_v6.dart' as v6;
+import 'generated/schema/schema_v7.dart' as v7;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -21,17 +22,17 @@ void main() {
     verifier = SchemaVerifier(GeneratedHelper());
   });
 
-  test('empty v1 schema migrates exactly to v7', () async {
+  test('empty v1 schema migrates exactly to v8', () async {
     final schema = await verifier.schemaAt(1);
     final database = AppDatabase.forTesting(schema.newConnection());
 
-    await verifier.migrateAndValidate(database, 7);
+    await verifier.migrateAndValidate(database, 8);
 
     await database.close();
     schema.close();
   });
 
-  test('v1 sessions, impacts and photos survive the v7 migration', () async {
+  test('v1 sessions, impacts and photos survive the v8 migration', () async {
     final schema = await verifier.schemaAt(1);
     final old = v1.DatabaseAtV1(schema.newConnection());
     final timestamp =
@@ -139,7 +140,7 @@ void main() {
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 7);
+    await verifier.migrateAndValidate(database, 8);
 
     final session = await database
         .select(database.trainingSessions)
@@ -244,7 +245,7 @@ void main() {
       await old.close();
 
       final database = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(database, 7);
+      await verifier.migrateAndValidate(database, 8);
 
       final migrated = await database
           .select(database.shootingSeries)
@@ -288,7 +289,7 @@ void main() {
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 7);
+    await verifier.migrateAndValidate(database, 8);
 
     final cartridge = await database.select(database.cartridges).getSingle();
     final ammo = await database.select(database.ammoLots).getSingle();
@@ -306,7 +307,7 @@ void main() {
     schema.close();
   });
 
-  test('v3 score records migrate to v7 without recalculation', () async {
+  test('v3 score records migrate to v8 without recalculation', () async {
     final schema = await verifier.schemaAt(3);
     final old = v3.DatabaseAtV3(schema.newConnection());
     final timestamp =
@@ -357,7 +358,7 @@ void main() {
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 7);
+    await verifier.migrateAndValidate(database, 8);
     final series = await database.select(database.shootingSeries).getSingle();
     final impact = await database.select(database.shotImpacts).getSingle();
 
@@ -378,7 +379,7 @@ void main() {
     schema.close();
   });
 
-  test('v4 percentage goals migrate to typed v7 goals', () async {
+  test('v4 percentage goals migrate to typed v8 goals', () async {
     final schema = await verifier.schemaAt(4);
     final old = v4.DatabaseAtV4(schema.newConnection());
 
@@ -393,7 +394,7 @@ void main() {
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 7);
+    await verifier.migrateAndValidate(database, 8);
 
     final goal = await database.select(database.goals).getSingle();
     expect(goal.id, 'legacy-goal');
@@ -413,7 +414,7 @@ void main() {
   });
 
   test(
-    'v5 data migrates to v7 with empty training and vision storage',
+    'v5 data migrates to v8 with empty training and vision storage',
     () async {
       final schema = await verifier.schemaAt(5);
       final old = v5.DatabaseAtV5(schema.newConnection());
@@ -422,7 +423,7 @@ void main() {
       await old.close();
 
       final database = AppDatabase.forTesting(schema.newConnection());
-      await verifier.migrateAndValidate(database, 7);
+      await verifier.migrateAndValidate(database, 8);
 
       expect(await database.select(database.trainingActivities).get(), isEmpty);
       expect(
@@ -447,7 +448,7 @@ void main() {
     },
   );
 
-  test('v6 data migrates to v7 without changing scores', () async {
+  test('v6 data migrates to v8 without changing scores', () async {
     final schema = await verifier.schemaAt(6);
     final old = v6.DatabaseAtV6(schema.newConnection());
     final timestamp =
@@ -499,7 +500,7 @@ void main() {
     await old.close();
 
     final database = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(database, 7);
+    await verifier.migrateAndValidate(database, 8);
 
     final series = await database.select(database.shootingSeries).getSingle();
     final impact = await database.select(database.shotImpacts).getSingle();
@@ -512,6 +513,123 @@ void main() {
     expect(impact.positionalUncertaintyMm, null);
     expect(await database.select(database.visionScanDrafts).get(), isEmpty);
     expect(await database.select(database.visionAnalyses).get(), isEmpty);
+    expect(
+      await database.customSelect('PRAGMA foreign_key_check').get(),
+      isEmpty,
+    );
+
+    await database.close();
+    schema.close();
+  });
+
+  test('v7 alignment records gain deterministic v8 defaults', () async {
+    final schema = await verifier.schemaAt(7);
+    final old = v7.DatabaseAtV7(schema.newConnection());
+    final timestamp =
+        DateTime.utc(2026, 8, 7, 12).millisecondsSinceEpoch ~/ 1000;
+    final target = IssfTargetProfiles.precision25m50m;
+
+    await old
+        .into(old.trainingSessions)
+        .insert(
+          v7.TrainingSessionsCompanion.insert(
+            id: 'v7-session',
+            status: 'completed',
+            startedAtUtc: timestamp,
+            localUtcOffsetMinutes: 120,
+            updatedAtUtc: timestamp,
+          ),
+        );
+    await old
+        .into(old.shootingSeries)
+        .insert(
+          v7.ShootingSeriesCompanion.insert(
+            id: 'v7-series',
+            sessionId: 'v7-session',
+            sequenceNumber: 1,
+            status: 'confirmed',
+            targetProfileVersionedId: target.versionedId,
+            targetProfileJson: target.toJsonString(),
+            distanceMeters: 25,
+            projectileDiameterMm: 5.6,
+            createdAtUtc: timestamp,
+            updatedAtUtc: timestamp,
+          ),
+        );
+    await old
+        .into(old.imageAssets)
+        .insert(
+          v7.ImageAssetsCompanion.insert(
+            id: 'v7-image',
+            sessionId: 'v7-session',
+            seriesId: const Value('v7-series'),
+            role: 'primaryScoringPhoto',
+            path: 'v7.jpg',
+            sha256: 'v7-hash',
+            width: 2000,
+            height: 2000,
+            sizeBytes: 100,
+            createdAtUtc: timestamp,
+            updatedAtUtc: timestamp,
+          ),
+        );
+    await old
+        .into(old.photoAlignments)
+        .insert(
+          v7.PhotoAlignmentsCompanion.insert(
+            imageId: 'v7-image',
+            cornersJson: '[[0,0],[1,0],[1,1],[0,1]]',
+            matrixJson: '[1,0,0,0,1,0,0,0,1]',
+            algorithmVersion: 'manual-homography-v1',
+            updatedAtUtc: timestamp,
+          ),
+        );
+    await old
+        .into(old.visionScanDrafts)
+        .insert(
+          v7.VisionScanDraftsCompanion.insert(
+            id: 'v7-draft',
+            status: 'review',
+            originalImagePath: 'draft.jpg',
+            sha256: 'draft-hash',
+            width: 2000,
+            height: 2000,
+            sizeBytes: 200,
+            targetProfileJson: target.toJsonString(),
+            projectileDiameterMm: 5.6,
+            createdAtUtc: timestamp,
+            updatedAtUtc: timestamp,
+          ),
+        );
+    await old.close();
+
+    final database = AppDatabase.forTesting(schema.newConnection());
+    await verifier.migrateAndValidate(database, 8);
+
+    final alignment = await database
+        .select(database.photoAlignments)
+        .getSingle();
+    final draft = await database.select(database.visionScanDrafts).getSingle();
+
+    expect(alignment.rotationQuarterTurns, 0);
+    expect(alignment.alignmentMode, 'fullCard');
+    expect(alignment.anchorsJson, null);
+    expect(alignment.reprojectionRmsMm, null);
+    expect(alignment.reprojectionMaxMm, null);
+    expect(alignment.planarityStatus, 'unknown');
+    expect(alignment.confirmedAtUtc, null);
+    expect(alignment.cornersJson, '[[0,0],[1,0],[1,1],[0,1]]');
+    expect(alignment.matrixJson, '[1,0,0,0,1,0,0,0,1]');
+    expect(alignment.algorithmVersion, 'manual-homography-v1');
+
+    expect(draft.rotationQuarterTurns, 0);
+    expect(draft.alignmentMode, 'fullCard');
+    expect(draft.anchorsJson, null);
+    expect(draft.reprojectionRmsMm, null);
+    expect(draft.reprojectionMaxMm, null);
+    expect(draft.planarityStatus, 'unknown');
+    expect(draft.alignmentAlgorithmVersion, null);
+    expect(draft.alignmentConfirmedAtUtc, null);
     expect(
       await database.customSelect('PRAGMA foreign_key_check').get(),
       isEmpty,

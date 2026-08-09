@@ -1,6 +1,7 @@
 import 'package:shooting_companion_domain/domain.dart';
 
-/// Target geometry from ISSF Rule Book 2026, rules 6.3.4.4 and 6.3.4.5.
+/// Target geometry from ISSF Edition 2025, Second Print (07/2026), rules
+/// 6.3.4.4 and 6.3.4.5, effective 1 July 2026.
 ///
 /// The canonical card is stored as 550 x 550 mm. The rulebook allows a visible
 /// height between 520 and 550 mm; scoring geometry is unaffected by that margin.
@@ -8,10 +9,11 @@ abstract final class IssfTargetProfiles {
   static final precision25m50m = TargetProfile(
     schemaVersion: 1,
     profileId: 'issf-25m-precision-50m-pistol',
-    profileVersion: 1,
+    profileVersion: 2,
     displayName: 'ISSF 25 m Precision / 50 m Pistol',
     authority: 'ISSF',
-    rulesEdition: '2026 (effective 2026-01-01), rule 6.3.4.5',
+    rulesEdition:
+        '2025 Second Print 07/2026 (effective 2026-07-01), rule 6.3.4.5',
     physicalCardWidthMm: 550,
     physicalCardHeightMm: 550,
     rings: const [
@@ -38,10 +40,11 @@ abstract final class IssfTargetProfiles {
   static final rapidFire25m = TargetProfile(
     schemaVersion: 1,
     profileId: 'issf-25m-rapid-fire-pistol',
-    profileVersion: 1,
+    profileVersion: 2,
     displayName: 'ISSF 25 m Rapid Fire Pistol',
     authority: 'ISSF',
-    rulesEdition: '2026 (effective 2026-01-01), rule 6.3.4.4',
+    rulesEdition:
+        '2025 Second Print 07/2026 (effective 2026-07-01), rule 6.3.4.4',
     physicalCardWidthMm: 550,
     physicalCardHeightMm: 550,
     rings: const [

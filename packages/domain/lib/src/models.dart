@@ -502,22 +502,77 @@ class StoredPhotoAlignment {
     required List<double> homographyMatrix,
     required this.algorithmVersion,
     required this.updatedAtUtc,
-  }) : assert(orderedCorners.length == 4),
-       assert(homographyMatrix.length == 9),
-       orderedCorners = List.unmodifiable(orderedCorners),
-       homographyMatrix = List.unmodifiable(homographyMatrix);
+    this.rotationQuarterTurns = 0,
+    this.alignmentMode = 'fullCard',
+    this.anchorsJson,
+    this.reprojectionRmsMm,
+    this.reprojectionMaxMm,
+    this.planarityStatus = 'legacyUnverified',
+    this.confirmedAtUtc,
+  }) : orderedCorners = List.unmodifiable(orderedCorners),
+       homographyMatrix = List.unmodifiable(homographyMatrix) {
+    if (orderedCorners.length != 4) {
+      throw ArgumentError.value(
+        orderedCorners.length,
+        'orderedCorners',
+        'Precies vier kaartpunten zijn vereist.',
+      );
+    }
+    if (homographyMatrix.length != 9 ||
+        homographyMatrix.any((value) => !value.isFinite)) {
+      throw ArgumentError.value(
+        homographyMatrix,
+        'homographyMatrix',
+        'Een eindige 3x3-homografie is vereist.',
+      );
+    }
+    if (rotationQuarterTurns < 0 || rotationQuarterTurns > 3) {
+      throw RangeError.range(
+        rotationQuarterTurns,
+        0,
+        3,
+        'rotationQuarterTurns',
+      );
+    }
+    if (alignmentMode.trim().isEmpty || planarityStatus.trim().isEmpty) {
+      throw ArgumentError('Uitlijningsmodus en kwaliteitsstatus zijn vereist.');
+    }
+    for (final residual in [reprojectionRmsMm, reprojectionMaxMm]) {
+      if (residual != null && (!residual.isFinite || residual < 0)) {
+        throw ArgumentError.value(
+          residual,
+          'reprojection residual',
+          'Moet eindig en minstens nul zijn.',
+        );
+      }
+    }
+  }
 
   final String imageId;
   final List<NormalizedPoint> orderedCorners;
   final List<double> homographyMatrix;
   final String algorithmVersion;
   final DateTime updatedAtUtc;
+  final int rotationQuarterTurns;
+  final String alignmentMode;
+  final String? anchorsJson;
+  final double? reprojectionRmsMm;
+  final double? reprojectionMaxMm;
+  final String planarityStatus;
+  final DateTime? confirmedAtUtc;
 
-  Map<String, Object> toJson() => {
+  Map<String, Object?> toJson() => {
     'imageId': imageId,
     'orderedCorners': orderedCorners.map((point) => point.toJson()).toList(),
     'homographyMatrix': homographyMatrix,
     'algorithmVersion': algorithmVersion,
+    'rotationQuarterTurns': rotationQuarterTurns,
+    'alignmentMode': alignmentMode,
+    'anchorsJson': anchorsJson,
+    'reprojectionRmsMm': reprojectionRmsMm,
+    'reprojectionMaxMm': reprojectionMaxMm,
+    'planarityStatus': planarityStatus,
+    'confirmedAtUtc': confirmedAtUtc?.toIso8601String(),
     'updatedAtUtc': updatedAtUtc.toIso8601String(),
   };
 
@@ -535,6 +590,15 @@ class StoredPhotoAlignment {
         .map((value) => (value! as num).toDouble())
         .toList(),
     algorithmVersion: json['algorithmVersion']! as String,
+    rotationQuarterTurns: (json['rotationQuarterTurns'] as num?)?.toInt() ?? 0,
+    alignmentMode: json['alignmentMode'] as String? ?? 'fullCard',
+    anchorsJson: json['anchorsJson'] as String?,
+    reprojectionRmsMm: (json['reprojectionRmsMm'] as num?)?.toDouble(),
+    reprojectionMaxMm: (json['reprojectionMaxMm'] as num?)?.toDouble(),
+    planarityStatus: json['planarityStatus'] as String? ?? 'legacyUnverified',
+    confirmedAtUtc: json['confirmedAtUtc'] == null
+        ? null
+        : DateTime.parse(json['confirmedAtUtc']! as String).toUtc(),
     updatedAtUtc: DateTime.parse(json['updatedAtUtc']! as String).toUtc(),
   );
 }

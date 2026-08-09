@@ -157,6 +157,17 @@ class VisionScanDrafts extends Table {
   TextColumn get reviewJson => text().nullable()();
   TextColumn get engineVersion => text().nullable()();
   TextColumn get failureCode => text().nullable()();
+  IntColumn get rotationQuarterTurns =>
+      integer().withDefault(const Constant(0))();
+  TextColumn get alignmentMode =>
+      text().withDefault(const Constant('fullCard'))();
+  TextColumn get anchorsJson => text().nullable()();
+  RealColumn get reprojectionRmsMm => real().nullable()();
+  RealColumn get reprojectionMaxMm => real().nullable()();
+  TextColumn get planarityStatus =>
+      text().withDefault(const Constant('unknown'))();
+  TextColumn get alignmentAlgorithmVersion => text().nullable()();
+  DateTimeColumn get alignmentConfirmedAtUtc => dateTime().nullable()();
   DateTimeColumn get createdAtUtc => dateTime()();
   DateTimeColumn get updatedAtUtc => dateTime()();
 
@@ -230,6 +241,16 @@ class PhotoAlignments extends Table {
   TextColumn get cornersJson => text()();
   TextColumn get matrixJson => text()();
   TextColumn get algorithmVersion => text()();
+  IntColumn get rotationQuarterTurns =>
+      integer().withDefault(const Constant(0))();
+  TextColumn get alignmentMode =>
+      text().withDefault(const Constant('fullCard'))();
+  TextColumn get anchorsJson => text().nullable()();
+  RealColumn get reprojectionRmsMm => real().nullable()();
+  RealColumn get reprojectionMaxMm => real().nullable()();
+  TextColumn get planarityStatus =>
+      text().withDefault(const Constant('unknown'))();
+  DateTimeColumn get confirmedAtUtc => dateTime().nullable()();
   DateTimeColumn get updatedAtUtc => dateTime()();
 
   @override
@@ -435,7 +456,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -463,6 +484,13 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from <= 6 && to >= 7) {
         await _migrateToV7(migrator, addImpactColumns: from != 1);
+      }
+      if (from <= 7 && to >= 8) {
+        await _migrateToV8(
+          migrator,
+          addVisionDraftColumns: from == 7,
+          addPhotoAlignmentColumns: from != 1,
+        );
       }
     },
     beforeOpen: (details) async {
@@ -648,6 +676,65 @@ class AppDatabase extends _$AppDatabase {
         shotImpacts,
         shotImpacts.positionalUncertaintyMm,
       );
+    }
+  }
+
+  Future<void> _migrateToV8(
+    Migrator migrator, {
+    required bool addVisionDraftColumns,
+    required bool addPhotoAlignmentColumns,
+  }) async {
+    if (addVisionDraftColumns) {
+      await migrator.addColumn(
+        visionScanDrafts,
+        visionScanDrafts.rotationQuarterTurns,
+      );
+      await migrator.addColumn(
+        visionScanDrafts,
+        visionScanDrafts.alignmentMode,
+      );
+      await migrator.addColumn(visionScanDrafts, visionScanDrafts.anchorsJson);
+      await migrator.addColumn(
+        visionScanDrafts,
+        visionScanDrafts.reprojectionRmsMm,
+      );
+      await migrator.addColumn(
+        visionScanDrafts,
+        visionScanDrafts.reprojectionMaxMm,
+      );
+      await migrator.addColumn(
+        visionScanDrafts,
+        visionScanDrafts.planarityStatus,
+      );
+      await migrator.addColumn(
+        visionScanDrafts,
+        visionScanDrafts.alignmentAlgorithmVersion,
+      );
+      await migrator.addColumn(
+        visionScanDrafts,
+        visionScanDrafts.alignmentConfirmedAtUtc,
+      );
+    }
+    if (addPhotoAlignmentColumns) {
+      await migrator.addColumn(
+        photoAlignments,
+        photoAlignments.rotationQuarterTurns,
+      );
+      await migrator.addColumn(photoAlignments, photoAlignments.alignmentMode);
+      await migrator.addColumn(photoAlignments, photoAlignments.anchorsJson);
+      await migrator.addColumn(
+        photoAlignments,
+        photoAlignments.reprojectionRmsMm,
+      );
+      await migrator.addColumn(
+        photoAlignments,
+        photoAlignments.reprojectionMaxMm,
+      );
+      await migrator.addColumn(
+        photoAlignments,
+        photoAlignments.planarityStatus,
+      );
+      await migrator.addColumn(photoAlignments, photoAlignments.confirmedAtUtc);
     }
   }
 

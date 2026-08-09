@@ -5013,6 +5013,98 @@ class $VisionScanDraftsTable extends VisionScanDrafts
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _rotationQuarterTurnsMeta =
+      const VerificationMeta('rotationQuarterTurns');
+  @override
+  late final GeneratedColumn<int> rotationQuarterTurns = GeneratedColumn<int>(
+    'rotation_quarter_turns',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _alignmentModeMeta = const VerificationMeta(
+    'alignmentMode',
+  );
+  @override
+  late final GeneratedColumn<String> alignmentMode = GeneratedColumn<String>(
+    'alignment_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('fullCard'),
+  );
+  static const VerificationMeta _anchorsJsonMeta = const VerificationMeta(
+    'anchorsJson',
+  );
+  @override
+  late final GeneratedColumn<String> anchorsJson = GeneratedColumn<String>(
+    'anchors_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reprojectionRmsMmMeta = const VerificationMeta(
+    'reprojectionRmsMm',
+  );
+  @override
+  late final GeneratedColumn<double> reprojectionRmsMm =
+      GeneratedColumn<double>(
+        'reprojection_rms_mm',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _reprojectionMaxMmMeta = const VerificationMeta(
+    'reprojectionMaxMm',
+  );
+  @override
+  late final GeneratedColumn<double> reprojectionMaxMm =
+      GeneratedColumn<double>(
+        'reprojection_max_mm',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _planarityStatusMeta = const VerificationMeta(
+    'planarityStatus',
+  );
+  @override
+  late final GeneratedColumn<String> planarityStatus = GeneratedColumn<String>(
+    'planarity_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('unknown'),
+  );
+  static const VerificationMeta _alignmentAlgorithmVersionMeta =
+      const VerificationMeta('alignmentAlgorithmVersion');
+  @override
+  late final GeneratedColumn<String> alignmentAlgorithmVersion =
+      GeneratedColumn<String>(
+        'alignment_algorithm_version',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _alignmentConfirmedAtUtcMeta =
+      const VerificationMeta('alignmentConfirmedAtUtc');
+  @override
+  late final GeneratedColumn<DateTime> alignmentConfirmedAtUtc =
+      GeneratedColumn<DateTime>(
+        'alignment_confirmed_at_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
     'createdAtUtc',
   );
@@ -5052,6 +5144,14 @@ class $VisionScanDraftsTable extends VisionScanDrafts
     reviewJson,
     engineVersion,
     failureCode,
+    rotationQuarterTurns,
+    alignmentMode,
+    anchorsJson,
+    reprojectionRmsMm,
+    reprojectionMaxMm,
+    planarityStatus,
+    alignmentAlgorithmVersion,
+    alignmentConfirmedAtUtc,
     createdAtUtc,
     updatedAtUtc,
   ];
@@ -5196,6 +5296,78 @@ class $VisionScanDraftsTable extends VisionScanDrafts
         ),
       );
     }
+    if (data.containsKey('rotation_quarter_turns')) {
+      context.handle(
+        _rotationQuarterTurnsMeta,
+        rotationQuarterTurns.isAcceptableOrUnknown(
+          data['rotation_quarter_turns']!,
+          _rotationQuarterTurnsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('alignment_mode')) {
+      context.handle(
+        _alignmentModeMeta,
+        alignmentMode.isAcceptableOrUnknown(
+          data['alignment_mode']!,
+          _alignmentModeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('anchors_json')) {
+      context.handle(
+        _anchorsJsonMeta,
+        anchorsJson.isAcceptableOrUnknown(
+          data['anchors_json']!,
+          _anchorsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reprojection_rms_mm')) {
+      context.handle(
+        _reprojectionRmsMmMeta,
+        reprojectionRmsMm.isAcceptableOrUnknown(
+          data['reprojection_rms_mm']!,
+          _reprojectionRmsMmMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reprojection_max_mm')) {
+      context.handle(
+        _reprojectionMaxMmMeta,
+        reprojectionMaxMm.isAcceptableOrUnknown(
+          data['reprojection_max_mm']!,
+          _reprojectionMaxMmMeta,
+        ),
+      );
+    }
+    if (data.containsKey('planarity_status')) {
+      context.handle(
+        _planarityStatusMeta,
+        planarityStatus.isAcceptableOrUnknown(
+          data['planarity_status']!,
+          _planarityStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('alignment_algorithm_version')) {
+      context.handle(
+        _alignmentAlgorithmVersionMeta,
+        alignmentAlgorithmVersion.isAcceptableOrUnknown(
+          data['alignment_algorithm_version']!,
+          _alignmentAlgorithmVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('alignment_confirmed_at_utc')) {
+      context.handle(
+        _alignmentConfirmedAtUtcMeta,
+        alignmentConfirmedAtUtc.isAcceptableOrUnknown(
+          data['alignment_confirmed_at_utc']!,
+          _alignmentConfirmedAtUtcMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at_utc')) {
       context.handle(
         _createdAtUtcMeta,
@@ -5287,6 +5459,38 @@ class $VisionScanDraftsTable extends VisionScanDrafts
         DriftSqlType.string,
         data['${effectivePrefix}failure_code'],
       ),
+      rotationQuarterTurns: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rotation_quarter_turns'],
+      )!,
+      alignmentMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}alignment_mode'],
+      )!,
+      anchorsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}anchors_json'],
+      ),
+      reprojectionRmsMm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}reprojection_rms_mm'],
+      ),
+      reprojectionMaxMm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}reprojection_max_mm'],
+      ),
+      planarityStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}planarity_status'],
+      )!,
+      alignmentAlgorithmVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}alignment_algorithm_version'],
+      ),
+      alignmentConfirmedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}alignment_confirmed_at_utc'],
+      ),
       createdAtUtc: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at_utc'],
@@ -5321,6 +5525,14 @@ class VisionScanDraftRecord extends DataClass
   final String? reviewJson;
   final String? engineVersion;
   final String? failureCode;
+  final int rotationQuarterTurns;
+  final String alignmentMode;
+  final String? anchorsJson;
+  final double? reprojectionRmsMm;
+  final double? reprojectionMaxMm;
+  final String planarityStatus;
+  final String? alignmentAlgorithmVersion;
+  final DateTime? alignmentConfirmedAtUtc;
   final DateTime createdAtUtc;
   final DateTime updatedAtUtc;
   const VisionScanDraftRecord({
@@ -5339,6 +5551,14 @@ class VisionScanDraftRecord extends DataClass
     this.reviewJson,
     this.engineVersion,
     this.failureCode,
+    required this.rotationQuarterTurns,
+    required this.alignmentMode,
+    this.anchorsJson,
+    this.reprojectionRmsMm,
+    this.reprojectionMaxMm,
+    required this.planarityStatus,
+    this.alignmentAlgorithmVersion,
+    this.alignmentConfirmedAtUtc,
     required this.createdAtUtc,
     required this.updatedAtUtc,
   });
@@ -5371,6 +5591,28 @@ class VisionScanDraftRecord extends DataClass
     }
     if (!nullToAbsent || failureCode != null) {
       map['failure_code'] = Variable<String>(failureCode);
+    }
+    map['rotation_quarter_turns'] = Variable<int>(rotationQuarterTurns);
+    map['alignment_mode'] = Variable<String>(alignmentMode);
+    if (!nullToAbsent || anchorsJson != null) {
+      map['anchors_json'] = Variable<String>(anchorsJson);
+    }
+    if (!nullToAbsent || reprojectionRmsMm != null) {
+      map['reprojection_rms_mm'] = Variable<double>(reprojectionRmsMm);
+    }
+    if (!nullToAbsent || reprojectionMaxMm != null) {
+      map['reprojection_max_mm'] = Variable<double>(reprojectionMaxMm);
+    }
+    map['planarity_status'] = Variable<String>(planarityStatus);
+    if (!nullToAbsent || alignmentAlgorithmVersion != null) {
+      map['alignment_algorithm_version'] = Variable<String>(
+        alignmentAlgorithmVersion,
+      );
+    }
+    if (!nullToAbsent || alignmentConfirmedAtUtc != null) {
+      map['alignment_confirmed_at_utc'] = Variable<DateTime>(
+        alignmentConfirmedAtUtc,
+      );
     }
     map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
     map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
@@ -5406,6 +5648,25 @@ class VisionScanDraftRecord extends DataClass
       failureCode: failureCode == null && nullToAbsent
           ? const Value.absent()
           : Value(failureCode),
+      rotationQuarterTurns: Value(rotationQuarterTurns),
+      alignmentMode: Value(alignmentMode),
+      anchorsJson: anchorsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(anchorsJson),
+      reprojectionRmsMm: reprojectionRmsMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reprojectionRmsMm),
+      reprojectionMaxMm: reprojectionMaxMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reprojectionMaxMm),
+      planarityStatus: Value(planarityStatus),
+      alignmentAlgorithmVersion:
+          alignmentAlgorithmVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(alignmentAlgorithmVersion),
+      alignmentConfirmedAtUtc: alignmentConfirmedAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(alignmentConfirmedAtUtc),
       createdAtUtc: Value(createdAtUtc),
       updatedAtUtc: Value(updatedAtUtc),
     );
@@ -5434,6 +5695,24 @@ class VisionScanDraftRecord extends DataClass
       reviewJson: serializer.fromJson<String?>(json['reviewJson']),
       engineVersion: serializer.fromJson<String?>(json['engineVersion']),
       failureCode: serializer.fromJson<String?>(json['failureCode']),
+      rotationQuarterTurns: serializer.fromJson<int>(
+        json['rotationQuarterTurns'],
+      ),
+      alignmentMode: serializer.fromJson<String>(json['alignmentMode']),
+      anchorsJson: serializer.fromJson<String?>(json['anchorsJson']),
+      reprojectionRmsMm: serializer.fromJson<double?>(
+        json['reprojectionRmsMm'],
+      ),
+      reprojectionMaxMm: serializer.fromJson<double?>(
+        json['reprojectionMaxMm'],
+      ),
+      planarityStatus: serializer.fromJson<String>(json['planarityStatus']),
+      alignmentAlgorithmVersion: serializer.fromJson<String?>(
+        json['alignmentAlgorithmVersion'],
+      ),
+      alignmentConfirmedAtUtc: serializer.fromJson<DateTime?>(
+        json['alignmentConfirmedAtUtc'],
+      ),
       createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
       updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
     );
@@ -5457,6 +5736,18 @@ class VisionScanDraftRecord extends DataClass
       'reviewJson': serializer.toJson<String?>(reviewJson),
       'engineVersion': serializer.toJson<String?>(engineVersion),
       'failureCode': serializer.toJson<String?>(failureCode),
+      'rotationQuarterTurns': serializer.toJson<int>(rotationQuarterTurns),
+      'alignmentMode': serializer.toJson<String>(alignmentMode),
+      'anchorsJson': serializer.toJson<String?>(anchorsJson),
+      'reprojectionRmsMm': serializer.toJson<double?>(reprojectionRmsMm),
+      'reprojectionMaxMm': serializer.toJson<double?>(reprojectionMaxMm),
+      'planarityStatus': serializer.toJson<String>(planarityStatus),
+      'alignmentAlgorithmVersion': serializer.toJson<String?>(
+        alignmentAlgorithmVersion,
+      ),
+      'alignmentConfirmedAtUtc': serializer.toJson<DateTime?>(
+        alignmentConfirmedAtUtc,
+      ),
       'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
       'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
     };
@@ -5478,6 +5769,14 @@ class VisionScanDraftRecord extends DataClass
     Value<String?> reviewJson = const Value.absent(),
     Value<String?> engineVersion = const Value.absent(),
     Value<String?> failureCode = const Value.absent(),
+    int? rotationQuarterTurns,
+    String? alignmentMode,
+    Value<String?> anchorsJson = const Value.absent(),
+    Value<double?> reprojectionRmsMm = const Value.absent(),
+    Value<double?> reprojectionMaxMm = const Value.absent(),
+    String? planarityStatus,
+    Value<String?> alignmentAlgorithmVersion = const Value.absent(),
+    Value<DateTime?> alignmentConfirmedAtUtc = const Value.absent(),
     DateTime? createdAtUtc,
     DateTime? updatedAtUtc,
   }) => VisionScanDraftRecord(
@@ -5502,6 +5801,22 @@ class VisionScanDraftRecord extends DataClass
         ? engineVersion.value
         : this.engineVersion,
     failureCode: failureCode.present ? failureCode.value : this.failureCode,
+    rotationQuarterTurns: rotationQuarterTurns ?? this.rotationQuarterTurns,
+    alignmentMode: alignmentMode ?? this.alignmentMode,
+    anchorsJson: anchorsJson.present ? anchorsJson.value : this.anchorsJson,
+    reprojectionRmsMm: reprojectionRmsMm.present
+        ? reprojectionRmsMm.value
+        : this.reprojectionRmsMm,
+    reprojectionMaxMm: reprojectionMaxMm.present
+        ? reprojectionMaxMm.value
+        : this.reprojectionMaxMm,
+    planarityStatus: planarityStatus ?? this.planarityStatus,
+    alignmentAlgorithmVersion: alignmentAlgorithmVersion.present
+        ? alignmentAlgorithmVersion.value
+        : this.alignmentAlgorithmVersion,
+    alignmentConfirmedAtUtc: alignmentConfirmedAtUtc.present
+        ? alignmentConfirmedAtUtc.value
+        : this.alignmentConfirmedAtUtc,
     createdAtUtc: createdAtUtc ?? this.createdAtUtc,
     updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
   );
@@ -5540,6 +5855,30 @@ class VisionScanDraftRecord extends DataClass
       failureCode: data.failureCode.present
           ? data.failureCode.value
           : this.failureCode,
+      rotationQuarterTurns: data.rotationQuarterTurns.present
+          ? data.rotationQuarterTurns.value
+          : this.rotationQuarterTurns,
+      alignmentMode: data.alignmentMode.present
+          ? data.alignmentMode.value
+          : this.alignmentMode,
+      anchorsJson: data.anchorsJson.present
+          ? data.anchorsJson.value
+          : this.anchorsJson,
+      reprojectionRmsMm: data.reprojectionRmsMm.present
+          ? data.reprojectionRmsMm.value
+          : this.reprojectionRmsMm,
+      reprojectionMaxMm: data.reprojectionMaxMm.present
+          ? data.reprojectionMaxMm.value
+          : this.reprojectionMaxMm,
+      planarityStatus: data.planarityStatus.present
+          ? data.planarityStatus.value
+          : this.planarityStatus,
+      alignmentAlgorithmVersion: data.alignmentAlgorithmVersion.present
+          ? data.alignmentAlgorithmVersion.value
+          : this.alignmentAlgorithmVersion,
+      alignmentConfirmedAtUtc: data.alignmentConfirmedAtUtc.present
+          ? data.alignmentConfirmedAtUtc.value
+          : this.alignmentConfirmedAtUtc,
       createdAtUtc: data.createdAtUtc.present
           ? data.createdAtUtc.value
           : this.createdAtUtc,
@@ -5567,6 +5906,14 @@ class VisionScanDraftRecord extends DataClass
           ..write('reviewJson: $reviewJson, ')
           ..write('engineVersion: $engineVersion, ')
           ..write('failureCode: $failureCode, ')
+          ..write('rotationQuarterTurns: $rotationQuarterTurns, ')
+          ..write('alignmentMode: $alignmentMode, ')
+          ..write('anchorsJson: $anchorsJson, ')
+          ..write('reprojectionRmsMm: $reprojectionRmsMm, ')
+          ..write('reprojectionMaxMm: $reprojectionMaxMm, ')
+          ..write('planarityStatus: $planarityStatus, ')
+          ..write('alignmentAlgorithmVersion: $alignmentAlgorithmVersion, ')
+          ..write('alignmentConfirmedAtUtc: $alignmentConfirmedAtUtc, ')
           ..write('createdAtUtc: $createdAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc')
           ..write(')'))
@@ -5574,7 +5921,7 @@ class VisionScanDraftRecord extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     status,
     originalImagePath,
@@ -5590,9 +5937,17 @@ class VisionScanDraftRecord extends DataClass
     reviewJson,
     engineVersion,
     failureCode,
+    rotationQuarterTurns,
+    alignmentMode,
+    anchorsJson,
+    reprojectionRmsMm,
+    reprojectionMaxMm,
+    planarityStatus,
+    alignmentAlgorithmVersion,
+    alignmentConfirmedAtUtc,
     createdAtUtc,
     updatedAtUtc,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5612,6 +5967,14 @@ class VisionScanDraftRecord extends DataClass
           other.reviewJson == this.reviewJson &&
           other.engineVersion == this.engineVersion &&
           other.failureCode == this.failureCode &&
+          other.rotationQuarterTurns == this.rotationQuarterTurns &&
+          other.alignmentMode == this.alignmentMode &&
+          other.anchorsJson == this.anchorsJson &&
+          other.reprojectionRmsMm == this.reprojectionRmsMm &&
+          other.reprojectionMaxMm == this.reprojectionMaxMm &&
+          other.planarityStatus == this.planarityStatus &&
+          other.alignmentAlgorithmVersion == this.alignmentAlgorithmVersion &&
+          other.alignmentConfirmedAtUtc == this.alignmentConfirmedAtUtc &&
           other.createdAtUtc == this.createdAtUtc &&
           other.updatedAtUtc == this.updatedAtUtc);
 }
@@ -5632,6 +5995,14 @@ class VisionScanDraftsCompanion extends UpdateCompanion<VisionScanDraftRecord> {
   final Value<String?> reviewJson;
   final Value<String?> engineVersion;
   final Value<String?> failureCode;
+  final Value<int> rotationQuarterTurns;
+  final Value<String> alignmentMode;
+  final Value<String?> anchorsJson;
+  final Value<double?> reprojectionRmsMm;
+  final Value<double?> reprojectionMaxMm;
+  final Value<String> planarityStatus;
+  final Value<String?> alignmentAlgorithmVersion;
+  final Value<DateTime?> alignmentConfirmedAtUtc;
   final Value<DateTime> createdAtUtc;
   final Value<DateTime> updatedAtUtc;
   final Value<int> rowid;
@@ -5651,6 +6022,14 @@ class VisionScanDraftsCompanion extends UpdateCompanion<VisionScanDraftRecord> {
     this.reviewJson = const Value.absent(),
     this.engineVersion = const Value.absent(),
     this.failureCode = const Value.absent(),
+    this.rotationQuarterTurns = const Value.absent(),
+    this.alignmentMode = const Value.absent(),
+    this.anchorsJson = const Value.absent(),
+    this.reprojectionRmsMm = const Value.absent(),
+    this.reprojectionMaxMm = const Value.absent(),
+    this.planarityStatus = const Value.absent(),
+    this.alignmentAlgorithmVersion = const Value.absent(),
+    this.alignmentConfirmedAtUtc = const Value.absent(),
     this.createdAtUtc = const Value.absent(),
     this.updatedAtUtc = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -5671,6 +6050,14 @@ class VisionScanDraftsCompanion extends UpdateCompanion<VisionScanDraftRecord> {
     this.reviewJson = const Value.absent(),
     this.engineVersion = const Value.absent(),
     this.failureCode = const Value.absent(),
+    this.rotationQuarterTurns = const Value.absent(),
+    this.alignmentMode = const Value.absent(),
+    this.anchorsJson = const Value.absent(),
+    this.reprojectionRmsMm = const Value.absent(),
+    this.reprojectionMaxMm = const Value.absent(),
+    this.planarityStatus = const Value.absent(),
+    this.alignmentAlgorithmVersion = const Value.absent(),
+    this.alignmentConfirmedAtUtc = const Value.absent(),
     required DateTime createdAtUtc,
     required DateTime updatedAtUtc,
     this.rowid = const Value.absent(),
@@ -5701,6 +6088,14 @@ class VisionScanDraftsCompanion extends UpdateCompanion<VisionScanDraftRecord> {
     Expression<String>? reviewJson,
     Expression<String>? engineVersion,
     Expression<String>? failureCode,
+    Expression<int>? rotationQuarterTurns,
+    Expression<String>? alignmentMode,
+    Expression<String>? anchorsJson,
+    Expression<double>? reprojectionRmsMm,
+    Expression<double>? reprojectionMaxMm,
+    Expression<String>? planarityStatus,
+    Expression<String>? alignmentAlgorithmVersion,
+    Expression<DateTime>? alignmentConfirmedAtUtc,
     Expression<DateTime>? createdAtUtc,
     Expression<DateTime>? updatedAtUtc,
     Expression<int>? rowid,
@@ -5722,6 +6117,17 @@ class VisionScanDraftsCompanion extends UpdateCompanion<VisionScanDraftRecord> {
       if (reviewJson != null) 'review_json': reviewJson,
       if (engineVersion != null) 'engine_version': engineVersion,
       if (failureCode != null) 'failure_code': failureCode,
+      if (rotationQuarterTurns != null)
+        'rotation_quarter_turns': rotationQuarterTurns,
+      if (alignmentMode != null) 'alignment_mode': alignmentMode,
+      if (anchorsJson != null) 'anchors_json': anchorsJson,
+      if (reprojectionRmsMm != null) 'reprojection_rms_mm': reprojectionRmsMm,
+      if (reprojectionMaxMm != null) 'reprojection_max_mm': reprojectionMaxMm,
+      if (planarityStatus != null) 'planarity_status': planarityStatus,
+      if (alignmentAlgorithmVersion != null)
+        'alignment_algorithm_version': alignmentAlgorithmVersion,
+      if (alignmentConfirmedAtUtc != null)
+        'alignment_confirmed_at_utc': alignmentConfirmedAtUtc,
       if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
       if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
       if (rowid != null) 'rowid': rowid,
@@ -5744,6 +6150,14 @@ class VisionScanDraftsCompanion extends UpdateCompanion<VisionScanDraftRecord> {
     Value<String?>? reviewJson,
     Value<String?>? engineVersion,
     Value<String?>? failureCode,
+    Value<int>? rotationQuarterTurns,
+    Value<String>? alignmentMode,
+    Value<String?>? anchorsJson,
+    Value<double?>? reprojectionRmsMm,
+    Value<double?>? reprojectionMaxMm,
+    Value<String>? planarityStatus,
+    Value<String?>? alignmentAlgorithmVersion,
+    Value<DateTime?>? alignmentConfirmedAtUtc,
     Value<DateTime>? createdAtUtc,
     Value<DateTime>? updatedAtUtc,
     Value<int>? rowid,
@@ -5764,6 +6178,16 @@ class VisionScanDraftsCompanion extends UpdateCompanion<VisionScanDraftRecord> {
       reviewJson: reviewJson ?? this.reviewJson,
       engineVersion: engineVersion ?? this.engineVersion,
       failureCode: failureCode ?? this.failureCode,
+      rotationQuarterTurns: rotationQuarterTurns ?? this.rotationQuarterTurns,
+      alignmentMode: alignmentMode ?? this.alignmentMode,
+      anchorsJson: anchorsJson ?? this.anchorsJson,
+      reprojectionRmsMm: reprojectionRmsMm ?? this.reprojectionRmsMm,
+      reprojectionMaxMm: reprojectionMaxMm ?? this.reprojectionMaxMm,
+      planarityStatus: planarityStatus ?? this.planarityStatus,
+      alignmentAlgorithmVersion:
+          alignmentAlgorithmVersion ?? this.alignmentAlgorithmVersion,
+      alignmentConfirmedAtUtc:
+          alignmentConfirmedAtUtc ?? this.alignmentConfirmedAtUtc,
       createdAtUtc: createdAtUtc ?? this.createdAtUtc,
       updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
       rowid: rowid ?? this.rowid,
@@ -5820,6 +6244,34 @@ class VisionScanDraftsCompanion extends UpdateCompanion<VisionScanDraftRecord> {
     if (failureCode.present) {
       map['failure_code'] = Variable<String>(failureCode.value);
     }
+    if (rotationQuarterTurns.present) {
+      map['rotation_quarter_turns'] = Variable<int>(rotationQuarterTurns.value);
+    }
+    if (alignmentMode.present) {
+      map['alignment_mode'] = Variable<String>(alignmentMode.value);
+    }
+    if (anchorsJson.present) {
+      map['anchors_json'] = Variable<String>(anchorsJson.value);
+    }
+    if (reprojectionRmsMm.present) {
+      map['reprojection_rms_mm'] = Variable<double>(reprojectionRmsMm.value);
+    }
+    if (reprojectionMaxMm.present) {
+      map['reprojection_max_mm'] = Variable<double>(reprojectionMaxMm.value);
+    }
+    if (planarityStatus.present) {
+      map['planarity_status'] = Variable<String>(planarityStatus.value);
+    }
+    if (alignmentAlgorithmVersion.present) {
+      map['alignment_algorithm_version'] = Variable<String>(
+        alignmentAlgorithmVersion.value,
+      );
+    }
+    if (alignmentConfirmedAtUtc.present) {
+      map['alignment_confirmed_at_utc'] = Variable<DateTime>(
+        alignmentConfirmedAtUtc.value,
+      );
+    }
     if (createdAtUtc.present) {
       map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
     }
@@ -5850,6 +6302,14 @@ class VisionScanDraftsCompanion extends UpdateCompanion<VisionScanDraftRecord> {
           ..write('reviewJson: $reviewJson, ')
           ..write('engineVersion: $engineVersion, ')
           ..write('failureCode: $failureCode, ')
+          ..write('rotationQuarterTurns: $rotationQuarterTurns, ')
+          ..write('alignmentMode: $alignmentMode, ')
+          ..write('anchorsJson: $anchorsJson, ')
+          ..write('reprojectionRmsMm: $reprojectionRmsMm, ')
+          ..write('reprojectionMaxMm: $reprojectionMaxMm, ')
+          ..write('planarityStatus: $planarityStatus, ')
+          ..write('alignmentAlgorithmVersion: $alignmentAlgorithmVersion, ')
+          ..write('alignmentConfirmedAtUtc: $alignmentConfirmedAtUtc, ')
           ..write('createdAtUtc: $createdAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc, ')
           ..write('rowid: $rowid')
@@ -7748,6 +8208,88 @@ class $PhotoAlignmentsTable extends PhotoAlignments
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _rotationQuarterTurnsMeta =
+      const VerificationMeta('rotationQuarterTurns');
+  @override
+  late final GeneratedColumn<int> rotationQuarterTurns = GeneratedColumn<int>(
+    'rotation_quarter_turns',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _alignmentModeMeta = const VerificationMeta(
+    'alignmentMode',
+  );
+  @override
+  late final GeneratedColumn<String> alignmentMode = GeneratedColumn<String>(
+    'alignment_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('fullCard'),
+  );
+  static const VerificationMeta _anchorsJsonMeta = const VerificationMeta(
+    'anchorsJson',
+  );
+  @override
+  late final GeneratedColumn<String> anchorsJson = GeneratedColumn<String>(
+    'anchors_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reprojectionRmsMmMeta = const VerificationMeta(
+    'reprojectionRmsMm',
+  );
+  @override
+  late final GeneratedColumn<double> reprojectionRmsMm =
+      GeneratedColumn<double>(
+        'reprojection_rms_mm',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _reprojectionMaxMmMeta = const VerificationMeta(
+    'reprojectionMaxMm',
+  );
+  @override
+  late final GeneratedColumn<double> reprojectionMaxMm =
+      GeneratedColumn<double>(
+        'reprojection_max_mm',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _planarityStatusMeta = const VerificationMeta(
+    'planarityStatus',
+  );
+  @override
+  late final GeneratedColumn<String> planarityStatus = GeneratedColumn<String>(
+    'planarity_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('unknown'),
+  );
+  static const VerificationMeta _confirmedAtUtcMeta = const VerificationMeta(
+    'confirmedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> confirmedAtUtc =
+      GeneratedColumn<DateTime>(
+        'confirmed_at_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
     'updatedAtUtc',
   );
@@ -7765,6 +8307,13 @@ class $PhotoAlignmentsTable extends PhotoAlignments
     cornersJson,
     matrixJson,
     algorithmVersion,
+    rotationQuarterTurns,
+    alignmentMode,
+    anchorsJson,
+    reprojectionRmsMm,
+    reprojectionMaxMm,
+    planarityStatus,
+    confirmedAtUtc,
     updatedAtUtc,
   ];
   @override
@@ -7817,6 +8366,69 @@ class $PhotoAlignmentsTable extends PhotoAlignments
     } else if (isInserting) {
       context.missing(_algorithmVersionMeta);
     }
+    if (data.containsKey('rotation_quarter_turns')) {
+      context.handle(
+        _rotationQuarterTurnsMeta,
+        rotationQuarterTurns.isAcceptableOrUnknown(
+          data['rotation_quarter_turns']!,
+          _rotationQuarterTurnsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('alignment_mode')) {
+      context.handle(
+        _alignmentModeMeta,
+        alignmentMode.isAcceptableOrUnknown(
+          data['alignment_mode']!,
+          _alignmentModeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('anchors_json')) {
+      context.handle(
+        _anchorsJsonMeta,
+        anchorsJson.isAcceptableOrUnknown(
+          data['anchors_json']!,
+          _anchorsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reprojection_rms_mm')) {
+      context.handle(
+        _reprojectionRmsMmMeta,
+        reprojectionRmsMm.isAcceptableOrUnknown(
+          data['reprojection_rms_mm']!,
+          _reprojectionRmsMmMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reprojection_max_mm')) {
+      context.handle(
+        _reprojectionMaxMmMeta,
+        reprojectionMaxMm.isAcceptableOrUnknown(
+          data['reprojection_max_mm']!,
+          _reprojectionMaxMmMeta,
+        ),
+      );
+    }
+    if (data.containsKey('planarity_status')) {
+      context.handle(
+        _planarityStatusMeta,
+        planarityStatus.isAcceptableOrUnknown(
+          data['planarity_status']!,
+          _planarityStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('confirmed_at_utc')) {
+      context.handle(
+        _confirmedAtUtcMeta,
+        confirmedAtUtc.isAcceptableOrUnknown(
+          data['confirmed_at_utc']!,
+          _confirmedAtUtcMeta,
+        ),
+      );
+    }
     if (data.containsKey('updated_at_utc')) {
       context.handle(
         _updatedAtUtcMeta,
@@ -7853,6 +8465,34 @@ class $PhotoAlignmentsTable extends PhotoAlignments
         DriftSqlType.string,
         data['${effectivePrefix}algorithm_version'],
       )!,
+      rotationQuarterTurns: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rotation_quarter_turns'],
+      )!,
+      alignmentMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}alignment_mode'],
+      )!,
+      anchorsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}anchors_json'],
+      ),
+      reprojectionRmsMm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}reprojection_rms_mm'],
+      ),
+      reprojectionMaxMm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}reprojection_max_mm'],
+      ),
+      planarityStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}planarity_status'],
+      )!,
+      confirmedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}confirmed_at_utc'],
+      ),
       updatedAtUtc: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at_utc'],
@@ -7872,12 +8512,26 @@ class PhotoAlignmentRecord extends DataClass
   final String cornersJson;
   final String matrixJson;
   final String algorithmVersion;
+  final int rotationQuarterTurns;
+  final String alignmentMode;
+  final String? anchorsJson;
+  final double? reprojectionRmsMm;
+  final double? reprojectionMaxMm;
+  final String planarityStatus;
+  final DateTime? confirmedAtUtc;
   final DateTime updatedAtUtc;
   const PhotoAlignmentRecord({
     required this.imageId,
     required this.cornersJson,
     required this.matrixJson,
     required this.algorithmVersion,
+    required this.rotationQuarterTurns,
+    required this.alignmentMode,
+    this.anchorsJson,
+    this.reprojectionRmsMm,
+    this.reprojectionMaxMm,
+    required this.planarityStatus,
+    this.confirmedAtUtc,
     required this.updatedAtUtc,
   });
   @override
@@ -7887,6 +8541,21 @@ class PhotoAlignmentRecord extends DataClass
     map['corners_json'] = Variable<String>(cornersJson);
     map['matrix_json'] = Variable<String>(matrixJson);
     map['algorithm_version'] = Variable<String>(algorithmVersion);
+    map['rotation_quarter_turns'] = Variable<int>(rotationQuarterTurns);
+    map['alignment_mode'] = Variable<String>(alignmentMode);
+    if (!nullToAbsent || anchorsJson != null) {
+      map['anchors_json'] = Variable<String>(anchorsJson);
+    }
+    if (!nullToAbsent || reprojectionRmsMm != null) {
+      map['reprojection_rms_mm'] = Variable<double>(reprojectionRmsMm);
+    }
+    if (!nullToAbsent || reprojectionMaxMm != null) {
+      map['reprojection_max_mm'] = Variable<double>(reprojectionMaxMm);
+    }
+    map['planarity_status'] = Variable<String>(planarityStatus);
+    if (!nullToAbsent || confirmedAtUtc != null) {
+      map['confirmed_at_utc'] = Variable<DateTime>(confirmedAtUtc);
+    }
     map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
     return map;
   }
@@ -7897,6 +8566,21 @@ class PhotoAlignmentRecord extends DataClass
       cornersJson: Value(cornersJson),
       matrixJson: Value(matrixJson),
       algorithmVersion: Value(algorithmVersion),
+      rotationQuarterTurns: Value(rotationQuarterTurns),
+      alignmentMode: Value(alignmentMode),
+      anchorsJson: anchorsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(anchorsJson),
+      reprojectionRmsMm: reprojectionRmsMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reprojectionRmsMm),
+      reprojectionMaxMm: reprojectionMaxMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reprojectionMaxMm),
+      planarityStatus: Value(planarityStatus),
+      confirmedAtUtc: confirmedAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confirmedAtUtc),
       updatedAtUtc: Value(updatedAtUtc),
     );
   }
@@ -7911,6 +8595,19 @@ class PhotoAlignmentRecord extends DataClass
       cornersJson: serializer.fromJson<String>(json['cornersJson']),
       matrixJson: serializer.fromJson<String>(json['matrixJson']),
       algorithmVersion: serializer.fromJson<String>(json['algorithmVersion']),
+      rotationQuarterTurns: serializer.fromJson<int>(
+        json['rotationQuarterTurns'],
+      ),
+      alignmentMode: serializer.fromJson<String>(json['alignmentMode']),
+      anchorsJson: serializer.fromJson<String?>(json['anchorsJson']),
+      reprojectionRmsMm: serializer.fromJson<double?>(
+        json['reprojectionRmsMm'],
+      ),
+      reprojectionMaxMm: serializer.fromJson<double?>(
+        json['reprojectionMaxMm'],
+      ),
+      planarityStatus: serializer.fromJson<String>(json['planarityStatus']),
+      confirmedAtUtc: serializer.fromJson<DateTime?>(json['confirmedAtUtc']),
       updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
     );
   }
@@ -7922,6 +8619,13 @@ class PhotoAlignmentRecord extends DataClass
       'cornersJson': serializer.toJson<String>(cornersJson),
       'matrixJson': serializer.toJson<String>(matrixJson),
       'algorithmVersion': serializer.toJson<String>(algorithmVersion),
+      'rotationQuarterTurns': serializer.toJson<int>(rotationQuarterTurns),
+      'alignmentMode': serializer.toJson<String>(alignmentMode),
+      'anchorsJson': serializer.toJson<String?>(anchorsJson),
+      'reprojectionRmsMm': serializer.toJson<double?>(reprojectionRmsMm),
+      'reprojectionMaxMm': serializer.toJson<double?>(reprojectionMaxMm),
+      'planarityStatus': serializer.toJson<String>(planarityStatus),
+      'confirmedAtUtc': serializer.toJson<DateTime?>(confirmedAtUtc),
       'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
     };
   }
@@ -7931,12 +8635,32 @@ class PhotoAlignmentRecord extends DataClass
     String? cornersJson,
     String? matrixJson,
     String? algorithmVersion,
+    int? rotationQuarterTurns,
+    String? alignmentMode,
+    Value<String?> anchorsJson = const Value.absent(),
+    Value<double?> reprojectionRmsMm = const Value.absent(),
+    Value<double?> reprojectionMaxMm = const Value.absent(),
+    String? planarityStatus,
+    Value<DateTime?> confirmedAtUtc = const Value.absent(),
     DateTime? updatedAtUtc,
   }) => PhotoAlignmentRecord(
     imageId: imageId ?? this.imageId,
     cornersJson: cornersJson ?? this.cornersJson,
     matrixJson: matrixJson ?? this.matrixJson,
     algorithmVersion: algorithmVersion ?? this.algorithmVersion,
+    rotationQuarterTurns: rotationQuarterTurns ?? this.rotationQuarterTurns,
+    alignmentMode: alignmentMode ?? this.alignmentMode,
+    anchorsJson: anchorsJson.present ? anchorsJson.value : this.anchorsJson,
+    reprojectionRmsMm: reprojectionRmsMm.present
+        ? reprojectionRmsMm.value
+        : this.reprojectionRmsMm,
+    reprojectionMaxMm: reprojectionMaxMm.present
+        ? reprojectionMaxMm.value
+        : this.reprojectionMaxMm,
+    planarityStatus: planarityStatus ?? this.planarityStatus,
+    confirmedAtUtc: confirmedAtUtc.present
+        ? confirmedAtUtc.value
+        : this.confirmedAtUtc,
     updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
   );
   PhotoAlignmentRecord copyWithCompanion(PhotoAlignmentsCompanion data) {
@@ -7951,6 +8675,27 @@ class PhotoAlignmentRecord extends DataClass
       algorithmVersion: data.algorithmVersion.present
           ? data.algorithmVersion.value
           : this.algorithmVersion,
+      rotationQuarterTurns: data.rotationQuarterTurns.present
+          ? data.rotationQuarterTurns.value
+          : this.rotationQuarterTurns,
+      alignmentMode: data.alignmentMode.present
+          ? data.alignmentMode.value
+          : this.alignmentMode,
+      anchorsJson: data.anchorsJson.present
+          ? data.anchorsJson.value
+          : this.anchorsJson,
+      reprojectionRmsMm: data.reprojectionRmsMm.present
+          ? data.reprojectionRmsMm.value
+          : this.reprojectionRmsMm,
+      reprojectionMaxMm: data.reprojectionMaxMm.present
+          ? data.reprojectionMaxMm.value
+          : this.reprojectionMaxMm,
+      planarityStatus: data.planarityStatus.present
+          ? data.planarityStatus.value
+          : this.planarityStatus,
+      confirmedAtUtc: data.confirmedAtUtc.present
+          ? data.confirmedAtUtc.value
+          : this.confirmedAtUtc,
       updatedAtUtc: data.updatedAtUtc.present
           ? data.updatedAtUtc.value
           : this.updatedAtUtc,
@@ -7964,6 +8709,13 @@ class PhotoAlignmentRecord extends DataClass
           ..write('cornersJson: $cornersJson, ')
           ..write('matrixJson: $matrixJson, ')
           ..write('algorithmVersion: $algorithmVersion, ')
+          ..write('rotationQuarterTurns: $rotationQuarterTurns, ')
+          ..write('alignmentMode: $alignmentMode, ')
+          ..write('anchorsJson: $anchorsJson, ')
+          ..write('reprojectionRmsMm: $reprojectionRmsMm, ')
+          ..write('reprojectionMaxMm: $reprojectionMaxMm, ')
+          ..write('planarityStatus: $planarityStatus, ')
+          ..write('confirmedAtUtc: $confirmedAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc')
           ..write(')'))
         .toString();
@@ -7975,6 +8727,13 @@ class PhotoAlignmentRecord extends DataClass
     cornersJson,
     matrixJson,
     algorithmVersion,
+    rotationQuarterTurns,
+    alignmentMode,
+    anchorsJson,
+    reprojectionRmsMm,
+    reprojectionMaxMm,
+    planarityStatus,
+    confirmedAtUtc,
     updatedAtUtc,
   );
   @override
@@ -7985,6 +8744,13 @@ class PhotoAlignmentRecord extends DataClass
           other.cornersJson == this.cornersJson &&
           other.matrixJson == this.matrixJson &&
           other.algorithmVersion == this.algorithmVersion &&
+          other.rotationQuarterTurns == this.rotationQuarterTurns &&
+          other.alignmentMode == this.alignmentMode &&
+          other.anchorsJson == this.anchorsJson &&
+          other.reprojectionRmsMm == this.reprojectionRmsMm &&
+          other.reprojectionMaxMm == this.reprojectionMaxMm &&
+          other.planarityStatus == this.planarityStatus &&
+          other.confirmedAtUtc == this.confirmedAtUtc &&
           other.updatedAtUtc == this.updatedAtUtc);
 }
 
@@ -7993,6 +8759,13 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
   final Value<String> cornersJson;
   final Value<String> matrixJson;
   final Value<String> algorithmVersion;
+  final Value<int> rotationQuarterTurns;
+  final Value<String> alignmentMode;
+  final Value<String?> anchorsJson;
+  final Value<double?> reprojectionRmsMm;
+  final Value<double?> reprojectionMaxMm;
+  final Value<String> planarityStatus;
+  final Value<DateTime?> confirmedAtUtc;
   final Value<DateTime> updatedAtUtc;
   final Value<int> rowid;
   const PhotoAlignmentsCompanion({
@@ -8000,6 +8773,13 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
     this.cornersJson = const Value.absent(),
     this.matrixJson = const Value.absent(),
     this.algorithmVersion = const Value.absent(),
+    this.rotationQuarterTurns = const Value.absent(),
+    this.alignmentMode = const Value.absent(),
+    this.anchorsJson = const Value.absent(),
+    this.reprojectionRmsMm = const Value.absent(),
+    this.reprojectionMaxMm = const Value.absent(),
+    this.planarityStatus = const Value.absent(),
+    this.confirmedAtUtc = const Value.absent(),
     this.updatedAtUtc = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -8008,6 +8788,13 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
     required String cornersJson,
     required String matrixJson,
     required String algorithmVersion,
+    this.rotationQuarterTurns = const Value.absent(),
+    this.alignmentMode = const Value.absent(),
+    this.anchorsJson = const Value.absent(),
+    this.reprojectionRmsMm = const Value.absent(),
+    this.reprojectionMaxMm = const Value.absent(),
+    this.planarityStatus = const Value.absent(),
+    this.confirmedAtUtc = const Value.absent(),
     required DateTime updatedAtUtc,
     this.rowid = const Value.absent(),
   }) : imageId = Value(imageId),
@@ -8020,6 +8807,13 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
     Expression<String>? cornersJson,
     Expression<String>? matrixJson,
     Expression<String>? algorithmVersion,
+    Expression<int>? rotationQuarterTurns,
+    Expression<String>? alignmentMode,
+    Expression<String>? anchorsJson,
+    Expression<double>? reprojectionRmsMm,
+    Expression<double>? reprojectionMaxMm,
+    Expression<String>? planarityStatus,
+    Expression<DateTime>? confirmedAtUtc,
     Expression<DateTime>? updatedAtUtc,
     Expression<int>? rowid,
   }) {
@@ -8028,6 +8822,14 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
       if (cornersJson != null) 'corners_json': cornersJson,
       if (matrixJson != null) 'matrix_json': matrixJson,
       if (algorithmVersion != null) 'algorithm_version': algorithmVersion,
+      if (rotationQuarterTurns != null)
+        'rotation_quarter_turns': rotationQuarterTurns,
+      if (alignmentMode != null) 'alignment_mode': alignmentMode,
+      if (anchorsJson != null) 'anchors_json': anchorsJson,
+      if (reprojectionRmsMm != null) 'reprojection_rms_mm': reprojectionRmsMm,
+      if (reprojectionMaxMm != null) 'reprojection_max_mm': reprojectionMaxMm,
+      if (planarityStatus != null) 'planarity_status': planarityStatus,
+      if (confirmedAtUtc != null) 'confirmed_at_utc': confirmedAtUtc,
       if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
       if (rowid != null) 'rowid': rowid,
     });
@@ -8038,6 +8840,13 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
     Value<String>? cornersJson,
     Value<String>? matrixJson,
     Value<String>? algorithmVersion,
+    Value<int>? rotationQuarterTurns,
+    Value<String>? alignmentMode,
+    Value<String?>? anchorsJson,
+    Value<double?>? reprojectionRmsMm,
+    Value<double?>? reprojectionMaxMm,
+    Value<String>? planarityStatus,
+    Value<DateTime?>? confirmedAtUtc,
     Value<DateTime>? updatedAtUtc,
     Value<int>? rowid,
   }) {
@@ -8046,6 +8855,13 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
       cornersJson: cornersJson ?? this.cornersJson,
       matrixJson: matrixJson ?? this.matrixJson,
       algorithmVersion: algorithmVersion ?? this.algorithmVersion,
+      rotationQuarterTurns: rotationQuarterTurns ?? this.rotationQuarterTurns,
+      alignmentMode: alignmentMode ?? this.alignmentMode,
+      anchorsJson: anchorsJson ?? this.anchorsJson,
+      reprojectionRmsMm: reprojectionRmsMm ?? this.reprojectionRmsMm,
+      reprojectionMaxMm: reprojectionMaxMm ?? this.reprojectionMaxMm,
+      planarityStatus: planarityStatus ?? this.planarityStatus,
+      confirmedAtUtc: confirmedAtUtc ?? this.confirmedAtUtc,
       updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
       rowid: rowid ?? this.rowid,
     );
@@ -8066,6 +8882,27 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
     if (algorithmVersion.present) {
       map['algorithm_version'] = Variable<String>(algorithmVersion.value);
     }
+    if (rotationQuarterTurns.present) {
+      map['rotation_quarter_turns'] = Variable<int>(rotationQuarterTurns.value);
+    }
+    if (alignmentMode.present) {
+      map['alignment_mode'] = Variable<String>(alignmentMode.value);
+    }
+    if (anchorsJson.present) {
+      map['anchors_json'] = Variable<String>(anchorsJson.value);
+    }
+    if (reprojectionRmsMm.present) {
+      map['reprojection_rms_mm'] = Variable<double>(reprojectionRmsMm.value);
+    }
+    if (reprojectionMaxMm.present) {
+      map['reprojection_max_mm'] = Variable<double>(reprojectionMaxMm.value);
+    }
+    if (planarityStatus.present) {
+      map['planarity_status'] = Variable<String>(planarityStatus.value);
+    }
+    if (confirmedAtUtc.present) {
+      map['confirmed_at_utc'] = Variable<DateTime>(confirmedAtUtc.value);
+    }
     if (updatedAtUtc.present) {
       map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
     }
@@ -8082,6 +8919,13 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
           ..write('cornersJson: $cornersJson, ')
           ..write('matrixJson: $matrixJson, ')
           ..write('algorithmVersion: $algorithmVersion, ')
+          ..write('rotationQuarterTurns: $rotationQuarterTurns, ')
+          ..write('alignmentMode: $alignmentMode, ')
+          ..write('anchorsJson: $anchorsJson, ')
+          ..write('reprojectionRmsMm: $reprojectionRmsMm, ')
+          ..write('reprojectionMaxMm: $reprojectionMaxMm, ')
+          ..write('planarityStatus: $planarityStatus, ')
+          ..write('confirmedAtUtc: $confirmedAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -18979,6 +19823,14 @@ typedef $$VisionScanDraftsTableCreateCompanionBuilder =
       Value<String?> reviewJson,
       Value<String?> engineVersion,
       Value<String?> failureCode,
+      Value<int> rotationQuarterTurns,
+      Value<String> alignmentMode,
+      Value<String?> anchorsJson,
+      Value<double?> reprojectionRmsMm,
+      Value<double?> reprojectionMaxMm,
+      Value<String> planarityStatus,
+      Value<String?> alignmentAlgorithmVersion,
+      Value<DateTime?> alignmentConfirmedAtUtc,
       required DateTime createdAtUtc,
       required DateTime updatedAtUtc,
       Value<int> rowid,
@@ -19000,6 +19852,14 @@ typedef $$VisionScanDraftsTableUpdateCompanionBuilder =
       Value<String?> reviewJson,
       Value<String?> engineVersion,
       Value<String?> failureCode,
+      Value<int> rotationQuarterTurns,
+      Value<String> alignmentMode,
+      Value<String?> anchorsJson,
+      Value<double?> reprojectionRmsMm,
+      Value<double?> reprojectionMaxMm,
+      Value<String> planarityStatus,
+      Value<String?> alignmentAlgorithmVersion,
+      Value<DateTime?> alignmentConfirmedAtUtc,
       Value<DateTime> createdAtUtc,
       Value<DateTime> updatedAtUtc,
       Value<int> rowid,
@@ -19086,6 +19946,46 @@ class $$VisionScanDraftsTableFilterComposer
 
   ColumnFilters<String> get failureCode => $composableBuilder(
     column: $table.failureCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rotationQuarterTurns => $composableBuilder(
+    column: $table.rotationQuarterTurns,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get alignmentMode => $composableBuilder(
+    column: $table.alignmentMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get anchorsJson => $composableBuilder(
+    column: $table.anchorsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get reprojectionRmsMm => $composableBuilder(
+    column: $table.reprojectionRmsMm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get reprojectionMaxMm => $composableBuilder(
+    column: $table.reprojectionMaxMm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get planarityStatus => $composableBuilder(
+    column: $table.planarityStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get alignmentAlgorithmVersion => $composableBuilder(
+    column: $table.alignmentAlgorithmVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get alignmentConfirmedAtUtc => $composableBuilder(
+    column: $table.alignmentConfirmedAtUtc,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -19184,6 +20084,46 @@ class $$VisionScanDraftsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get rotationQuarterTurns => $composableBuilder(
+    column: $table.rotationQuarterTurns,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get alignmentMode => $composableBuilder(
+    column: $table.alignmentMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get anchorsJson => $composableBuilder(
+    column: $table.anchorsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get reprojectionRmsMm => $composableBuilder(
+    column: $table.reprojectionRmsMm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get reprojectionMaxMm => $composableBuilder(
+    column: $table.reprojectionMaxMm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get planarityStatus => $composableBuilder(
+    column: $table.planarityStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get alignmentAlgorithmVersion => $composableBuilder(
+    column: $table.alignmentAlgorithmVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get alignmentConfirmedAtUtc => $composableBuilder(
+    column: $table.alignmentConfirmedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAtUtc => $composableBuilder(
     column: $table.createdAtUtc,
     builder: (column) => ColumnOrderings(column),
@@ -19267,6 +20207,46 @@ class $$VisionScanDraftsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get rotationQuarterTurns => $composableBuilder(
+    column: $table.rotationQuarterTurns,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get alignmentMode => $composableBuilder(
+    column: $table.alignmentMode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get anchorsJson => $composableBuilder(
+    column: $table.anchorsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get reprojectionRmsMm => $composableBuilder(
+    column: $table.reprojectionRmsMm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get reprojectionMaxMm => $composableBuilder(
+    column: $table.reprojectionMaxMm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get planarityStatus => $composableBuilder(
+    column: $table.planarityStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get alignmentAlgorithmVersion => $composableBuilder(
+    column: $table.alignmentAlgorithmVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get alignmentConfirmedAtUtc => $composableBuilder(
+    column: $table.alignmentConfirmedAtUtc,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAtUtc => $composableBuilder(
     column: $table.createdAtUtc,
     builder: (column) => column,
@@ -19330,6 +20310,14 @@ class $$VisionScanDraftsTableTableManager
                 Value<String?> reviewJson = const Value.absent(),
                 Value<String?> engineVersion = const Value.absent(),
                 Value<String?> failureCode = const Value.absent(),
+                Value<int> rotationQuarterTurns = const Value.absent(),
+                Value<String> alignmentMode = const Value.absent(),
+                Value<String?> anchorsJson = const Value.absent(),
+                Value<double?> reprojectionRmsMm = const Value.absent(),
+                Value<double?> reprojectionMaxMm = const Value.absent(),
+                Value<String> planarityStatus = const Value.absent(),
+                Value<String?> alignmentAlgorithmVersion = const Value.absent(),
+                Value<DateTime?> alignmentConfirmedAtUtc = const Value.absent(),
                 Value<DateTime> createdAtUtc = const Value.absent(),
                 Value<DateTime> updatedAtUtc = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -19349,6 +20337,14 @@ class $$VisionScanDraftsTableTableManager
                 reviewJson: reviewJson,
                 engineVersion: engineVersion,
                 failureCode: failureCode,
+                rotationQuarterTurns: rotationQuarterTurns,
+                alignmentMode: alignmentMode,
+                anchorsJson: anchorsJson,
+                reprojectionRmsMm: reprojectionRmsMm,
+                reprojectionMaxMm: reprojectionMaxMm,
+                planarityStatus: planarityStatus,
+                alignmentAlgorithmVersion: alignmentAlgorithmVersion,
+                alignmentConfirmedAtUtc: alignmentConfirmedAtUtc,
                 createdAtUtc: createdAtUtc,
                 updatedAtUtc: updatedAtUtc,
                 rowid: rowid,
@@ -19370,6 +20366,14 @@ class $$VisionScanDraftsTableTableManager
                 Value<String?> reviewJson = const Value.absent(),
                 Value<String?> engineVersion = const Value.absent(),
                 Value<String?> failureCode = const Value.absent(),
+                Value<int> rotationQuarterTurns = const Value.absent(),
+                Value<String> alignmentMode = const Value.absent(),
+                Value<String?> anchorsJson = const Value.absent(),
+                Value<double?> reprojectionRmsMm = const Value.absent(),
+                Value<double?> reprojectionMaxMm = const Value.absent(),
+                Value<String> planarityStatus = const Value.absent(),
+                Value<String?> alignmentAlgorithmVersion = const Value.absent(),
+                Value<DateTime?> alignmentConfirmedAtUtc = const Value.absent(),
                 required DateTime createdAtUtc,
                 required DateTime updatedAtUtc,
                 Value<int> rowid = const Value.absent(),
@@ -19389,6 +20393,14 @@ class $$VisionScanDraftsTableTableManager
                 reviewJson: reviewJson,
                 engineVersion: engineVersion,
                 failureCode: failureCode,
+                rotationQuarterTurns: rotationQuarterTurns,
+                alignmentMode: alignmentMode,
+                anchorsJson: anchorsJson,
+                reprojectionRmsMm: reprojectionRmsMm,
+                reprojectionMaxMm: reprojectionMaxMm,
+                planarityStatus: planarityStatus,
+                alignmentAlgorithmVersion: alignmentAlgorithmVersion,
+                alignmentConfirmedAtUtc: alignmentConfirmedAtUtc,
                 createdAtUtc: createdAtUtc,
                 updatedAtUtc: updatedAtUtc,
                 rowid: rowid,
@@ -20879,6 +21891,13 @@ typedef $$PhotoAlignmentsTableCreateCompanionBuilder =
       required String cornersJson,
       required String matrixJson,
       required String algorithmVersion,
+      Value<int> rotationQuarterTurns,
+      Value<String> alignmentMode,
+      Value<String?> anchorsJson,
+      Value<double?> reprojectionRmsMm,
+      Value<double?> reprojectionMaxMm,
+      Value<String> planarityStatus,
+      Value<DateTime?> confirmedAtUtc,
       required DateTime updatedAtUtc,
       Value<int> rowid,
     });
@@ -20888,6 +21907,13 @@ typedef $$PhotoAlignmentsTableUpdateCompanionBuilder =
       Value<String> cornersJson,
       Value<String> matrixJson,
       Value<String> algorithmVersion,
+      Value<int> rotationQuarterTurns,
+      Value<String> alignmentMode,
+      Value<String?> anchorsJson,
+      Value<double?> reprojectionRmsMm,
+      Value<double?> reprojectionMaxMm,
+      Value<String> planarityStatus,
+      Value<DateTime?> confirmedAtUtc,
       Value<DateTime> updatedAtUtc,
       Value<int> rowid,
     });
@@ -20947,6 +21973,41 @@ class $$PhotoAlignmentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get rotationQuarterTurns => $composableBuilder(
+    column: $table.rotationQuarterTurns,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get alignmentMode => $composableBuilder(
+    column: $table.alignmentMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get anchorsJson => $composableBuilder(
+    column: $table.anchorsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get reprojectionRmsMm => $composableBuilder(
+    column: $table.reprojectionRmsMm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get reprojectionMaxMm => $composableBuilder(
+    column: $table.reprojectionMaxMm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get planarityStatus => $composableBuilder(
+    column: $table.planarityStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get confirmedAtUtc => $composableBuilder(
+    column: $table.confirmedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get updatedAtUtc => $composableBuilder(
     column: $table.updatedAtUtc,
     builder: (column) => ColumnFilters(column),
@@ -21000,6 +22061,41 @@ class $$PhotoAlignmentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get rotationQuarterTurns => $composableBuilder(
+    column: $table.rotationQuarterTurns,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get alignmentMode => $composableBuilder(
+    column: $table.alignmentMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get anchorsJson => $composableBuilder(
+    column: $table.anchorsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get reprojectionRmsMm => $composableBuilder(
+    column: $table.reprojectionRmsMm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get reprojectionMaxMm => $composableBuilder(
+    column: $table.reprojectionMaxMm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get planarityStatus => $composableBuilder(
+    column: $table.planarityStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get confirmedAtUtc => $composableBuilder(
+    column: $table.confirmedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAtUtc => $composableBuilder(
     column: $table.updatedAtUtc,
     builder: (column) => ColumnOrderings(column),
@@ -21050,6 +22146,41 @@ class $$PhotoAlignmentsTableAnnotationComposer
 
   GeneratedColumn<String> get algorithmVersion => $composableBuilder(
     column: $table.algorithmVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get rotationQuarterTurns => $composableBuilder(
+    column: $table.rotationQuarterTurns,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get alignmentMode => $composableBuilder(
+    column: $table.alignmentMode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get anchorsJson => $composableBuilder(
+    column: $table.anchorsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get reprojectionRmsMm => $composableBuilder(
+    column: $table.reprojectionRmsMm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get reprojectionMaxMm => $composableBuilder(
+    column: $table.reprojectionMaxMm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get planarityStatus => $composableBuilder(
+    column: $table.planarityStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get confirmedAtUtc => $composableBuilder(
+    column: $table.confirmedAtUtc,
     builder: (column) => column,
   );
 
@@ -21116,6 +22247,13 @@ class $$PhotoAlignmentsTableTableManager
                 Value<String> cornersJson = const Value.absent(),
                 Value<String> matrixJson = const Value.absent(),
                 Value<String> algorithmVersion = const Value.absent(),
+                Value<int> rotationQuarterTurns = const Value.absent(),
+                Value<String> alignmentMode = const Value.absent(),
+                Value<String?> anchorsJson = const Value.absent(),
+                Value<double?> reprojectionRmsMm = const Value.absent(),
+                Value<double?> reprojectionMaxMm = const Value.absent(),
+                Value<String> planarityStatus = const Value.absent(),
+                Value<DateTime?> confirmedAtUtc = const Value.absent(),
                 Value<DateTime> updatedAtUtc = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PhotoAlignmentsCompanion(
@@ -21123,6 +22261,13 @@ class $$PhotoAlignmentsTableTableManager
                 cornersJson: cornersJson,
                 matrixJson: matrixJson,
                 algorithmVersion: algorithmVersion,
+                rotationQuarterTurns: rotationQuarterTurns,
+                alignmentMode: alignmentMode,
+                anchorsJson: anchorsJson,
+                reprojectionRmsMm: reprojectionRmsMm,
+                reprojectionMaxMm: reprojectionMaxMm,
+                planarityStatus: planarityStatus,
+                confirmedAtUtc: confirmedAtUtc,
                 updatedAtUtc: updatedAtUtc,
                 rowid: rowid,
               ),
@@ -21132,6 +22277,13 @@ class $$PhotoAlignmentsTableTableManager
                 required String cornersJson,
                 required String matrixJson,
                 required String algorithmVersion,
+                Value<int> rotationQuarterTurns = const Value.absent(),
+                Value<String> alignmentMode = const Value.absent(),
+                Value<String?> anchorsJson = const Value.absent(),
+                Value<double?> reprojectionRmsMm = const Value.absent(),
+                Value<double?> reprojectionMaxMm = const Value.absent(),
+                Value<String> planarityStatus = const Value.absent(),
+                Value<DateTime?> confirmedAtUtc = const Value.absent(),
                 required DateTime updatedAtUtc,
                 Value<int> rowid = const Value.absent(),
               }) => PhotoAlignmentsCompanion.insert(
@@ -21139,6 +22291,13 @@ class $$PhotoAlignmentsTableTableManager
                 cornersJson: cornersJson,
                 matrixJson: matrixJson,
                 algorithmVersion: algorithmVersion,
+                rotationQuarterTurns: rotationQuarterTurns,
+                alignmentMode: alignmentMode,
+                anchorsJson: anchorsJson,
+                reprojectionRmsMm: reprojectionRmsMm,
+                reprojectionMaxMm: reprojectionMaxMm,
+                planarityStatus: planarityStatus,
+                confirmedAtUtc: confirmedAtUtc,
                 updatedAtUtc: updatedAtUtc,
                 rowid: rowid,
               ),

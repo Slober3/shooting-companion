@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:shooting_companion_domain/domain.dart';
 
+import 'radial_score_evaluator.dart';
+
 class ScoredImpact {
   const ScoredImpact({
     required this.impact,
@@ -11,6 +13,8 @@ class ScoredImpact {
     required this.isInnerTen,
     required this.isBoundaryUncertain,
     required this.radialDistanceMm,
+    this.countedMultiplicity = 1,
+    this.duplicateMultiplicity = 0,
     this.targetBullId,
   });
 
@@ -23,6 +27,8 @@ class ScoredImpact {
   final bool isInnerTen;
   final bool isBoundaryUncertain;
   final double radialDistanceMm;
+  final int countedMultiplicity;
+  final int duplicateMultiplicity;
   final String? targetBullId;
 
   int get subtotal => countedValue;
@@ -31,6 +37,8 @@ class ScoredImpact {
     required int countedValue,
     required ScoreDisposition disposition,
     required bool isInnerTen,
+    int? countedMultiplicity,
+    int? duplicateMultiplicity,
   }) => ScoredImpact(
     impact: impact,
     value: value,
@@ -39,6 +47,8 @@ class ScoredImpact {
     isInnerTen: isInnerTen,
     isBoundaryUncertain: isBoundaryUncertain,
     radialDistanceMm: radialDistanceMm,
+    countedMultiplicity: countedMultiplicity ?? this.countedMultiplicity,
+    duplicateMultiplicity: duplicateMultiplicity ?? this.duplicateMultiplicity,
     targetBullId: targetBullId,
   );
 }
@@ -56,6 +66,10 @@ class ScoreResult {
     required this.innerTenCount,
     required this.missCount,
     required this.hasBoundaryWarnings,
+    this.duplicateShotCount = 0,
+    this.explicitMissShotCount = 0,
+    this.zeroValueShotCount = 0,
+    this.unscoredBullCount,
   });
 
   final List<ScoredImpact> shots;
@@ -67,8 +81,26 @@ class ScoreResult {
   final int total;
   final int maximumPossible;
   final int innerTenCount;
+
+  /// Legacy score-zero aggregate.
+  ///
+  /// On a single bull this is the number of zero-valued projectiles. On a
+  /// fixed multi-bull target this is the number of record bulls whose final
+  /// score is zero, including record bulls without a submitted outcome.
   final int missCount;
   final bool hasBoundaryWarnings;
+
+  /// Projectiles ignored by the target's duplicate-shot policy.
+  final int duplicateShotCount;
+
+  /// Projectiles explicitly entered as a miss, independent of duplicate rules.
+  final int explicitMissShotCount;
+
+  /// Submitted projectiles whose raw radial value is zero.
+  final int zeroValueShotCount;
+
+  /// Fixed record bulls without any submitted outcome; `null` for single bull.
+  final int? unscoredBullCount;
 
   double get percentage =>
       maximumPossible == 0 ? 0 : total / maximumPossible * 100;
@@ -81,14 +113,34 @@ abstract final class ScoreEngine {
     required double projectileDiameterMm,
     double positionUncertaintyMm = 0.75,
   }) {
-    if (projectileDiameterMm <= 0) {
+    target.validateRuntime().requireValid(argumentName: 'target');
+    if (!projectileDiameterMm.isFinite || projectileDiameterMm <= 0) {
       throw ArgumentError.value(
         projectileDiameterMm,
         'projectileDiameterMm',
-        'Moet groter zijn dan nul',
+        'Moet eindig en groter zijn dan nul.',
+      );
+    }
+    if (!positionUncertaintyMm.isFinite || positionUncertaintyMm < 0) {
+      throw ArgumentError.value(
+        positionUncertaintyMm,
+        'positionUncertaintyMm',
+        'Moet eindig en minstens nul zijn.',
       );
     }
     final impactList = impacts.toList(growable: false);
+    final impactIds = <String>{};
+    for (var index = 0; index < impactList.length; index++) {
+      final impact = impactList[index];
+      impact.validateRuntime().requireValid(argumentName: 'impacts[$index]');
+      if (!impactIds.add(impact.id)) {
+        throw ArgumentError.value(
+          impact.id,
+          'impacts[$index].id',
+          'Impact-ID’s moeten binnen een scoreaanvraag uniek zijn.',
+        );
+      }
+    }
     return switch (target.targetKind) {
       TargetKind.concentricRings => _scoreSingleBull(
         target: target,
@@ -131,6 +183,14 @@ abstract final class ScoreEngine {
       0,
       (sum, shot) => sum + shot.value * shot.impact.multiplicity,
     );
+    final explicitMissShotCount = scored.fold(
+      0,
+      (sum, shot) => sum + (shot.impact.isMiss ? shot.impact.multiplicity : 0),
+    );
+    final zeroValueShotCount = scored.fold(
+      0,
+      (sum, shot) => sum + (shot.value == 0 ? shot.impact.multiplicity : 0),
+    );
     return ScoreResult(
       shots: [
         for (final shot in scored)
@@ -140,6 +200,8 @@ abstract final class ScoreEngine {
                 ? ScoreDisposition.miss
                 : ScoreDisposition.counted,
             isInnerTen: shot.isInnerTen,
+            countedMultiplicity: shot.impact.multiplicity,
+            duplicateMultiplicity: 0,
           ),
       ],
       actualShotCount: actualShots,
@@ -153,11 +215,12 @@ abstract final class ScoreEngine {
         0,
         (sum, shot) => sum + (shot.isInnerTen ? shot.impact.multiplicity : 0),
       ),
-      missCount: scored.fold(
-        0,
-        (sum, shot) => sum + (shot.value == 0 ? shot.impact.multiplicity : 0),
-      ),
+      missCount: zeroValueShotCount,
       hasBoundaryWarnings: scored.any((shot) => shot.isBoundaryUncertain),
+      duplicateShotCount: 0,
+      explicitMissShotCount: explicitMissShotCount,
+      zeroValueShotCount: zeroValueShotCount,
+      unscoredBullCount: null,
     );
   }
 
@@ -168,10 +231,6 @@ abstract final class ScoreEngine {
     required double positionUncertaintyMm,
   }) {
     final policy = target.multiBullScoringPolicy!;
-    final recordBulls = <String, TargetBull>{};
-    for (final bull in target.bulls) {
-      if (bull.role == TargetBullRole.record) recordBulls[bull.id] = bull;
-    }
     final originalOrder = <String, int>{};
     for (var index = 0; index < impacts.length; index++) {
       originalOrder[impacts[index].id] = index;
@@ -181,22 +240,7 @@ abstract final class ScoreEngine {
     var actualShotCount = 0;
 
     for (final impact in impacts) {
-      final explicitBull = target.bullById(impact.targetBullId);
-      final bull = explicitBull?.role == TargetBullRole.record
-          ? explicitBull
-          : target.bullAt(impact.xMm, impact.yMm, recordOnly: true);
-      if (bull == null || !recordBulls.containsKey(bull.id)) {
-        rawById[impact.id] = ScoredImpact(
-          impact: impact,
-          value: 0,
-          countedValue: 0,
-          disposition: ScoreDisposition.duplicateNotCounted,
-          isInnerTen: false,
-          isBoundaryUncertain: impact.isPositionUncertain,
-          radialDistanceMm: 0,
-        );
-        continue;
-      }
+      final bull = _resolveRecordBull(target, impact);
       final normalizedImpact = impact.copyWith(targetBullId: bull.id);
       final scored = _scoreImpact(
         target: target,
@@ -235,6 +279,8 @@ abstract final class ScoreEngine {
             ? ScoreDisposition.miss
             : ScoreDisposition.counted,
         isInnerTen: winner.isInnerTen,
+        countedMultiplicity: 1,
+        duplicateMultiplicity: winner.impact.multiplicity - 1,
       );
       for (var index = 0; index < entries.length; index++) {
         if (index == winnerIndex) continue;
@@ -243,6 +289,8 @@ abstract final class ScoreEngine {
           countedValue: 0,
           disposition: ScoreDisposition.duplicateNotCounted,
           isInnerTen: false,
+          countedMultiplicity: 0,
+          duplicateMultiplicity: duplicate.impact.multiplicity,
         );
       }
     }
@@ -254,6 +302,16 @@ abstract final class ScoreEngine {
     final penalty =
         math.max(0, actualShotCount - policy.recordBullCount) *
         policy.excessShotPenalty;
+    final duplicateShotCount = actualShotCount - byBull.length;
+    final explicitMissShotCount = impacts.fold<int>(
+      0,
+      (sum, impact) => sum + (impact.isMiss ? impact.multiplicity : 0),
+    );
+    final zeroValueShotCount = rawById.values.fold<int>(
+      0,
+      (sum, shot) => sum + (shot.value == 0 ? shot.impact.multiplicity : 0),
+    );
+    final unscoredBullCount = policy.recordBullCount - byBull.length;
 
     return ScoreResult(
       shots: shots,
@@ -267,7 +325,52 @@ abstract final class ScoreEngine {
       innerTenCount: innerTenCount,
       missCount: policy.recordBullCount - bullsWithPositiveScore,
       hasBoundaryWarnings: shots.any((shot) => shot.isBoundaryUncertain),
+      duplicateShotCount: duplicateShotCount,
+      explicitMissShotCount: explicitMissShotCount,
+      zeroValueShotCount: zeroValueShotCount,
+      unscoredBullCount: unscoredBullCount,
     );
+  }
+
+  static TargetBull _resolveRecordBull(
+    TargetProfile target,
+    ShotImpact impact,
+  ) {
+    final explicitBull = target.bullById(impact.targetBullId);
+    if (impact.isMiss) {
+      if (explicitBull == null || explicitBull.role != TargetBullRole.record) {
+        throw ArgumentError.value(
+          impact.targetBullId,
+          'impact.targetBullId',
+          'Een multi-bullmisser moet aan een bestaande recordbull gekoppeld zijn.',
+        );
+      }
+      return explicitBull;
+    }
+
+    final geometricBull = target.bullAt(
+      impact.xMm,
+      impact.yMm,
+      recordOnly: true,
+    );
+    if (geometricBull == null) {
+      throw ArgumentError.value(
+        '${impact.xMm}, ${impact.yMm}',
+        'impact.position',
+        'De impact ligt niet in het scoringsgebied van een recordbull.',
+      );
+    }
+    if (impact.targetBullId != null &&
+        (explicitBull == null ||
+            explicitBull.role != TargetBullRole.record ||
+            explicitBull.id != geometricBull.id)) {
+      throw ArgumentError.value(
+        impact.targetBullId,
+        'impact.targetBullId',
+        'De opgeslagen bull komt niet overeen met de geometrische positie.',
+      );
+    }
+    return geometricBull;
   }
 
   static int _compareMultiBullResult(
@@ -307,43 +410,28 @@ abstract final class ScoreEngine {
         targetBullId: targetBullId,
       );
     }
-
-    final bulletRadius = projectileDiameterMm / 2;
-    final qualifyingRadius =
-        target.lineBreakingRule == LineBreakingRule.bulletEdgeTouchesHigherRing
-        ? math.max(0.0, radialDistance - bulletRadius)
-        : radialDistance;
-
-    var value = 0;
-    for (final ring in target.rings) {
-      if (qualifyingRadius <= ring.outerDiameterMm / 2) {
-        value = ring.value;
-        break;
-      }
-    }
-
-    final nearestBoundaryDistance = target.rings
-        .map((ring) => (qualifyingRadius - ring.outerDiameterMm / 2).abs())
-        .reduce(math.min);
-    final isBoundaryUncertain =
-        impact.isPositionUncertain ||
-        nearestBoundaryDistance <= positionUncertaintyMm;
-    final innerTenDiameter = target.innerTenDiameterMm;
-    final isInnerTen =
-        value == target.maximumScore &&
-        innerTenDiameter != null &&
-        qualifyingRadius <= innerTenDiameter / 2;
+    final evaluation = RadialScoreEvaluator.evaluate(
+      target: target,
+      xMm: impact.xMm,
+      yMm: impact.yMm,
+      centerXMm: centerXMm,
+      centerYMm: centerYMm,
+      projectileDiameterMm: projectileDiameterMm,
+      positionUncertaintyMm:
+          impact.positionalUncertaintyMm ?? positionUncertaintyMm,
+      forceUncertain: impact.isPositionUncertain,
+    );
 
     return ScoredImpact(
       impact: impact,
-      value: value,
-      countedValue: value,
+      value: evaluation.value,
+      countedValue: evaluation.value,
       disposition: impact.isMiss
           ? ScoreDisposition.miss
           : ScoreDisposition.counted,
-      isInnerTen: isInnerTen,
-      isBoundaryUncertain: isBoundaryUncertain,
-      radialDistanceMm: radialDistance,
+      isInnerTen: evaluation.isInnerTen,
+      isBoundaryUncertain: evaluation.isBoundaryUncertain,
+      radialDistanceMm: evaluation.radialDistanceMm,
       targetBullId: targetBullId,
     );
   }

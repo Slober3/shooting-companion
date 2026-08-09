@@ -4,6 +4,9 @@ import 'package:test/test.dart';
 void main() {
   test('ISSF precision profile contains ten immutable scoring rings', () {
     final profile = IssfTargetProfiles.precision25m50m;
+    expect(profile.profileVersion, 2);
+    expect(profile.rulesEdition, contains('Second Print 07/2026'));
+    expect(profile.rulesEdition, contains('2026-07-01'));
     expect(profile.rings, hasLength(10));
     expect(profile.rings.first.value, 10);
     expect(profile.rings.last.outerDiameterMm, 500);
@@ -12,6 +15,8 @@ void main() {
 
   test('ISSF rapid-fire profile follows 2026 diameters', () {
     final profile = IssfTargetProfiles.rapidFire25m;
+    expect(profile.profileVersion, 2);
+    expect(profile.rulesEdition, contains('Second Print 07/2026'));
     expect(profile.rings.map((ring) => ring.outerDiameterMm), [
       100,
       180,
