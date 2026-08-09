@@ -150,9 +150,25 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final targetProfiles = widget.targets
+    final storedTargetProfiles = widget.targets
         .map((record) => TargetProfile.fromJsonString(record.profileJson))
         .toList();
+    final targetProfiles =
+        storedTargetProfiles.any(
+          (target) => target.versionedId == widget.initial.target.versionedId,
+        )
+        ? storedTargetProfiles
+        : [widget.initial.target, ...storedTargetProfiles];
+    final targetRecordsById = {
+      for (final record in widget.targets) record.versionedId: record,
+    };
+    String targetLabel(TargetProfile target) {
+      final record = targetRecordsById[target.versionedId];
+      if (record == null) return '${target.displayName} (historisch)';
+      if (record.archived) return '${target.displayName} (gearchiveerd)';
+      return target.displayName;
+    }
+
     final filteredLots = widget.ammoLots
         .where((lot) => lot.cartridgeId == _cartridgeId)
         .toList();
@@ -174,7 +190,7 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
                   .map(
                     (target) => AppSelectOption(
                       value: target.versionedId,
-                      label: target.displayName,
+                      label: targetLabel(target),
                     ),
                   )
                   .toList(),
@@ -189,8 +205,12 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
                   initialValue: _cartridgeId,
                   options: widget.cartridges
                       .map(
-                        (item) =>
-                            AppSelectOption(value: item.id, label: item.name),
+                        (item) => AppSelectOption(
+                          value: item.id,
+                          label: item.archived
+                              ? '${item.name} (gearchiveerd)'
+                              : item.name,
+                        ),
                       )
                       .toList(),
                   onChanged: (id) => setState(() {
@@ -241,7 +261,9 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
                     ...widget.firearms.map(
                       (item) => AppSelectOption<String?>(
                         value: item.id,
-                        label: item.name,
+                        label: item.archived
+                            ? '${item.name} (gearchiveerd)'
+                            : item.name,
                       ),
                     ),
                   ],
@@ -260,7 +282,9 @@ class _SeriesSettingsSheetState extends State<_SeriesSettingsSheet> {
                       ...filteredLots.map(
                         (lot) => AppSelectOption<String?>(
                           value: lot.id,
-                          label: lot.displayName,
+                          label: lot.archived
+                              ? '${lot.displayName} (gearchiveerd)'
+                              : lot.displayName,
                         ),
                       ),
                     ],

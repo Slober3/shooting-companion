@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,8 +9,82 @@ import 'package:shooting_companion/data/app_database.dart';
 import 'package:shooting_companion/data/shooting_repository.dart';
 import 'package:shooting_companion/features/scoring/target_canvas.dart';
 import 'package:shooting_companion/features/session/manual_series_screen.dart';
+import 'package:shooting_companion/widgets/app_select_field.dart';
 
 void main() {
+  testWidgets(
+    'immediate settings tap awaits catalogs and opens only once',
+    (tester) async {
+      final database = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = ShootingRepository(database);
+      await repository.seedDefaults();
+      final quick = await repository.startQuickSession();
+      final targets = await database.select(database.targetProfiles).get();
+      final cartridges = await database.select(database.cartridges).get();
+      final firearms = await database.select(database.firearms).get();
+      final ammoLots = await database.select(database.ammoLots).get();
+      final targetCatalog = Completer<List<TargetProfileRecord>>();
+      final cartridgeCatalog = Completer<List<CartridgeRecord>>();
+      final firearmCatalog = Completer<List<FirearmRecord>>();
+      final ammoCatalog = Completer<List<AmmoLotRecord>>();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(database),
+            allTargetProfilesProvider.overrideWith(
+              (_) => targetCatalog.future.asStream(),
+            ),
+            allCartridgesProvider.overrideWith(
+              (_) => cartridgeCatalog.future.asStream(),
+            ),
+            allFirearmsProvider.overrideWith(
+              (_) => firearmCatalog.future.asStream(),
+            ),
+            allAmmoLotsProvider.overrideWith(
+              (_) => ammoCatalog.future.asStream(),
+            ),
+          ],
+          child: MaterialApp(
+            home: ManualSeriesScreen(
+              sessionId: quick.sessionId,
+              seriesId: quick.draftSeriesId,
+            ),
+          ),
+        ),
+      );
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      for (var attempt = 0; attempt < 30; attempt++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        if (find.byType(TargetCanvas).evaluate().isNotEmpty) break;
+      }
+
+      expect(find.text('Wijzig'), findsOneWidget);
+      await tester.tap(find.text('Wijzig'));
+      await tester.tap(find.text('Wijzig'));
+      await tester.pump();
+      expect(find.text('Reeksinstellingen'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      targetCatalog.complete(targets);
+      cartridgeCatalog.complete(cartridges);
+      firearmCatalog.complete(firearms);
+      ammoCatalog.complete(ammoLots);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Reeksinstellingen'), findsOneWidget);
+      expect(find.byType(AppSelectField<String>), findsNWidgets(2));
+      expect(find.text('Keuze niet beschikbaar'), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 1));
+    },
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
+
   testWidgets(
     'manual editor keeps canvas and actions usable at 320 dp and 200 percent',
     (tester) async {

@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -148,6 +150,174 @@ void main() {
     expect(find.text('Wat meet dit?'), findsOneWidget);
     expect(find.textContaining('minutes of angle'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+  });
+
+  testWidgets(
+    'long analysis metrics stay readable across narrow widths and text scales',
+    (tester) async {
+      final fixture = await _createIssfFixture();
+      addTearDown(fixture.database.close);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(() {
+        tester.view.resetDevicePixelRatio();
+        tester.view.resetPhysicalSize();
+      });
+
+      const configurations = <({double width, double textScale})>[
+        (width: 320, textScale: 1),
+        (width: 320, textScale: 1.3),
+        (width: 320, textScale: 2),
+        (width: 360, textScale: 1),
+        (width: 360, textScale: 1.3),
+        (width: 360, textScale: 2),
+        (width: 412, textScale: 1),
+        (width: 412, textScale: 1.3),
+        (width: 412, textScale: 2),
+      ];
+
+      for (final configuration in configurations) {
+        tester.view.physicalSize = Size(configuration.width, 1200);
+        await _pumpDatabaseScreen(
+          tester,
+          database: fixture.database,
+          home: MediaQuery(
+            data: MediaQueryData(
+              size: Size(configuration.width, 1200),
+              textScaler: TextScaler.linear(configuration.textScale),
+            ),
+            child: KeyedSubtree(
+              key: ValueKey(
+                'analysis-${configuration.width}-${configuration.textScale}',
+              ),
+              child: SeriesAnalysisScreen(seriesId: fixture.firstSeriesId),
+            ),
+          ),
+        );
+
+        await tester.scrollUntilVisible(
+          find.text('Meer groepsmaten'),
+          260,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.ensureVisible(find.text('Meer groepsmaten'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Meer groepsmaten'));
+        await tester.pumpAndSettle();
+        final stackedLayout = find.byKey(
+          const ValueKey('metric-row-layout-stacked-Richting spreidingsellips'),
+        );
+        await tester.scrollUntilVisible(
+          stackedLayout,
+          160,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.ensureVisible(stackedLayout);
+        await tester.pumpAndSettle();
+
+        expect(stackedLayout, findsOneWidget);
+        final value = tester.widget<Text>(
+          find.byKey(
+            const ValueKey('metric-row-value-Richting spreidingsellips'),
+          ),
+        );
+        expect(value.data, contains('° · '));
+        expect(value.maxLines, isNull);
+        expect(tester.takeException(), isNull);
+      }
+
+      tester.view.physicalSize = const Size(800, 1200);
+      await _pumpDatabaseScreen(
+        tester,
+        database: fixture.database,
+        home: MediaQuery(
+          data: const MediaQueryData(size: Size(800, 1200)),
+          child: SeriesAnalysisScreen(seriesId: fixture.firstSeriesId),
+        ),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Meer groepsmaten'),
+        260,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(find.text('Meer groepsmaten'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Meer groepsmaten'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(
+          const ValueKey('metric-row-layout-compact-Spreiding in MOA'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 1));
+    },
+  );
+
+  testWidgets('responsive metric row remains one explanation action', (
+    tester,
+  ) async {
+    final fixture = await _createIssfFixture();
+    addTearDown(fixture.database.close);
+    final semantics = tester.ensureSemantics();
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 800);
+    addTearDown(() {
+      tester.view.resetDevicePixelRatio();
+      tester.view.resetPhysicalSize();
+    });
+
+    await _pumpDatabaseScreen(
+      tester,
+      database: fixture.database,
+      home: MediaQuery(
+        data: const MediaQueryData(
+          size: Size(320, 800),
+          textScaler: TextScaler.linear(2),
+        ),
+        child: SeriesAnalysisScreen(seriesId: fixture.firstSeriesId),
+      ),
+    );
+    await tester.scrollUntilVisible(
+      find.text('Meer groepsmaten'),
+      260,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(find.text('Meer groepsmaten'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Meer groepsmaten'));
+    await tester.pumpAndSettle();
+    final metricRow = find.byKey(
+      const ValueKey('metric-row-Richting spreidingsellips'),
+    );
+    await tester.scrollUntilVisible(
+      metricRow,
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(metricRow);
+    await tester.pumpAndSettle();
+    final semanticsRow = find.bySemanticsLabel(
+      RegExp('Richting spreidingsellips: .*Open uitleg'),
+    );
+    expect(semanticsRow, findsOneWidget);
+    expect(
+      tester
+          .getSemantics(semanticsRow)
+          .getSemanticsData()
+          .hasAction(ui.SemanticsAction.tap),
+      isTrue,
+    );
+    await tester.tap(metricRow);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Wat meet dit?'), findsOneWidget);
+    expect(find.textContaining('spreidingsellips'), findsWidgets);
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 1));
   });

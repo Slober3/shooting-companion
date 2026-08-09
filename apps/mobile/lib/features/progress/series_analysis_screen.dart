@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -442,39 +444,123 @@ class _MetricRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final row = Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: Text(label)),
-        const SizedBox(width: 16),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
-        if (definition != null) ...[
-          const SizedBox(width: 8),
-          const Icon(Icons.info_outline, size: 18),
-        ],
-      ],
+    final content = LayoutBuilder(
+      builder: (context, constraints) {
+        final defaultStyle = DefaultTextStyle.of(context).style;
+        final valueStyle = defaultStyle.copyWith(fontWeight: FontWeight.w600);
+        final textScaler = MediaQuery.textScalerOf(context);
+        final textDirection = Directionality.of(context);
+        final labelWidth = _measureSingleLineWidth(
+          label,
+          style: defaultStyle,
+          textScaler: textScaler,
+          textDirection: textDirection,
+        );
+        final valueWidth = _measureSingleLineWidth(
+          value,
+          style: valueStyle,
+          textScaler: textScaler,
+          textDirection: textDirection,
+        );
+        final infoWidth = definition == null ? 0.0 : 48.0;
+        final requiredWidth = labelWidth + 16 + valueWidth + infoWidth;
+        final useCompactLayout = requiredWidth <= constraints.maxWidth;
+
+        if (useCompactLayout) {
+          return ConstrainedBox(
+            key: ValueKey('metric-row-layout-compact-$label'),
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Row(
+              children: [
+                Expanded(child: Text(label, maxLines: 1)),
+                const SizedBox(width: 16),
+                Text(
+                  value,
+                  key: ValueKey('metric-row-value-$label'),
+                  maxLines: 1,
+                  style: valueStyle,
+                ),
+                if (definition != null)
+                  const SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Center(child: Icon(Icons.info_outline, size: 18)),
+                  ),
+              ],
+            ),
+          );
+        }
+
+        return ConstrainedBox(
+          key: ValueKey('metric-row-layout-stacked-$label'),
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: Text(label)),
+                  if (definition != null)
+                    const SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Center(child: Icon(Icons.info_outline, size: 18)),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                key: ValueKey('metric-row-value-$label'),
+                style: valueStyle,
+              ),
+            ],
+          ),
+        );
+      },
     );
+    void openExplanation() => showMetricExplanationSheet(
+      context: context,
+      definition: definition!,
+      currentValue: value,
+      evidence: evidence,
+    );
+
     return Padding(
+      key: ValueKey('metric-row-$label'),
       padding: const EdgeInsets.only(top: 10),
       child: definition == null
-          ? row
+          ? content
           : Semantics(
               button: true,
+              excludeSemantics: true,
               label: '$label: $value. Open uitleg.',
+              onTap: openExplanation,
               child: InkWell(
-                onTap: () => showMetricExplanationSheet(
-                  context: context,
-                  definition: definition!,
-                  currentValue: value,
-                  evidence: evidence,
-                ),
+                onTap: openExplanation,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: row,
+                  child: content,
                 ),
               ),
             ),
     );
+  }
+
+  double _measureSingleLineWidth(
+    String text, {
+    required TextStyle style,
+    required TextScaler textScaler,
+    required ui.TextDirection textDirection,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textScaler: textScaler,
+      textDirection: textDirection,
+      maxLines: 1,
+    )..layout();
+    return painter.width;
   }
 }
 

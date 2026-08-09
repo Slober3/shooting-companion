@@ -65,6 +65,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
   Object? _loadError;
   bool _loading = true;
   bool _saving = false;
+  bool _settingsOpening = false;
   _AutosaveStatus _autosaveStatus = _AutosaveStatus.saved;
   bool _allowPop = false;
   bool _sessionActive = true;
@@ -148,7 +149,8 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
       cartridgeName: cartridge?.name ?? 'Kaliber',
       distanceMeters: _distanceMeters,
       autosaveStatus: _autosaveStatus,
-      onEdit: _openSettings,
+      onEdit: _settingsOpening ? null : _openSettings,
+      loading: _settingsOpening,
       onRetry: () => unawaited(_persistSnapshot().catchError((_) {})),
       compact: compact,
     );
@@ -1060,59 +1062,98 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
   }
 
   Future<void> _openSettings() async {
+    if (_settingsOpening) return;
     final target = _target;
     final cartridgeId = _cartridgeId;
     if (target == null || cartridgeId == null) return;
-    final result = await showSeriesSettingsSheet(
-      context: context,
-      initial: SeriesSettingsValues(
-        target: target,
-        cartridgeId: cartridgeId,
-        distanceMeters: _distanceMeters,
-        firearmId: _firearmId,
-        ammoLotId: _ammoLotId,
-        notes: _notes,
-      ),
-      targets:
-          ref.read(targetProfilesProvider).valueOrNull ??
-          const <TargetProfileRecord>[],
-      cartridges:
-          ref.read(cartridgesProvider).valueOrNull ?? const <CartridgeRecord>[],
-      firearms:
-          ref.read(firearmsProvider).valueOrNull ?? const <FirearmRecord>[],
-      ammoLots:
-          ref.read(ammoLotsProvider).valueOrNull ?? const <AmmoLotRecord>[],
-    );
-    if (result == null || !mounted) return;
-    final cartridge = ref
-        .read(cartridgesProvider)
-        .valueOrNull
-        ?.where((item) => item.id == result.cartridgeId)
-        .firstOrNull;
-    final targetChanged = result.target.versionedId != target.versionedId;
-    setState(() {
-      _target = result.target;
-      _cartridgeId = result.cartridgeId;
-      _distanceMeters = result.distanceMeters;
-      _firearmId = result.firearmId;
-      _ammoLotId = result.ammoLotId;
-      _notes = result.notes;
-      _projectileDiameterMm =
-          cartridge?.projectileDiameterMm ?? _projectileDiameterMm;
-      if (targetChanged) {
-        _alignment = null;
-        _impacts = _impacts
-            .map(
-              (impact) => impact.copyWith(
-                clearSourceImage: true,
-                clearImageCoordinates: true,
-                clearTargetBull: true,
-              ),
-            )
-            .toList();
+    setState(() => _settingsOpening = true);
+    try {
+      // Start all streams before awaiting them so a first, fast tap cannot
+      // snapshot AsyncLoading as an empty catalog.
+      final targetsFuture = ref.read(allTargetProfilesProvider.future);
+      final cartridgesFuture = ref.read(allCartridgesProvider.future);
+      final firearmsFuture = ref.read(allFirearmsProvider.future);
+      final ammoLotsFuture = ref.read(allAmmoLotsProvider.future);
+      final allTargets = await targetsFuture;
+      final allCartridges = await cartridgesFuture;
+      final allFirearms = await firearmsFuture;
+      final allAmmoLots = await ammoLotsFuture;
+      if (!mounted) return;
+
+      final targets = allTargets
+          .where(
+            (record) =>
+                !record.archived || record.versionedId == target.versionedId,
+          )
+          .toList();
+      final cartridges = allCartridges
+          .where((record) => !record.archived || record.id == cartridgeId)
+          .toList();
+      final firearms = allFirearms
+          .where((record) => !record.archived || record.id == _firearmId)
+          .toList();
+      final ammoLots = allAmmoLots
+          .where((record) => !record.archived || record.id == _ammoLotId)
+          .toList();
+
+      final result = await showSeriesSettingsSheet(
+        context: context,
+        initial: SeriesSettingsValues(
+          target: target,
+          cartridgeId: cartridgeId,
+          distanceMeters: _distanceMeters,
+          firearmId: _firearmId,
+          ammoLotId: _ammoLotId,
+          notes: _notes,
+        ),
+        targets: targets,
+        cartridges: cartridges,
+        firearms: firearms,
+        ammoLots: ammoLots,
+      );
+      if (result == null || !mounted) return;
+      final cartridge = cartridges
+          .where((item) => item.id == result.cartridgeId)
+          .firstOrNull;
+      final targetChanged = result.target.versionedId != target.versionedId;
+      setState(() {
+        _target = result.target;
+        _cartridgeId = result.cartridgeId;
+        _distanceMeters = result.distanceMeters;
+        _firearmId = result.firearmId;
+        _ammoLotId = result.ammoLotId;
+        _notes = result.notes;
+        _projectileDiameterMm =
+            cartridge?.projectileDiameterMm ?? _projectileDiameterMm;
+        if (targetChanged) {
+          _alignment = null;
+          _impacts = _impacts
+              .map(
+                (impact) => impact.copyWith(
+                  clearSourceImage: true,
+                  clearImageCoordinates: true,
+                  clearTargetBull: true,
+                ),
+              )
+              .toList();
+        }
+      });
+      _scheduleAutosave();
+    } catch (_) {
+      if (mounted) {
+        AppMessenger.show(
+          context,
+          kind: AppNoticeKind.error,
+          message: 'Reeksinstellingen konden niet worden geladen.',
+          action: AppNoticeAction(
+            label: 'Opnieuw',
+            onPressed: () => unawaited(_openSettings()),
+          ),
+        );
       }
-    });
-    _scheduleAutosave();
+    } finally {
+      if (mounted) setState(() => _settingsOpening = false);
+    }
   }
 
   void _scheduleAutosave() {
@@ -1695,6 +1736,7 @@ class _SettingsSummary extends StatelessWidget {
     required this.autosaveStatus,
     required this.onEdit,
     required this.onRetry,
+    this.loading = false,
     this.compact = false,
   });
 
@@ -1702,9 +1744,10 @@ class _SettingsSummary extends StatelessWidget {
   final String cartridgeName;
   final double distanceMeters;
   final _AutosaveStatus autosaveStatus;
-  final VoidCallback onEdit;
+  final VoidCallback? onEdit;
   final VoidCallback onRetry;
   final bool compact;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -1736,7 +1779,16 @@ class _SettingsSummary extends StatelessWidget {
             tooltip: 'Opnieuw proberen op te slaan',
             icon: const Icon(Icons.refresh),
           ),
-        TextButton(onPressed: onEdit, child: const Text('Wijzig')),
+        if (loading)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox.square(
+              dimension: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        else
+          TextButton(onPressed: onEdit, child: const Text('Wijzig')),
       ],
     );
     return compact
