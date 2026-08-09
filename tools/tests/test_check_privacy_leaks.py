@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -40,6 +41,24 @@ class PrivacyLeakCheckTest(unittest.TestCase):
         self.assertEqual(
             MODULE.find_path_leaks([fixture, f"{fixture}.fixture.json"]), []
         )
+
+    def test_checker_does_not_flag_its_own_pattern_source(self) -> None:
+        self.assertEqual(
+            MODULE.find_content_leaks(
+                ROOT,
+                ["tools/check_privacy_leaks.py"],
+            ),
+            [],
+        )
+
+    def test_rejects_an_actual_user_home_path_in_text(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            sample = root / "sample.md"
+            sensitive = "C:\\" + "Users\\example\\Downloads\\target.jpg"
+            sample.write_text(sensitive, encoding="utf-8")
+            leaks = MODULE.find_content_leaks(root, ["sample.md"])
+        self.assertTrue(any("user-home path" in leak for leak in leaks))
 
 
 if __name__ == "__main__":

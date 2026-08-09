@@ -39,7 +39,13 @@ PRIVATE_MEDIA_SUFFIXES = (
 CAMERA_FILENAME = re.compile(
     r"(?:AISelect_|IMG_|PXL_|WIN_)?\d{8}[_-]?\d{6}", re.IGNORECASE
 )
-HOME_PATH = re.compile(r"(?:[A-Za-z]:[\\/]Users[\\/][^\\/\s]+|/Users/[^/\s]+)")
+# Build the platform directory name separately so this checker does not match
+# the literal regular-expression source in its own tracked file.
+_HOME_DIRECTORY = "Users"
+HOME_PATH = re.compile(
+    rf"(?:[A-Za-z]:[\\/]{_HOME_DIRECTORY}[\\/][^\\/\s]+|"
+    rf"/{_HOME_DIRECTORY}/[^/\s]+)"
+)
 TEXT_SUFFIXES = {
     ".dart",
     ".json",
