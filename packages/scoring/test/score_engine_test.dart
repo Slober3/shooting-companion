@@ -57,6 +57,78 @@ void main() {
     expect(result.maximumPossible, 30);
     expect(result.actualShotCount, 3);
     expect(result.missCount, 1);
+    expect(result.explicitMissShotCount, 1);
+    expect(result.zeroValueShotCount, 1);
+    expect(result.duplicateShotCount, 0);
+    expect(result.shots.first.countedMultiplicity, 2);
+  });
+
+  test('runtime validation rejects non-finite input and duplicate IDs', () {
+    expect(
+      () => ScoreEngine.score(
+        target: target,
+        impacts: [impact(0)],
+        projectileDiameterMm: double.nan,
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => ScoreEngine.score(
+        target: target,
+        impacts: [impact(0)],
+        projectileDiameterMm: 5.6,
+        positionUncertaintyMm: double.infinity,
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => ScoreEngine.score(
+        target: target,
+        impacts: const [
+          ShotImpact(id: 'duplicate', xMm: 0, yMm: 0),
+          ShotImpact(id: 'duplicate', xMm: 1, yMm: 0),
+        ],
+        projectileDiameterMm: 5.6,
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('impact-specific uncertainty overrides the request default', () {
+    const projectileDiameterMm = 5.6;
+    final tenBoundaryMm = 25 + projectileDiameterMm / 2;
+    final result = ScoreEngine.score(
+      target: target,
+      impacts: [
+        ShotImpact(
+          id: 'uncertain',
+          xMm: tenBoundaryMm + 0.2,
+          yMm: 0,
+          positionalUncertaintyMm: 0.25,
+        ),
+      ],
+      projectileDiameterMm: projectileDiameterMm,
+      positionUncertaintyMm: 0,
+    );
+
+    expect(result.total, 9);
+    expect(result.shots.single.isBoundaryUncertain, isTrue);
+    expect(result.hasBoundaryWarnings, isTrue);
+  });
+
+  test('inner-ten boundary produces a score warning', () {
+    const projectileDiameterMm = 5.6;
+    final innerTenBoundaryMm =
+        target.innerTenDiameterMm! / 2 + projectileDiameterMm / 2;
+    final result = ScoreEngine.score(
+      target: target,
+      impacts: [impact(innerTenBoundaryMm)],
+      projectileDiameterMm: projectileDiameterMm,
+      positionUncertaintyMm: 0,
+    );
+
+    expect(result.innerTenCount, 1);
+    expect(result.hasBoundaryWarnings, isTrue);
   });
 
   test('custom target maximum is used instead of a hardcoded ten', () {
@@ -153,6 +225,26 @@ void main() {
         ),
         hasLength(1),
       );
+      expect(result.countedShotCount, 1);
+      expect(result.duplicateShotCount, 1);
+      expect(result.unscoredBullCount, 24);
+    });
+
+    test('multiplicity counts one shot and exposes remaining duplicates', () {
+      final result = ScoreEngine.score(
+        target: target,
+        impacts: [br50Impact(1, 0, multiplicity: 3)],
+        projectileDiameterMm: 5.6,
+        positionUncertaintyMm: 0,
+      );
+
+      expect(result.totalBeforePenalty, 10);
+      expect(result.actualShotCount, 3);
+      expect(result.countedShotCount, 1);
+      expect(result.duplicateShotCount, 2);
+      expect(result.shots.single.countedMultiplicity, 1);
+      expect(result.shots.single.duplicateMultiplicity, 2);
+      expect(result.penalty, 0);
     });
 
     test('extra record shots receive one penalty point each', () {
@@ -168,6 +260,7 @@ void main() {
       expect(result.actualShotCount, 27);
       expect(result.penalty, 2);
       expect(result.total, 248);
+      expect(result.duplicateShotCount, 2);
     });
 
     test('empty record bulls remain zero in the fixed 250 maximum', () {
@@ -180,6 +273,100 @@ void main() {
       expect(result.total, 10);
       expect(result.maximumPossible, 250);
       expect(result.missCount, 24);
+      expect(result.unscoredBullCount, 24);
+      expect(result.explicitMissShotCount, 0);
+    });
+
+    test('geometry derives a missing bull id', () {
+      final bull = target.recordBulls.first;
+      final result = ScoreEngine.score(
+        target: target,
+        impacts: [
+          ShotImpact(id: 'derived', xMm: bull.centerXMm, yMm: bull.centerYMm),
+        ],
+        projectileDiameterMm: 5.6,
+      );
+
+      expect(result.shots.single.targetBullId, bull.id);
+      expect(result.shots.single.impact.targetBullId, bull.id);
+    });
+
+    test('stored bull id must agree with geometric position', () {
+      final first = target.recordBulls.first;
+      final second = target.recordBulls[1];
+      expect(
+        () => ScoreEngine.score(
+          target: target,
+          impacts: [
+            ShotImpact(
+              id: 'mismatch',
+              xMm: first.centerXMm,
+              yMm: first.centerYMm,
+              targetBullId: second.id,
+            ),
+          ],
+          projectileDiameterMm: 5.6,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('sighter and between-bull positions cannot enter record scoring', () {
+      final sighter = target.bulls.firstWhere(
+        (bull) => bull.role == TargetBullRole.sighter,
+      );
+      final first = target.recordBulls.first;
+      expect(
+        () => ScoreEngine.score(
+          target: target,
+          impacts: [
+            ShotImpact(
+              id: 'sighter',
+              xMm: sighter.centerXMm,
+              yMm: sighter.centerYMm,
+              targetBullId: sighter.id,
+            ),
+          ],
+          projectileDiameterMm: 5.6,
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => ScoreEngine.score(
+          target: target,
+          impacts: [
+            ShotImpact(
+              id: 'between',
+              xMm: first.centerXMm + 27.5,
+              yMm: first.centerYMm,
+            ),
+          ],
+          projectileDiameterMm: 5.6,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('a multi-bull miss requires an explicit record bull', () {
+      expect(
+        () => ScoreEngine.score(
+          target: target,
+          impacts: const [ShotImpact(id: 'miss', xMm: 0, yMm: 0, isMiss: true)],
+          projectileDiameterMm: 5.6,
+        ),
+        throwsArgumentError,
+      );
+
+      final result = ScoreEngine.score(
+        target: target,
+        impacts: [br50Impact(1, 0, multiplicity: 2, miss: true)],
+        projectileDiameterMm: 5.6,
+      );
+      expect(result.explicitMissShotCount, 2);
+      expect(result.zeroValueShotCount, 2);
+      expect(result.countedShotCount, 1);
+      expect(result.duplicateShotCount, 1);
+      expect(result.unscoredBullCount, 24);
     });
   });
 }

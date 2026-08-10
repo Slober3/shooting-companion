@@ -1,6 +1,12 @@
 # Local toolchains
 .tooling/
+.dart-sdk-local/
+.flutter-sdk/
+.pub-cache/
+.appdata/
+.localappdata/
 .local-appdata/
+.local/vision-validation/
 
 # Flutter / Dart
 .dart_tool/

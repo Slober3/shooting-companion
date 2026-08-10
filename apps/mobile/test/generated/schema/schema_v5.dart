@@ -4,7 +4,7 @@
 //
 import 'package:drift/drift.dart';
 
-class Firearms extends Table with TableInfo {
+class Firearms extends Table with TableInfo<Firearms, FirearmsData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -94,8 +94,42 @@ class Firearms extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  FirearmsData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FirearmsData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      manufacturer: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}manufacturer'],
+      ),
+      model: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model'],
+      ),
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      defaultCartridgeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}default_cartridge_id'],
+      ),
+      sightNotes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sight_notes'],
+      ),
+      archived: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}archived'],
+      )!,
+    );
   }
 
   @override
@@ -109,7 +143,315 @@ class Firearms extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class Cartridges extends Table with TableInfo {
+class FirearmsData extends DataClass implements Insertable<FirearmsData> {
+  final String id;
+  final String name;
+  final String? manufacturer;
+  final String? model;
+  final String type;
+  final String? defaultCartridgeId;
+  final String? sightNotes;
+  final int archived;
+  const FirearmsData({
+    required this.id,
+    required this.name,
+    this.manufacturer,
+    this.model,
+    required this.type,
+    this.defaultCartridgeId,
+    this.sightNotes,
+    required this.archived,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || manufacturer != null) {
+      map['manufacturer'] = Variable<String>(manufacturer);
+    }
+    if (!nullToAbsent || model != null) {
+      map['model'] = Variable<String>(model);
+    }
+    map['type'] = Variable<String>(type);
+    if (!nullToAbsent || defaultCartridgeId != null) {
+      map['default_cartridge_id'] = Variable<String>(defaultCartridgeId);
+    }
+    if (!nullToAbsent || sightNotes != null) {
+      map['sight_notes'] = Variable<String>(sightNotes);
+    }
+    map['archived'] = Variable<int>(archived);
+    return map;
+  }
+
+  FirearmsCompanion toCompanion(bool nullToAbsent) {
+    return FirearmsCompanion(
+      id: Value(id),
+      name: Value(name),
+      manufacturer: manufacturer == null && nullToAbsent
+          ? const Value.absent()
+          : Value(manufacturer),
+      model: model == null && nullToAbsent
+          ? const Value.absent()
+          : Value(model),
+      type: Value(type),
+      defaultCartridgeId: defaultCartridgeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(defaultCartridgeId),
+      sightNotes: sightNotes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sightNotes),
+      archived: Value(archived),
+    );
+  }
+
+  factory FirearmsData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FirearmsData(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      manufacturer: serializer.fromJson<String?>(json['manufacturer']),
+      model: serializer.fromJson<String?>(json['model']),
+      type: serializer.fromJson<String>(json['type']),
+      defaultCartridgeId: serializer.fromJson<String?>(
+        json['defaultCartridgeId'],
+      ),
+      sightNotes: serializer.fromJson<String?>(json['sightNotes']),
+      archived: serializer.fromJson<int>(json['archived']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'manufacturer': serializer.toJson<String?>(manufacturer),
+      'model': serializer.toJson<String?>(model),
+      'type': serializer.toJson<String>(type),
+      'defaultCartridgeId': serializer.toJson<String?>(defaultCartridgeId),
+      'sightNotes': serializer.toJson<String?>(sightNotes),
+      'archived': serializer.toJson<int>(archived),
+    };
+  }
+
+  FirearmsData copyWith({
+    String? id,
+    String? name,
+    Value<String?> manufacturer = const Value.absent(),
+    Value<String?> model = const Value.absent(),
+    String? type,
+    Value<String?> defaultCartridgeId = const Value.absent(),
+    Value<String?> sightNotes = const Value.absent(),
+    int? archived,
+  }) => FirearmsData(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    manufacturer: manufacturer.present ? manufacturer.value : this.manufacturer,
+    model: model.present ? model.value : this.model,
+    type: type ?? this.type,
+    defaultCartridgeId: defaultCartridgeId.present
+        ? defaultCartridgeId.value
+        : this.defaultCartridgeId,
+    sightNotes: sightNotes.present ? sightNotes.value : this.sightNotes,
+    archived: archived ?? this.archived,
+  );
+  FirearmsData copyWithCompanion(FirearmsCompanion data) {
+    return FirearmsData(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      manufacturer: data.manufacturer.present
+          ? data.manufacturer.value
+          : this.manufacturer,
+      model: data.model.present ? data.model.value : this.model,
+      type: data.type.present ? data.type.value : this.type,
+      defaultCartridgeId: data.defaultCartridgeId.present
+          ? data.defaultCartridgeId.value
+          : this.defaultCartridgeId,
+      sightNotes: data.sightNotes.present
+          ? data.sightNotes.value
+          : this.sightNotes,
+      archived: data.archived.present ? data.archived.value : this.archived,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FirearmsData(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('manufacturer: $manufacturer, ')
+          ..write('model: $model, ')
+          ..write('type: $type, ')
+          ..write('defaultCartridgeId: $defaultCartridgeId, ')
+          ..write('sightNotes: $sightNotes, ')
+          ..write('archived: $archived')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    manufacturer,
+    model,
+    type,
+    defaultCartridgeId,
+    sightNotes,
+    archived,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FirearmsData &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.manufacturer == this.manufacturer &&
+          other.model == this.model &&
+          other.type == this.type &&
+          other.defaultCartridgeId == this.defaultCartridgeId &&
+          other.sightNotes == this.sightNotes &&
+          other.archived == this.archived);
+}
+
+class FirearmsCompanion extends UpdateCompanion<FirearmsData> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String?> manufacturer;
+  final Value<String?> model;
+  final Value<String> type;
+  final Value<String?> defaultCartridgeId;
+  final Value<String?> sightNotes;
+  final Value<int> archived;
+  final Value<int> rowid;
+  const FirearmsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.manufacturer = const Value.absent(),
+    this.model = const Value.absent(),
+    this.type = const Value.absent(),
+    this.defaultCartridgeId = const Value.absent(),
+    this.sightNotes = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FirearmsCompanion.insert({
+    required String id,
+    required String name,
+    this.manufacturer = const Value.absent(),
+    this.model = const Value.absent(),
+    required String type,
+    this.defaultCartridgeId = const Value.absent(),
+    this.sightNotes = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       type = Value(type);
+  static Insertable<FirearmsData> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? manufacturer,
+    Expression<String>? model,
+    Expression<String>? type,
+    Expression<String>? defaultCartridgeId,
+    Expression<String>? sightNotes,
+    Expression<int>? archived,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (manufacturer != null) 'manufacturer': manufacturer,
+      if (model != null) 'model': model,
+      if (type != null) 'type': type,
+      if (defaultCartridgeId != null)
+        'default_cartridge_id': defaultCartridgeId,
+      if (sightNotes != null) 'sight_notes': sightNotes,
+      if (archived != null) 'archived': archived,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FirearmsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String?>? manufacturer,
+    Value<String?>? model,
+    Value<String>? type,
+    Value<String?>? defaultCartridgeId,
+    Value<String?>? sightNotes,
+    Value<int>? archived,
+    Value<int>? rowid,
+  }) {
+    return FirearmsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      manufacturer: manufacturer ?? this.manufacturer,
+      model: model ?? this.model,
+      type: type ?? this.type,
+      defaultCartridgeId: defaultCartridgeId ?? this.defaultCartridgeId,
+      sightNotes: sightNotes ?? this.sightNotes,
+      archived: archived ?? this.archived,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (manufacturer.present) {
+      map['manufacturer'] = Variable<String>(manufacturer.value);
+    }
+    if (model.present) {
+      map['model'] = Variable<String>(model.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (defaultCartridgeId.present) {
+      map['default_cartridge_id'] = Variable<String>(defaultCartridgeId.value);
+    }
+    if (sightNotes.present) {
+      map['sight_notes'] = Variable<String>(sightNotes.value);
+    }
+    if (archived.present) {
+      map['archived'] = Variable<int>(archived.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FirearmsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('manufacturer: $manufacturer, ')
+          ..write('model: $model, ')
+          ..write('type: $type, ')
+          ..write('defaultCartridgeId: $defaultCartridgeId, ')
+          ..write('sightNotes: $sightNotes, ')
+          ..write('archived: $archived, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class Cartridges extends Table with TableInfo<Cartridges, CartridgesData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -182,8 +524,34 @@ class Cartridges extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  CartridgesData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CartridgesData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      projectileDiameterMm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}projectile_diameter_mm'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      builtIn: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}built_in'],
+      )!,
+      archived: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}archived'],
+      )!,
+    );
   }
 
   @override
@@ -197,7 +565,247 @@ class Cartridges extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class AmmoLots extends Table with TableInfo {
+class CartridgesData extends DataClass implements Insertable<CartridgesData> {
+  final String id;
+  final String name;
+  final double projectileDiameterMm;
+  final String? notes;
+  final int builtIn;
+  final int archived;
+  const CartridgesData({
+    required this.id,
+    required this.name,
+    required this.projectileDiameterMm,
+    this.notes,
+    required this.builtIn,
+    required this.archived,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['projectile_diameter_mm'] = Variable<double>(projectileDiameterMm);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['built_in'] = Variable<int>(builtIn);
+    map['archived'] = Variable<int>(archived);
+    return map;
+  }
+
+  CartridgesCompanion toCompanion(bool nullToAbsent) {
+    return CartridgesCompanion(
+      id: Value(id),
+      name: Value(name),
+      projectileDiameterMm: Value(projectileDiameterMm),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      builtIn: Value(builtIn),
+      archived: Value(archived),
+    );
+  }
+
+  factory CartridgesData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CartridgesData(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      projectileDiameterMm: serializer.fromJson<double>(
+        json['projectileDiameterMm'],
+      ),
+      notes: serializer.fromJson<String?>(json['notes']),
+      builtIn: serializer.fromJson<int>(json['builtIn']),
+      archived: serializer.fromJson<int>(json['archived']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'projectileDiameterMm': serializer.toJson<double>(projectileDiameterMm),
+      'notes': serializer.toJson<String?>(notes),
+      'builtIn': serializer.toJson<int>(builtIn),
+      'archived': serializer.toJson<int>(archived),
+    };
+  }
+
+  CartridgesData copyWith({
+    String? id,
+    String? name,
+    double? projectileDiameterMm,
+    Value<String?> notes = const Value.absent(),
+    int? builtIn,
+    int? archived,
+  }) => CartridgesData(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    projectileDiameterMm: projectileDiameterMm ?? this.projectileDiameterMm,
+    notes: notes.present ? notes.value : this.notes,
+    builtIn: builtIn ?? this.builtIn,
+    archived: archived ?? this.archived,
+  );
+  CartridgesData copyWithCompanion(CartridgesCompanion data) {
+    return CartridgesData(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      projectileDiameterMm: data.projectileDiameterMm.present
+          ? data.projectileDiameterMm.value
+          : this.projectileDiameterMm,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      builtIn: data.builtIn.present ? data.builtIn.value : this.builtIn,
+      archived: data.archived.present ? data.archived.value : this.archived,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CartridgesData(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('projectileDiameterMm: $projectileDiameterMm, ')
+          ..write('notes: $notes, ')
+          ..write('builtIn: $builtIn, ')
+          ..write('archived: $archived')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, projectileDiameterMm, notes, builtIn, archived);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CartridgesData &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.projectileDiameterMm == this.projectileDiameterMm &&
+          other.notes == this.notes &&
+          other.builtIn == this.builtIn &&
+          other.archived == this.archived);
+}
+
+class CartridgesCompanion extends UpdateCompanion<CartridgesData> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<double> projectileDiameterMm;
+  final Value<String?> notes;
+  final Value<int> builtIn;
+  final Value<int> archived;
+  final Value<int> rowid;
+  const CartridgesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.projectileDiameterMm = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.builtIn = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CartridgesCompanion.insert({
+    required String id,
+    required String name,
+    required double projectileDiameterMm,
+    this.notes = const Value.absent(),
+    this.builtIn = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       projectileDiameterMm = Value(projectileDiameterMm);
+  static Insertable<CartridgesData> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<double>? projectileDiameterMm,
+    Expression<String>? notes,
+    Expression<int>? builtIn,
+    Expression<int>? archived,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (projectileDiameterMm != null)
+        'projectile_diameter_mm': projectileDiameterMm,
+      if (notes != null) 'notes': notes,
+      if (builtIn != null) 'built_in': builtIn,
+      if (archived != null) 'archived': archived,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CartridgesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<double>? projectileDiameterMm,
+    Value<String?>? notes,
+    Value<int>? builtIn,
+    Value<int>? archived,
+    Value<int>? rowid,
+  }) {
+    return CartridgesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      projectileDiameterMm: projectileDiameterMm ?? this.projectileDiameterMm,
+      notes: notes ?? this.notes,
+      builtIn: builtIn ?? this.builtIn,
+      archived: archived ?? this.archived,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (projectileDiameterMm.present) {
+      map['projectile_diameter_mm'] = Variable<double>(
+        projectileDiameterMm.value,
+      );
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (builtIn.present) {
+      map['built_in'] = Variable<int>(builtIn.value);
+    }
+    if (archived.present) {
+      map['archived'] = Variable<int>(archived.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CartridgesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('projectileDiameterMm: $projectileDiameterMm, ')
+          ..write('notes: $notes, ')
+          ..write('builtIn: $builtIn, ')
+          ..write('archived: $archived, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class AmmoLots extends Table with TableInfo<AmmoLots, AmmoLotsData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -305,8 +913,50 @@ class AmmoLots extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  AmmoLotsData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AmmoLotsData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      cartridgeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cartridge_id'],
+      )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      )!,
+      manufacturer: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}manufacturer'],
+      ),
+      productName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}product_name'],
+      ),
+      lotNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lot_number'],
+      ),
+      bulletWeightGrains: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}bullet_weight_grains'],
+      ),
+      projectileType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}projectile_type'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      archived: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}archived'],
+      )!,
+    );
   }
 
   @override
@@ -320,7 +970,377 @@ class AmmoLots extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class Ranges extends Table with TableInfo {
+class AmmoLotsData extends DataClass implements Insertable<AmmoLotsData> {
+  final String id;
+  final String cartridgeId;
+  final String displayName;
+  final String? manufacturer;
+  final String? productName;
+  final String? lotNumber;
+  final double? bulletWeightGrains;
+  final String? projectileType;
+  final String? notes;
+  final int archived;
+  const AmmoLotsData({
+    required this.id,
+    required this.cartridgeId,
+    required this.displayName,
+    this.manufacturer,
+    this.productName,
+    this.lotNumber,
+    this.bulletWeightGrains,
+    this.projectileType,
+    this.notes,
+    required this.archived,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['cartridge_id'] = Variable<String>(cartridgeId);
+    map['display_name'] = Variable<String>(displayName);
+    if (!nullToAbsent || manufacturer != null) {
+      map['manufacturer'] = Variable<String>(manufacturer);
+    }
+    if (!nullToAbsent || productName != null) {
+      map['product_name'] = Variable<String>(productName);
+    }
+    if (!nullToAbsent || lotNumber != null) {
+      map['lot_number'] = Variable<String>(lotNumber);
+    }
+    if (!nullToAbsent || bulletWeightGrains != null) {
+      map['bullet_weight_grains'] = Variable<double>(bulletWeightGrains);
+    }
+    if (!nullToAbsent || projectileType != null) {
+      map['projectile_type'] = Variable<String>(projectileType);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['archived'] = Variable<int>(archived);
+    return map;
+  }
+
+  AmmoLotsCompanion toCompanion(bool nullToAbsent) {
+    return AmmoLotsCompanion(
+      id: Value(id),
+      cartridgeId: Value(cartridgeId),
+      displayName: Value(displayName),
+      manufacturer: manufacturer == null && nullToAbsent
+          ? const Value.absent()
+          : Value(manufacturer),
+      productName: productName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(productName),
+      lotNumber: lotNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lotNumber),
+      bulletWeightGrains: bulletWeightGrains == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bulletWeightGrains),
+      projectileType: projectileType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(projectileType),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      archived: Value(archived),
+    );
+  }
+
+  factory AmmoLotsData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AmmoLotsData(
+      id: serializer.fromJson<String>(json['id']),
+      cartridgeId: serializer.fromJson<String>(json['cartridgeId']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      manufacturer: serializer.fromJson<String?>(json['manufacturer']),
+      productName: serializer.fromJson<String?>(json['productName']),
+      lotNumber: serializer.fromJson<String?>(json['lotNumber']),
+      bulletWeightGrains: serializer.fromJson<double?>(
+        json['bulletWeightGrains'],
+      ),
+      projectileType: serializer.fromJson<String?>(json['projectileType']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      archived: serializer.fromJson<int>(json['archived']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'cartridgeId': serializer.toJson<String>(cartridgeId),
+      'displayName': serializer.toJson<String>(displayName),
+      'manufacturer': serializer.toJson<String?>(manufacturer),
+      'productName': serializer.toJson<String?>(productName),
+      'lotNumber': serializer.toJson<String?>(lotNumber),
+      'bulletWeightGrains': serializer.toJson<double?>(bulletWeightGrains),
+      'projectileType': serializer.toJson<String?>(projectileType),
+      'notes': serializer.toJson<String?>(notes),
+      'archived': serializer.toJson<int>(archived),
+    };
+  }
+
+  AmmoLotsData copyWith({
+    String? id,
+    String? cartridgeId,
+    String? displayName,
+    Value<String?> manufacturer = const Value.absent(),
+    Value<String?> productName = const Value.absent(),
+    Value<String?> lotNumber = const Value.absent(),
+    Value<double?> bulletWeightGrains = const Value.absent(),
+    Value<String?> projectileType = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+    int? archived,
+  }) => AmmoLotsData(
+    id: id ?? this.id,
+    cartridgeId: cartridgeId ?? this.cartridgeId,
+    displayName: displayName ?? this.displayName,
+    manufacturer: manufacturer.present ? manufacturer.value : this.manufacturer,
+    productName: productName.present ? productName.value : this.productName,
+    lotNumber: lotNumber.present ? lotNumber.value : this.lotNumber,
+    bulletWeightGrains: bulletWeightGrains.present
+        ? bulletWeightGrains.value
+        : this.bulletWeightGrains,
+    projectileType: projectileType.present
+        ? projectileType.value
+        : this.projectileType,
+    notes: notes.present ? notes.value : this.notes,
+    archived: archived ?? this.archived,
+  );
+  AmmoLotsData copyWithCompanion(AmmoLotsCompanion data) {
+    return AmmoLotsData(
+      id: data.id.present ? data.id.value : this.id,
+      cartridgeId: data.cartridgeId.present
+          ? data.cartridgeId.value
+          : this.cartridgeId,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
+      manufacturer: data.manufacturer.present
+          ? data.manufacturer.value
+          : this.manufacturer,
+      productName: data.productName.present
+          ? data.productName.value
+          : this.productName,
+      lotNumber: data.lotNumber.present ? data.lotNumber.value : this.lotNumber,
+      bulletWeightGrains: data.bulletWeightGrains.present
+          ? data.bulletWeightGrains.value
+          : this.bulletWeightGrains,
+      projectileType: data.projectileType.present
+          ? data.projectileType.value
+          : this.projectileType,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      archived: data.archived.present ? data.archived.value : this.archived,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AmmoLotsData(')
+          ..write('id: $id, ')
+          ..write('cartridgeId: $cartridgeId, ')
+          ..write('displayName: $displayName, ')
+          ..write('manufacturer: $manufacturer, ')
+          ..write('productName: $productName, ')
+          ..write('lotNumber: $lotNumber, ')
+          ..write('bulletWeightGrains: $bulletWeightGrains, ')
+          ..write('projectileType: $projectileType, ')
+          ..write('notes: $notes, ')
+          ..write('archived: $archived')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    cartridgeId,
+    displayName,
+    manufacturer,
+    productName,
+    lotNumber,
+    bulletWeightGrains,
+    projectileType,
+    notes,
+    archived,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AmmoLotsData &&
+          other.id == this.id &&
+          other.cartridgeId == this.cartridgeId &&
+          other.displayName == this.displayName &&
+          other.manufacturer == this.manufacturer &&
+          other.productName == this.productName &&
+          other.lotNumber == this.lotNumber &&
+          other.bulletWeightGrains == this.bulletWeightGrains &&
+          other.projectileType == this.projectileType &&
+          other.notes == this.notes &&
+          other.archived == this.archived);
+}
+
+class AmmoLotsCompanion extends UpdateCompanion<AmmoLotsData> {
+  final Value<String> id;
+  final Value<String> cartridgeId;
+  final Value<String> displayName;
+  final Value<String?> manufacturer;
+  final Value<String?> productName;
+  final Value<String?> lotNumber;
+  final Value<double?> bulletWeightGrains;
+  final Value<String?> projectileType;
+  final Value<String?> notes;
+  final Value<int> archived;
+  final Value<int> rowid;
+  const AmmoLotsCompanion({
+    this.id = const Value.absent(),
+    this.cartridgeId = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.manufacturer = const Value.absent(),
+    this.productName = const Value.absent(),
+    this.lotNumber = const Value.absent(),
+    this.bulletWeightGrains = const Value.absent(),
+    this.projectileType = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AmmoLotsCompanion.insert({
+    required String id,
+    required String cartridgeId,
+    required String displayName,
+    this.manufacturer = const Value.absent(),
+    this.productName = const Value.absent(),
+    this.lotNumber = const Value.absent(),
+    this.bulletWeightGrains = const Value.absent(),
+    this.projectileType = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       cartridgeId = Value(cartridgeId),
+       displayName = Value(displayName);
+  static Insertable<AmmoLotsData> custom({
+    Expression<String>? id,
+    Expression<String>? cartridgeId,
+    Expression<String>? displayName,
+    Expression<String>? manufacturer,
+    Expression<String>? productName,
+    Expression<String>? lotNumber,
+    Expression<double>? bulletWeightGrains,
+    Expression<String>? projectileType,
+    Expression<String>? notes,
+    Expression<int>? archived,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (cartridgeId != null) 'cartridge_id': cartridgeId,
+      if (displayName != null) 'display_name': displayName,
+      if (manufacturer != null) 'manufacturer': manufacturer,
+      if (productName != null) 'product_name': productName,
+      if (lotNumber != null) 'lot_number': lotNumber,
+      if (bulletWeightGrains != null)
+        'bullet_weight_grains': bulletWeightGrains,
+      if (projectileType != null) 'projectile_type': projectileType,
+      if (notes != null) 'notes': notes,
+      if (archived != null) 'archived': archived,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AmmoLotsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? cartridgeId,
+    Value<String>? displayName,
+    Value<String?>? manufacturer,
+    Value<String?>? productName,
+    Value<String?>? lotNumber,
+    Value<double?>? bulletWeightGrains,
+    Value<String?>? projectileType,
+    Value<String?>? notes,
+    Value<int>? archived,
+    Value<int>? rowid,
+  }) {
+    return AmmoLotsCompanion(
+      id: id ?? this.id,
+      cartridgeId: cartridgeId ?? this.cartridgeId,
+      displayName: displayName ?? this.displayName,
+      manufacturer: manufacturer ?? this.manufacturer,
+      productName: productName ?? this.productName,
+      lotNumber: lotNumber ?? this.lotNumber,
+      bulletWeightGrains: bulletWeightGrains ?? this.bulletWeightGrains,
+      projectileType: projectileType ?? this.projectileType,
+      notes: notes ?? this.notes,
+      archived: archived ?? this.archived,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (cartridgeId.present) {
+      map['cartridge_id'] = Variable<String>(cartridgeId.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (manufacturer.present) {
+      map['manufacturer'] = Variable<String>(manufacturer.value);
+    }
+    if (productName.present) {
+      map['product_name'] = Variable<String>(productName.value);
+    }
+    if (lotNumber.present) {
+      map['lot_number'] = Variable<String>(lotNumber.value);
+    }
+    if (bulletWeightGrains.present) {
+      map['bullet_weight_grains'] = Variable<double>(bulletWeightGrains.value);
+    }
+    if (projectileType.present) {
+      map['projectile_type'] = Variable<String>(projectileType.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (archived.present) {
+      map['archived'] = Variable<int>(archived.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AmmoLotsCompanion(')
+          ..write('id: $id, ')
+          ..write('cartridgeId: $cartridgeId, ')
+          ..write('displayName: $displayName, ')
+          ..write('manufacturer: $manufacturer, ')
+          ..write('productName: $productName, ')
+          ..write('lotNumber: $lotNumber, ')
+          ..write('bulletWeightGrains: $bulletWeightGrains, ')
+          ..write('projectileType: $projectileType, ')
+          ..write('notes: $notes, ')
+          ..write('archived: $archived, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class Ranges extends Table with TableInfo<Ranges, RangesData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -404,8 +1424,38 @@ class Ranges extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  RangesData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RangesData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      locationDescription: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location_description'],
+      ),
+      isIndoor: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}is_indoor'],
+      )!,
+      availableDistancesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}available_distances_json'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      archived: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}archived'],
+      )!,
+    );
   }
 
   @override
@@ -419,7 +1469,291 @@ class Ranges extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class TrainingSessions extends Table with TableInfo {
+class RangesData extends DataClass implements Insertable<RangesData> {
+  final String id;
+  final String name;
+  final String? locationDescription;
+  final int isIndoor;
+  final String availableDistancesJson;
+  final String? notes;
+  final int archived;
+  const RangesData({
+    required this.id,
+    required this.name,
+    this.locationDescription,
+    required this.isIndoor,
+    required this.availableDistancesJson,
+    this.notes,
+    required this.archived,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || locationDescription != null) {
+      map['location_description'] = Variable<String>(locationDescription);
+    }
+    map['is_indoor'] = Variable<int>(isIndoor);
+    map['available_distances_json'] = Variable<String>(availableDistancesJson);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['archived'] = Variable<int>(archived);
+    return map;
+  }
+
+  RangesCompanion toCompanion(bool nullToAbsent) {
+    return RangesCompanion(
+      id: Value(id),
+      name: Value(name),
+      locationDescription: locationDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationDescription),
+      isIndoor: Value(isIndoor),
+      availableDistancesJson: Value(availableDistancesJson),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      archived: Value(archived),
+    );
+  }
+
+  factory RangesData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RangesData(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      locationDescription: serializer.fromJson<String?>(
+        json['locationDescription'],
+      ),
+      isIndoor: serializer.fromJson<int>(json['isIndoor']),
+      availableDistancesJson: serializer.fromJson<String>(
+        json['availableDistancesJson'],
+      ),
+      notes: serializer.fromJson<String?>(json['notes']),
+      archived: serializer.fromJson<int>(json['archived']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'locationDescription': serializer.toJson<String?>(locationDescription),
+      'isIndoor': serializer.toJson<int>(isIndoor),
+      'availableDistancesJson': serializer.toJson<String>(
+        availableDistancesJson,
+      ),
+      'notes': serializer.toJson<String?>(notes),
+      'archived': serializer.toJson<int>(archived),
+    };
+  }
+
+  RangesData copyWith({
+    String? id,
+    String? name,
+    Value<String?> locationDescription = const Value.absent(),
+    int? isIndoor,
+    String? availableDistancesJson,
+    Value<String?> notes = const Value.absent(),
+    int? archived,
+  }) => RangesData(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    locationDescription: locationDescription.present
+        ? locationDescription.value
+        : this.locationDescription,
+    isIndoor: isIndoor ?? this.isIndoor,
+    availableDistancesJson:
+        availableDistancesJson ?? this.availableDistancesJson,
+    notes: notes.present ? notes.value : this.notes,
+    archived: archived ?? this.archived,
+  );
+  RangesData copyWithCompanion(RangesCompanion data) {
+    return RangesData(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      locationDescription: data.locationDescription.present
+          ? data.locationDescription.value
+          : this.locationDescription,
+      isIndoor: data.isIndoor.present ? data.isIndoor.value : this.isIndoor,
+      availableDistancesJson: data.availableDistancesJson.present
+          ? data.availableDistancesJson.value
+          : this.availableDistancesJson,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      archived: data.archived.present ? data.archived.value : this.archived,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RangesData(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('locationDescription: $locationDescription, ')
+          ..write('isIndoor: $isIndoor, ')
+          ..write('availableDistancesJson: $availableDistancesJson, ')
+          ..write('notes: $notes, ')
+          ..write('archived: $archived')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    locationDescription,
+    isIndoor,
+    availableDistancesJson,
+    notes,
+    archived,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RangesData &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.locationDescription == this.locationDescription &&
+          other.isIndoor == this.isIndoor &&
+          other.availableDistancesJson == this.availableDistancesJson &&
+          other.notes == this.notes &&
+          other.archived == this.archived);
+}
+
+class RangesCompanion extends UpdateCompanion<RangesData> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String?> locationDescription;
+  final Value<int> isIndoor;
+  final Value<String> availableDistancesJson;
+  final Value<String?> notes;
+  final Value<int> archived;
+  final Value<int> rowid;
+  const RangesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.locationDescription = const Value.absent(),
+    this.isIndoor = const Value.absent(),
+    this.availableDistancesJson = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RangesCompanion.insert({
+    required String id,
+    required String name,
+    this.locationDescription = const Value.absent(),
+    this.isIndoor = const Value.absent(),
+    this.availableDistancesJson = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name);
+  static Insertable<RangesData> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? locationDescription,
+    Expression<int>? isIndoor,
+    Expression<String>? availableDistancesJson,
+    Expression<String>? notes,
+    Expression<int>? archived,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (locationDescription != null)
+        'location_description': locationDescription,
+      if (isIndoor != null) 'is_indoor': isIndoor,
+      if (availableDistancesJson != null)
+        'available_distances_json': availableDistancesJson,
+      if (notes != null) 'notes': notes,
+      if (archived != null) 'archived': archived,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RangesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String?>? locationDescription,
+    Value<int>? isIndoor,
+    Value<String>? availableDistancesJson,
+    Value<String?>? notes,
+    Value<int>? archived,
+    Value<int>? rowid,
+  }) {
+    return RangesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      locationDescription: locationDescription ?? this.locationDescription,
+      isIndoor: isIndoor ?? this.isIndoor,
+      availableDistancesJson:
+          availableDistancesJson ?? this.availableDistancesJson,
+      notes: notes ?? this.notes,
+      archived: archived ?? this.archived,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (locationDescription.present) {
+      map['location_description'] = Variable<String>(locationDescription.value);
+    }
+    if (isIndoor.present) {
+      map['is_indoor'] = Variable<int>(isIndoor.value);
+    }
+    if (availableDistancesJson.present) {
+      map['available_distances_json'] = Variable<String>(
+        availableDistancesJson.value,
+      );
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (archived.present) {
+      map['archived'] = Variable<int>(archived.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RangesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('locationDescription: $locationDescription, ')
+          ..write('isIndoor: $isIndoor, ')
+          ..write('availableDistancesJson: $availableDistancesJson, ')
+          ..write('notes: $notes, ')
+          ..write('archived: $archived, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class TrainingSessions extends Table
+    with TableInfo<TrainingSessions, TrainingSessionsData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -535,8 +1869,54 @@ class TrainingSessions extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  TrainingSessionsData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrainingSessionsData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      startedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}started_at_utc'],
+      )!,
+      localUtcOffsetMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}local_utc_offset_minutes'],
+      )!,
+      endedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ended_at_utc'],
+      ),
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+      photoSafetyAcknowledgedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}photo_safety_acknowledged_at_utc'],
+      ),
+      rangeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}range_id'],
+      ),
+      trainingGoal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}training_goal'],
+      ),
+      conditions: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conditions'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+    );
   }
 
   @override
@@ -550,7 +1930,423 @@ class TrainingSessions extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class ShootingSeries extends Table with TableInfo {
+class TrainingSessionsData extends DataClass
+    implements Insertable<TrainingSessionsData> {
+  final String id;
+  final String status;
+  final int startedAtUtc;
+  final int localUtcOffsetMinutes;
+  final int? endedAtUtc;
+  final int updatedAtUtc;
+  final int? photoSafetyAcknowledgedAtUtc;
+  final String? rangeId;
+  final String? trainingGoal;
+  final String? conditions;
+  final String? notes;
+  const TrainingSessionsData({
+    required this.id,
+    required this.status,
+    required this.startedAtUtc,
+    required this.localUtcOffsetMinutes,
+    this.endedAtUtc,
+    required this.updatedAtUtc,
+    this.photoSafetyAcknowledgedAtUtc,
+    this.rangeId,
+    this.trainingGoal,
+    this.conditions,
+    this.notes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['status'] = Variable<String>(status);
+    map['started_at_utc'] = Variable<int>(startedAtUtc);
+    map['local_utc_offset_minutes'] = Variable<int>(localUtcOffsetMinutes);
+    if (!nullToAbsent || endedAtUtc != null) {
+      map['ended_at_utc'] = Variable<int>(endedAtUtc);
+    }
+    map['updated_at_utc'] = Variable<int>(updatedAtUtc);
+    if (!nullToAbsent || photoSafetyAcknowledgedAtUtc != null) {
+      map['photo_safety_acknowledged_at_utc'] = Variable<int>(
+        photoSafetyAcknowledgedAtUtc,
+      );
+    }
+    if (!nullToAbsent || rangeId != null) {
+      map['range_id'] = Variable<String>(rangeId);
+    }
+    if (!nullToAbsent || trainingGoal != null) {
+      map['training_goal'] = Variable<String>(trainingGoal);
+    }
+    if (!nullToAbsent || conditions != null) {
+      map['conditions'] = Variable<String>(conditions);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    return map;
+  }
+
+  TrainingSessionsCompanion toCompanion(bool nullToAbsent) {
+    return TrainingSessionsCompanion(
+      id: Value(id),
+      status: Value(status),
+      startedAtUtc: Value(startedAtUtc),
+      localUtcOffsetMinutes: Value(localUtcOffsetMinutes),
+      endedAtUtc: endedAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endedAtUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+      photoSafetyAcknowledgedAtUtc:
+          photoSafetyAcknowledgedAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(photoSafetyAcknowledgedAtUtc),
+      rangeId: rangeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rangeId),
+      trainingGoal: trainingGoal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trainingGoal),
+      conditions: conditions == null && nullToAbsent
+          ? const Value.absent()
+          : Value(conditions),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+    );
+  }
+
+  factory TrainingSessionsData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrainingSessionsData(
+      id: serializer.fromJson<String>(json['id']),
+      status: serializer.fromJson<String>(json['status']),
+      startedAtUtc: serializer.fromJson<int>(json['startedAtUtc']),
+      localUtcOffsetMinutes: serializer.fromJson<int>(
+        json['localUtcOffsetMinutes'],
+      ),
+      endedAtUtc: serializer.fromJson<int?>(json['endedAtUtc']),
+      updatedAtUtc: serializer.fromJson<int>(json['updatedAtUtc']),
+      photoSafetyAcknowledgedAtUtc: serializer.fromJson<int?>(
+        json['photoSafetyAcknowledgedAtUtc'],
+      ),
+      rangeId: serializer.fromJson<String?>(json['rangeId']),
+      trainingGoal: serializer.fromJson<String?>(json['trainingGoal']),
+      conditions: serializer.fromJson<String?>(json['conditions']),
+      notes: serializer.fromJson<String?>(json['notes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'status': serializer.toJson<String>(status),
+      'startedAtUtc': serializer.toJson<int>(startedAtUtc),
+      'localUtcOffsetMinutes': serializer.toJson<int>(localUtcOffsetMinutes),
+      'endedAtUtc': serializer.toJson<int?>(endedAtUtc),
+      'updatedAtUtc': serializer.toJson<int>(updatedAtUtc),
+      'photoSafetyAcknowledgedAtUtc': serializer.toJson<int?>(
+        photoSafetyAcknowledgedAtUtc,
+      ),
+      'rangeId': serializer.toJson<String?>(rangeId),
+      'trainingGoal': serializer.toJson<String?>(trainingGoal),
+      'conditions': serializer.toJson<String?>(conditions),
+      'notes': serializer.toJson<String?>(notes),
+    };
+  }
+
+  TrainingSessionsData copyWith({
+    String? id,
+    String? status,
+    int? startedAtUtc,
+    int? localUtcOffsetMinutes,
+    Value<int?> endedAtUtc = const Value.absent(),
+    int? updatedAtUtc,
+    Value<int?> photoSafetyAcknowledgedAtUtc = const Value.absent(),
+    Value<String?> rangeId = const Value.absent(),
+    Value<String?> trainingGoal = const Value.absent(),
+    Value<String?> conditions = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+  }) => TrainingSessionsData(
+    id: id ?? this.id,
+    status: status ?? this.status,
+    startedAtUtc: startedAtUtc ?? this.startedAtUtc,
+    localUtcOffsetMinutes: localUtcOffsetMinutes ?? this.localUtcOffsetMinutes,
+    endedAtUtc: endedAtUtc.present ? endedAtUtc.value : this.endedAtUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+    photoSafetyAcknowledgedAtUtc: photoSafetyAcknowledgedAtUtc.present
+        ? photoSafetyAcknowledgedAtUtc.value
+        : this.photoSafetyAcknowledgedAtUtc,
+    rangeId: rangeId.present ? rangeId.value : this.rangeId,
+    trainingGoal: trainingGoal.present ? trainingGoal.value : this.trainingGoal,
+    conditions: conditions.present ? conditions.value : this.conditions,
+    notes: notes.present ? notes.value : this.notes,
+  );
+  TrainingSessionsData copyWithCompanion(TrainingSessionsCompanion data) {
+    return TrainingSessionsData(
+      id: data.id.present ? data.id.value : this.id,
+      status: data.status.present ? data.status.value : this.status,
+      startedAtUtc: data.startedAtUtc.present
+          ? data.startedAtUtc.value
+          : this.startedAtUtc,
+      localUtcOffsetMinutes: data.localUtcOffsetMinutes.present
+          ? data.localUtcOffsetMinutes.value
+          : this.localUtcOffsetMinutes,
+      endedAtUtc: data.endedAtUtc.present
+          ? data.endedAtUtc.value
+          : this.endedAtUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+      photoSafetyAcknowledgedAtUtc: data.photoSafetyAcknowledgedAtUtc.present
+          ? data.photoSafetyAcknowledgedAtUtc.value
+          : this.photoSafetyAcknowledgedAtUtc,
+      rangeId: data.rangeId.present ? data.rangeId.value : this.rangeId,
+      trainingGoal: data.trainingGoal.present
+          ? data.trainingGoal.value
+          : this.trainingGoal,
+      conditions: data.conditions.present
+          ? data.conditions.value
+          : this.conditions,
+      notes: data.notes.present ? data.notes.value : this.notes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrainingSessionsData(')
+          ..write('id: $id, ')
+          ..write('status: $status, ')
+          ..write('startedAtUtc: $startedAtUtc, ')
+          ..write('localUtcOffsetMinutes: $localUtcOffsetMinutes, ')
+          ..write('endedAtUtc: $endedAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write(
+            'photoSafetyAcknowledgedAtUtc: $photoSafetyAcknowledgedAtUtc, ',
+          )
+          ..write('rangeId: $rangeId, ')
+          ..write('trainingGoal: $trainingGoal, ')
+          ..write('conditions: $conditions, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    status,
+    startedAtUtc,
+    localUtcOffsetMinutes,
+    endedAtUtc,
+    updatedAtUtc,
+    photoSafetyAcknowledgedAtUtc,
+    rangeId,
+    trainingGoal,
+    conditions,
+    notes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrainingSessionsData &&
+          other.id == this.id &&
+          other.status == this.status &&
+          other.startedAtUtc == this.startedAtUtc &&
+          other.localUtcOffsetMinutes == this.localUtcOffsetMinutes &&
+          other.endedAtUtc == this.endedAtUtc &&
+          other.updatedAtUtc == this.updatedAtUtc &&
+          other.photoSafetyAcknowledgedAtUtc ==
+              this.photoSafetyAcknowledgedAtUtc &&
+          other.rangeId == this.rangeId &&
+          other.trainingGoal == this.trainingGoal &&
+          other.conditions == this.conditions &&
+          other.notes == this.notes);
+}
+
+class TrainingSessionsCompanion extends UpdateCompanion<TrainingSessionsData> {
+  final Value<String> id;
+  final Value<String> status;
+  final Value<int> startedAtUtc;
+  final Value<int> localUtcOffsetMinutes;
+  final Value<int?> endedAtUtc;
+  final Value<int> updatedAtUtc;
+  final Value<int?> photoSafetyAcknowledgedAtUtc;
+  final Value<String?> rangeId;
+  final Value<String?> trainingGoal;
+  final Value<String?> conditions;
+  final Value<String?> notes;
+  final Value<int> rowid;
+  const TrainingSessionsCompanion({
+    this.id = const Value.absent(),
+    this.status = const Value.absent(),
+    this.startedAtUtc = const Value.absent(),
+    this.localUtcOffsetMinutes = const Value.absent(),
+    this.endedAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.photoSafetyAcknowledgedAtUtc = const Value.absent(),
+    this.rangeId = const Value.absent(),
+    this.trainingGoal = const Value.absent(),
+    this.conditions = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TrainingSessionsCompanion.insert({
+    required String id,
+    required String status,
+    required int startedAtUtc,
+    required int localUtcOffsetMinutes,
+    this.endedAtUtc = const Value.absent(),
+    required int updatedAtUtc,
+    this.photoSafetyAcknowledgedAtUtc = const Value.absent(),
+    this.rangeId = const Value.absent(),
+    this.trainingGoal = const Value.absent(),
+    this.conditions = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       status = Value(status),
+       startedAtUtc = Value(startedAtUtc),
+       localUtcOffsetMinutes = Value(localUtcOffsetMinutes),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<TrainingSessionsData> custom({
+    Expression<String>? id,
+    Expression<String>? status,
+    Expression<int>? startedAtUtc,
+    Expression<int>? localUtcOffsetMinutes,
+    Expression<int>? endedAtUtc,
+    Expression<int>? updatedAtUtc,
+    Expression<int>? photoSafetyAcknowledgedAtUtc,
+    Expression<String>? rangeId,
+    Expression<String>? trainingGoal,
+    Expression<String>? conditions,
+    Expression<String>? notes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (status != null) 'status': status,
+      if (startedAtUtc != null) 'started_at_utc': startedAtUtc,
+      if (localUtcOffsetMinutes != null)
+        'local_utc_offset_minutes': localUtcOffsetMinutes,
+      if (endedAtUtc != null) 'ended_at_utc': endedAtUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (photoSafetyAcknowledgedAtUtc != null)
+        'photo_safety_acknowledged_at_utc': photoSafetyAcknowledgedAtUtc,
+      if (rangeId != null) 'range_id': rangeId,
+      if (trainingGoal != null) 'training_goal': trainingGoal,
+      if (conditions != null) 'conditions': conditions,
+      if (notes != null) 'notes': notes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TrainingSessionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? status,
+    Value<int>? startedAtUtc,
+    Value<int>? localUtcOffsetMinutes,
+    Value<int?>? endedAtUtc,
+    Value<int>? updatedAtUtc,
+    Value<int?>? photoSafetyAcknowledgedAtUtc,
+    Value<String?>? rangeId,
+    Value<String?>? trainingGoal,
+    Value<String?>? conditions,
+    Value<String?>? notes,
+    Value<int>? rowid,
+  }) {
+    return TrainingSessionsCompanion(
+      id: id ?? this.id,
+      status: status ?? this.status,
+      startedAtUtc: startedAtUtc ?? this.startedAtUtc,
+      localUtcOffsetMinutes:
+          localUtcOffsetMinutes ?? this.localUtcOffsetMinutes,
+      endedAtUtc: endedAtUtc ?? this.endedAtUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      photoSafetyAcknowledgedAtUtc:
+          photoSafetyAcknowledgedAtUtc ?? this.photoSafetyAcknowledgedAtUtc,
+      rangeId: rangeId ?? this.rangeId,
+      trainingGoal: trainingGoal ?? this.trainingGoal,
+      conditions: conditions ?? this.conditions,
+      notes: notes ?? this.notes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (startedAtUtc.present) {
+      map['started_at_utc'] = Variable<int>(startedAtUtc.value);
+    }
+    if (localUtcOffsetMinutes.present) {
+      map['local_utc_offset_minutes'] = Variable<int>(
+        localUtcOffsetMinutes.value,
+      );
+    }
+    if (endedAtUtc.present) {
+      map['ended_at_utc'] = Variable<int>(endedAtUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<int>(updatedAtUtc.value);
+    }
+    if (photoSafetyAcknowledgedAtUtc.present) {
+      map['photo_safety_acknowledged_at_utc'] = Variable<int>(
+        photoSafetyAcknowledgedAtUtc.value,
+      );
+    }
+    if (rangeId.present) {
+      map['range_id'] = Variable<String>(rangeId.value);
+    }
+    if (trainingGoal.present) {
+      map['training_goal'] = Variable<String>(trainingGoal.value);
+    }
+    if (conditions.present) {
+      map['conditions'] = Variable<String>(conditions.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrainingSessionsCompanion(')
+          ..write('id: $id, ')
+          ..write('status: $status, ')
+          ..write('startedAtUtc: $startedAtUtc, ')
+          ..write('localUtcOffsetMinutes: $localUtcOffsetMinutes, ')
+          ..write('endedAtUtc: $endedAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write(
+            'photoSafetyAcknowledgedAtUtc: $photoSafetyAcknowledgedAtUtc, ',
+          )
+          ..write('rangeId: $rangeId, ')
+          ..write('trainingGoal: $trainingGoal, ')
+          ..write('conditions: $conditions, ')
+          ..write('notes: $notes, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class ShootingSeries extends Table
+    with TableInfo<ShootingSeries, ShootingSeriesData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -785,8 +2581,102 @@ class ShootingSeries extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  ShootingSeriesData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ShootingSeriesData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      sequenceNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sequence_number'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      targetProfileVersionedId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_profile_versioned_id'],
+      )!,
+      targetProfileJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_profile_json'],
+      )!,
+      distanceMeters: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}distance_meters'],
+      )!,
+      projectileDiameterMm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}projectile_diameter_mm'],
+      )!,
+      cartridgeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cartridge_id'],
+      ),
+      shotCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}shot_count'],
+      )!,
+      maximumPossibleScore: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}maximum_possible_score'],
+      )!,
+      firearmId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}firearm_id'],
+      ),
+      ammoLotId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ammo_lot_id'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      totalScore: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_score'],
+      )!,
+      innerTenCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}inner_ten_count'],
+      )!,
+      missCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}miss_count'],
+      )!,
+      scorePenalty: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}score_penalty'],
+      )!,
+      scoredBullCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}scored_bull_count'],
+      ),
+      hasBoundaryWarnings: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}has_boundary_warnings'],
+      )!,
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+      confirmedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}confirmed_at_utc'],
+      ),
+    );
   }
 
   @override
@@ -800,7 +2690,721 @@ class ShootingSeries extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class ImageAssets extends Table with TableInfo {
+class ShootingSeriesData extends DataClass
+    implements Insertable<ShootingSeriesData> {
+  final String id;
+  final String sessionId;
+  final int sequenceNumber;
+  final String status;
+  final String targetProfileVersionedId;
+  final String targetProfileJson;
+  final double distanceMeters;
+  final double projectileDiameterMm;
+  final String? cartridgeId;
+  final int shotCount;
+  final int maximumPossibleScore;
+  final String? firearmId;
+  final String? ammoLotId;
+  final String? notes;
+  final int totalScore;
+  final int innerTenCount;
+  final int missCount;
+  final int scorePenalty;
+  final int? scoredBullCount;
+  final int hasBoundaryWarnings;
+  final int createdAtUtc;
+  final int updatedAtUtc;
+  final int? confirmedAtUtc;
+  const ShootingSeriesData({
+    required this.id,
+    required this.sessionId,
+    required this.sequenceNumber,
+    required this.status,
+    required this.targetProfileVersionedId,
+    required this.targetProfileJson,
+    required this.distanceMeters,
+    required this.projectileDiameterMm,
+    this.cartridgeId,
+    required this.shotCount,
+    required this.maximumPossibleScore,
+    this.firearmId,
+    this.ammoLotId,
+    this.notes,
+    required this.totalScore,
+    required this.innerTenCount,
+    required this.missCount,
+    required this.scorePenalty,
+    this.scoredBullCount,
+    required this.hasBoundaryWarnings,
+    required this.createdAtUtc,
+    required this.updatedAtUtc,
+    this.confirmedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['session_id'] = Variable<String>(sessionId);
+    map['sequence_number'] = Variable<int>(sequenceNumber);
+    map['status'] = Variable<String>(status);
+    map['target_profile_versioned_id'] = Variable<String>(
+      targetProfileVersionedId,
+    );
+    map['target_profile_json'] = Variable<String>(targetProfileJson);
+    map['distance_meters'] = Variable<double>(distanceMeters);
+    map['projectile_diameter_mm'] = Variable<double>(projectileDiameterMm);
+    if (!nullToAbsent || cartridgeId != null) {
+      map['cartridge_id'] = Variable<String>(cartridgeId);
+    }
+    map['shot_count'] = Variable<int>(shotCount);
+    map['maximum_possible_score'] = Variable<int>(maximumPossibleScore);
+    if (!nullToAbsent || firearmId != null) {
+      map['firearm_id'] = Variable<String>(firearmId);
+    }
+    if (!nullToAbsent || ammoLotId != null) {
+      map['ammo_lot_id'] = Variable<String>(ammoLotId);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['total_score'] = Variable<int>(totalScore);
+    map['inner_ten_count'] = Variable<int>(innerTenCount);
+    map['miss_count'] = Variable<int>(missCount);
+    map['score_penalty'] = Variable<int>(scorePenalty);
+    if (!nullToAbsent || scoredBullCount != null) {
+      map['scored_bull_count'] = Variable<int>(scoredBullCount);
+    }
+    map['has_boundary_warnings'] = Variable<int>(hasBoundaryWarnings);
+    map['created_at_utc'] = Variable<int>(createdAtUtc);
+    map['updated_at_utc'] = Variable<int>(updatedAtUtc);
+    if (!nullToAbsent || confirmedAtUtc != null) {
+      map['confirmed_at_utc'] = Variable<int>(confirmedAtUtc);
+    }
+    return map;
+  }
+
+  ShootingSeriesCompanion toCompanion(bool nullToAbsent) {
+    return ShootingSeriesCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      sequenceNumber: Value(sequenceNumber),
+      status: Value(status),
+      targetProfileVersionedId: Value(targetProfileVersionedId),
+      targetProfileJson: Value(targetProfileJson),
+      distanceMeters: Value(distanceMeters),
+      projectileDiameterMm: Value(projectileDiameterMm),
+      cartridgeId: cartridgeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cartridgeId),
+      shotCount: Value(shotCount),
+      maximumPossibleScore: Value(maximumPossibleScore),
+      firearmId: firearmId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firearmId),
+      ammoLotId: ammoLotId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ammoLotId),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      totalScore: Value(totalScore),
+      innerTenCount: Value(innerTenCount),
+      missCount: Value(missCount),
+      scorePenalty: Value(scorePenalty),
+      scoredBullCount: scoredBullCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scoredBullCount),
+      hasBoundaryWarnings: Value(hasBoundaryWarnings),
+      createdAtUtc: Value(createdAtUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+      confirmedAtUtc: confirmedAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confirmedAtUtc),
+    );
+  }
+
+  factory ShootingSeriesData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ShootingSeriesData(
+      id: serializer.fromJson<String>(json['id']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      sequenceNumber: serializer.fromJson<int>(json['sequenceNumber']),
+      status: serializer.fromJson<String>(json['status']),
+      targetProfileVersionedId: serializer.fromJson<String>(
+        json['targetProfileVersionedId'],
+      ),
+      targetProfileJson: serializer.fromJson<String>(json['targetProfileJson']),
+      distanceMeters: serializer.fromJson<double>(json['distanceMeters']),
+      projectileDiameterMm: serializer.fromJson<double>(
+        json['projectileDiameterMm'],
+      ),
+      cartridgeId: serializer.fromJson<String?>(json['cartridgeId']),
+      shotCount: serializer.fromJson<int>(json['shotCount']),
+      maximumPossibleScore: serializer.fromJson<int>(
+        json['maximumPossibleScore'],
+      ),
+      firearmId: serializer.fromJson<String?>(json['firearmId']),
+      ammoLotId: serializer.fromJson<String?>(json['ammoLotId']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      totalScore: serializer.fromJson<int>(json['totalScore']),
+      innerTenCount: serializer.fromJson<int>(json['innerTenCount']),
+      missCount: serializer.fromJson<int>(json['missCount']),
+      scorePenalty: serializer.fromJson<int>(json['scorePenalty']),
+      scoredBullCount: serializer.fromJson<int?>(json['scoredBullCount']),
+      hasBoundaryWarnings: serializer.fromJson<int>(
+        json['hasBoundaryWarnings'],
+      ),
+      createdAtUtc: serializer.fromJson<int>(json['createdAtUtc']),
+      updatedAtUtc: serializer.fromJson<int>(json['updatedAtUtc']),
+      confirmedAtUtc: serializer.fromJson<int?>(json['confirmedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'sequenceNumber': serializer.toJson<int>(sequenceNumber),
+      'status': serializer.toJson<String>(status),
+      'targetProfileVersionedId': serializer.toJson<String>(
+        targetProfileVersionedId,
+      ),
+      'targetProfileJson': serializer.toJson<String>(targetProfileJson),
+      'distanceMeters': serializer.toJson<double>(distanceMeters),
+      'projectileDiameterMm': serializer.toJson<double>(projectileDiameterMm),
+      'cartridgeId': serializer.toJson<String?>(cartridgeId),
+      'shotCount': serializer.toJson<int>(shotCount),
+      'maximumPossibleScore': serializer.toJson<int>(maximumPossibleScore),
+      'firearmId': serializer.toJson<String?>(firearmId),
+      'ammoLotId': serializer.toJson<String?>(ammoLotId),
+      'notes': serializer.toJson<String?>(notes),
+      'totalScore': serializer.toJson<int>(totalScore),
+      'innerTenCount': serializer.toJson<int>(innerTenCount),
+      'missCount': serializer.toJson<int>(missCount),
+      'scorePenalty': serializer.toJson<int>(scorePenalty),
+      'scoredBullCount': serializer.toJson<int?>(scoredBullCount),
+      'hasBoundaryWarnings': serializer.toJson<int>(hasBoundaryWarnings),
+      'createdAtUtc': serializer.toJson<int>(createdAtUtc),
+      'updatedAtUtc': serializer.toJson<int>(updatedAtUtc),
+      'confirmedAtUtc': serializer.toJson<int?>(confirmedAtUtc),
+    };
+  }
+
+  ShootingSeriesData copyWith({
+    String? id,
+    String? sessionId,
+    int? sequenceNumber,
+    String? status,
+    String? targetProfileVersionedId,
+    String? targetProfileJson,
+    double? distanceMeters,
+    double? projectileDiameterMm,
+    Value<String?> cartridgeId = const Value.absent(),
+    int? shotCount,
+    int? maximumPossibleScore,
+    Value<String?> firearmId = const Value.absent(),
+    Value<String?> ammoLotId = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+    int? totalScore,
+    int? innerTenCount,
+    int? missCount,
+    int? scorePenalty,
+    Value<int?> scoredBullCount = const Value.absent(),
+    int? hasBoundaryWarnings,
+    int? createdAtUtc,
+    int? updatedAtUtc,
+    Value<int?> confirmedAtUtc = const Value.absent(),
+  }) => ShootingSeriesData(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    sequenceNumber: sequenceNumber ?? this.sequenceNumber,
+    status: status ?? this.status,
+    targetProfileVersionedId:
+        targetProfileVersionedId ?? this.targetProfileVersionedId,
+    targetProfileJson: targetProfileJson ?? this.targetProfileJson,
+    distanceMeters: distanceMeters ?? this.distanceMeters,
+    projectileDiameterMm: projectileDiameterMm ?? this.projectileDiameterMm,
+    cartridgeId: cartridgeId.present ? cartridgeId.value : this.cartridgeId,
+    shotCount: shotCount ?? this.shotCount,
+    maximumPossibleScore: maximumPossibleScore ?? this.maximumPossibleScore,
+    firearmId: firearmId.present ? firearmId.value : this.firearmId,
+    ammoLotId: ammoLotId.present ? ammoLotId.value : this.ammoLotId,
+    notes: notes.present ? notes.value : this.notes,
+    totalScore: totalScore ?? this.totalScore,
+    innerTenCount: innerTenCount ?? this.innerTenCount,
+    missCount: missCount ?? this.missCount,
+    scorePenalty: scorePenalty ?? this.scorePenalty,
+    scoredBullCount: scoredBullCount.present
+        ? scoredBullCount.value
+        : this.scoredBullCount,
+    hasBoundaryWarnings: hasBoundaryWarnings ?? this.hasBoundaryWarnings,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+    confirmedAtUtc: confirmedAtUtc.present
+        ? confirmedAtUtc.value
+        : this.confirmedAtUtc,
+  );
+  ShootingSeriesData copyWithCompanion(ShootingSeriesCompanion data) {
+    return ShootingSeriesData(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      sequenceNumber: data.sequenceNumber.present
+          ? data.sequenceNumber.value
+          : this.sequenceNumber,
+      status: data.status.present ? data.status.value : this.status,
+      targetProfileVersionedId: data.targetProfileVersionedId.present
+          ? data.targetProfileVersionedId.value
+          : this.targetProfileVersionedId,
+      targetProfileJson: data.targetProfileJson.present
+          ? data.targetProfileJson.value
+          : this.targetProfileJson,
+      distanceMeters: data.distanceMeters.present
+          ? data.distanceMeters.value
+          : this.distanceMeters,
+      projectileDiameterMm: data.projectileDiameterMm.present
+          ? data.projectileDiameterMm.value
+          : this.projectileDiameterMm,
+      cartridgeId: data.cartridgeId.present
+          ? data.cartridgeId.value
+          : this.cartridgeId,
+      shotCount: data.shotCount.present ? data.shotCount.value : this.shotCount,
+      maximumPossibleScore: data.maximumPossibleScore.present
+          ? data.maximumPossibleScore.value
+          : this.maximumPossibleScore,
+      firearmId: data.firearmId.present ? data.firearmId.value : this.firearmId,
+      ammoLotId: data.ammoLotId.present ? data.ammoLotId.value : this.ammoLotId,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      totalScore: data.totalScore.present
+          ? data.totalScore.value
+          : this.totalScore,
+      innerTenCount: data.innerTenCount.present
+          ? data.innerTenCount.value
+          : this.innerTenCount,
+      missCount: data.missCount.present ? data.missCount.value : this.missCount,
+      scorePenalty: data.scorePenalty.present
+          ? data.scorePenalty.value
+          : this.scorePenalty,
+      scoredBullCount: data.scoredBullCount.present
+          ? data.scoredBullCount.value
+          : this.scoredBullCount,
+      hasBoundaryWarnings: data.hasBoundaryWarnings.present
+          ? data.hasBoundaryWarnings.value
+          : this.hasBoundaryWarnings,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+      confirmedAtUtc: data.confirmedAtUtc.present
+          ? data.confirmedAtUtc.value
+          : this.confirmedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShootingSeriesData(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('sequenceNumber: $sequenceNumber, ')
+          ..write('status: $status, ')
+          ..write('targetProfileVersionedId: $targetProfileVersionedId, ')
+          ..write('targetProfileJson: $targetProfileJson, ')
+          ..write('distanceMeters: $distanceMeters, ')
+          ..write('projectileDiameterMm: $projectileDiameterMm, ')
+          ..write('cartridgeId: $cartridgeId, ')
+          ..write('shotCount: $shotCount, ')
+          ..write('maximumPossibleScore: $maximumPossibleScore, ')
+          ..write('firearmId: $firearmId, ')
+          ..write('ammoLotId: $ammoLotId, ')
+          ..write('notes: $notes, ')
+          ..write('totalScore: $totalScore, ')
+          ..write('innerTenCount: $innerTenCount, ')
+          ..write('missCount: $missCount, ')
+          ..write('scorePenalty: $scorePenalty, ')
+          ..write('scoredBullCount: $scoredBullCount, ')
+          ..write('hasBoundaryWarnings: $hasBoundaryWarnings, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('confirmedAtUtc: $confirmedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    sessionId,
+    sequenceNumber,
+    status,
+    targetProfileVersionedId,
+    targetProfileJson,
+    distanceMeters,
+    projectileDiameterMm,
+    cartridgeId,
+    shotCount,
+    maximumPossibleScore,
+    firearmId,
+    ammoLotId,
+    notes,
+    totalScore,
+    innerTenCount,
+    missCount,
+    scorePenalty,
+    scoredBullCount,
+    hasBoundaryWarnings,
+    createdAtUtc,
+    updatedAtUtc,
+    confirmedAtUtc,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ShootingSeriesData &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.sequenceNumber == this.sequenceNumber &&
+          other.status == this.status &&
+          other.targetProfileVersionedId == this.targetProfileVersionedId &&
+          other.targetProfileJson == this.targetProfileJson &&
+          other.distanceMeters == this.distanceMeters &&
+          other.projectileDiameterMm == this.projectileDiameterMm &&
+          other.cartridgeId == this.cartridgeId &&
+          other.shotCount == this.shotCount &&
+          other.maximumPossibleScore == this.maximumPossibleScore &&
+          other.firearmId == this.firearmId &&
+          other.ammoLotId == this.ammoLotId &&
+          other.notes == this.notes &&
+          other.totalScore == this.totalScore &&
+          other.innerTenCount == this.innerTenCount &&
+          other.missCount == this.missCount &&
+          other.scorePenalty == this.scorePenalty &&
+          other.scoredBullCount == this.scoredBullCount &&
+          other.hasBoundaryWarnings == this.hasBoundaryWarnings &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.updatedAtUtc == this.updatedAtUtc &&
+          other.confirmedAtUtc == this.confirmedAtUtc);
+}
+
+class ShootingSeriesCompanion extends UpdateCompanion<ShootingSeriesData> {
+  final Value<String> id;
+  final Value<String> sessionId;
+  final Value<int> sequenceNumber;
+  final Value<String> status;
+  final Value<String> targetProfileVersionedId;
+  final Value<String> targetProfileJson;
+  final Value<double> distanceMeters;
+  final Value<double> projectileDiameterMm;
+  final Value<String?> cartridgeId;
+  final Value<int> shotCount;
+  final Value<int> maximumPossibleScore;
+  final Value<String?> firearmId;
+  final Value<String?> ammoLotId;
+  final Value<String?> notes;
+  final Value<int> totalScore;
+  final Value<int> innerTenCount;
+  final Value<int> missCount;
+  final Value<int> scorePenalty;
+  final Value<int?> scoredBullCount;
+  final Value<int> hasBoundaryWarnings;
+  final Value<int> createdAtUtc;
+  final Value<int> updatedAtUtc;
+  final Value<int?> confirmedAtUtc;
+  final Value<int> rowid;
+  const ShootingSeriesCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.sequenceNumber = const Value.absent(),
+    this.status = const Value.absent(),
+    this.targetProfileVersionedId = const Value.absent(),
+    this.targetProfileJson = const Value.absent(),
+    this.distanceMeters = const Value.absent(),
+    this.projectileDiameterMm = const Value.absent(),
+    this.cartridgeId = const Value.absent(),
+    this.shotCount = const Value.absent(),
+    this.maximumPossibleScore = const Value.absent(),
+    this.firearmId = const Value.absent(),
+    this.ammoLotId = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.totalScore = const Value.absent(),
+    this.innerTenCount = const Value.absent(),
+    this.missCount = const Value.absent(),
+    this.scorePenalty = const Value.absent(),
+    this.scoredBullCount = const Value.absent(),
+    this.hasBoundaryWarnings = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.confirmedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ShootingSeriesCompanion.insert({
+    required String id,
+    required String sessionId,
+    required int sequenceNumber,
+    required String status,
+    required String targetProfileVersionedId,
+    required String targetProfileJson,
+    required double distanceMeters,
+    required double projectileDiameterMm,
+    this.cartridgeId = const Value.absent(),
+    this.shotCount = const Value.absent(),
+    this.maximumPossibleScore = const Value.absent(),
+    this.firearmId = const Value.absent(),
+    this.ammoLotId = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.totalScore = const Value.absent(),
+    this.innerTenCount = const Value.absent(),
+    this.missCount = const Value.absent(),
+    this.scorePenalty = const Value.absent(),
+    this.scoredBullCount = const Value.absent(),
+    this.hasBoundaryWarnings = const Value.absent(),
+    required int createdAtUtc,
+    required int updatedAtUtc,
+    this.confirmedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       sessionId = Value(sessionId),
+       sequenceNumber = Value(sequenceNumber),
+       status = Value(status),
+       targetProfileVersionedId = Value(targetProfileVersionedId),
+       targetProfileJson = Value(targetProfileJson),
+       distanceMeters = Value(distanceMeters),
+       projectileDiameterMm = Value(projectileDiameterMm),
+       createdAtUtc = Value(createdAtUtc),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<ShootingSeriesData> custom({
+    Expression<String>? id,
+    Expression<String>? sessionId,
+    Expression<int>? sequenceNumber,
+    Expression<String>? status,
+    Expression<String>? targetProfileVersionedId,
+    Expression<String>? targetProfileJson,
+    Expression<double>? distanceMeters,
+    Expression<double>? projectileDiameterMm,
+    Expression<String>? cartridgeId,
+    Expression<int>? shotCount,
+    Expression<int>? maximumPossibleScore,
+    Expression<String>? firearmId,
+    Expression<String>? ammoLotId,
+    Expression<String>? notes,
+    Expression<int>? totalScore,
+    Expression<int>? innerTenCount,
+    Expression<int>? missCount,
+    Expression<int>? scorePenalty,
+    Expression<int>? scoredBullCount,
+    Expression<int>? hasBoundaryWarnings,
+    Expression<int>? createdAtUtc,
+    Expression<int>? updatedAtUtc,
+    Expression<int>? confirmedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (sequenceNumber != null) 'sequence_number': sequenceNumber,
+      if (status != null) 'status': status,
+      if (targetProfileVersionedId != null)
+        'target_profile_versioned_id': targetProfileVersionedId,
+      if (targetProfileJson != null) 'target_profile_json': targetProfileJson,
+      if (distanceMeters != null) 'distance_meters': distanceMeters,
+      if (projectileDiameterMm != null)
+        'projectile_diameter_mm': projectileDiameterMm,
+      if (cartridgeId != null) 'cartridge_id': cartridgeId,
+      if (shotCount != null) 'shot_count': shotCount,
+      if (maximumPossibleScore != null)
+        'maximum_possible_score': maximumPossibleScore,
+      if (firearmId != null) 'firearm_id': firearmId,
+      if (ammoLotId != null) 'ammo_lot_id': ammoLotId,
+      if (notes != null) 'notes': notes,
+      if (totalScore != null) 'total_score': totalScore,
+      if (innerTenCount != null) 'inner_ten_count': innerTenCount,
+      if (missCount != null) 'miss_count': missCount,
+      if (scorePenalty != null) 'score_penalty': scorePenalty,
+      if (scoredBullCount != null) 'scored_bull_count': scoredBullCount,
+      if (hasBoundaryWarnings != null)
+        'has_boundary_warnings': hasBoundaryWarnings,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (confirmedAtUtc != null) 'confirmed_at_utc': confirmedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ShootingSeriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? sessionId,
+    Value<int>? sequenceNumber,
+    Value<String>? status,
+    Value<String>? targetProfileVersionedId,
+    Value<String>? targetProfileJson,
+    Value<double>? distanceMeters,
+    Value<double>? projectileDiameterMm,
+    Value<String?>? cartridgeId,
+    Value<int>? shotCount,
+    Value<int>? maximumPossibleScore,
+    Value<String?>? firearmId,
+    Value<String?>? ammoLotId,
+    Value<String?>? notes,
+    Value<int>? totalScore,
+    Value<int>? innerTenCount,
+    Value<int>? missCount,
+    Value<int>? scorePenalty,
+    Value<int?>? scoredBullCount,
+    Value<int>? hasBoundaryWarnings,
+    Value<int>? createdAtUtc,
+    Value<int>? updatedAtUtc,
+    Value<int?>? confirmedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return ShootingSeriesCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      sequenceNumber: sequenceNumber ?? this.sequenceNumber,
+      status: status ?? this.status,
+      targetProfileVersionedId:
+          targetProfileVersionedId ?? this.targetProfileVersionedId,
+      targetProfileJson: targetProfileJson ?? this.targetProfileJson,
+      distanceMeters: distanceMeters ?? this.distanceMeters,
+      projectileDiameterMm: projectileDiameterMm ?? this.projectileDiameterMm,
+      cartridgeId: cartridgeId ?? this.cartridgeId,
+      shotCount: shotCount ?? this.shotCount,
+      maximumPossibleScore: maximumPossibleScore ?? this.maximumPossibleScore,
+      firearmId: firearmId ?? this.firearmId,
+      ammoLotId: ammoLotId ?? this.ammoLotId,
+      notes: notes ?? this.notes,
+      totalScore: totalScore ?? this.totalScore,
+      innerTenCount: innerTenCount ?? this.innerTenCount,
+      missCount: missCount ?? this.missCount,
+      scorePenalty: scorePenalty ?? this.scorePenalty,
+      scoredBullCount: scoredBullCount ?? this.scoredBullCount,
+      hasBoundaryWarnings: hasBoundaryWarnings ?? this.hasBoundaryWarnings,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      confirmedAtUtc: confirmedAtUtc ?? this.confirmedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (sequenceNumber.present) {
+      map['sequence_number'] = Variable<int>(sequenceNumber.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (targetProfileVersionedId.present) {
+      map['target_profile_versioned_id'] = Variable<String>(
+        targetProfileVersionedId.value,
+      );
+    }
+    if (targetProfileJson.present) {
+      map['target_profile_json'] = Variable<String>(targetProfileJson.value);
+    }
+    if (distanceMeters.present) {
+      map['distance_meters'] = Variable<double>(distanceMeters.value);
+    }
+    if (projectileDiameterMm.present) {
+      map['projectile_diameter_mm'] = Variable<double>(
+        projectileDiameterMm.value,
+      );
+    }
+    if (cartridgeId.present) {
+      map['cartridge_id'] = Variable<String>(cartridgeId.value);
+    }
+    if (shotCount.present) {
+      map['shot_count'] = Variable<int>(shotCount.value);
+    }
+    if (maximumPossibleScore.present) {
+      map['maximum_possible_score'] = Variable<int>(maximumPossibleScore.value);
+    }
+    if (firearmId.present) {
+      map['firearm_id'] = Variable<String>(firearmId.value);
+    }
+    if (ammoLotId.present) {
+      map['ammo_lot_id'] = Variable<String>(ammoLotId.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (totalScore.present) {
+      map['total_score'] = Variable<int>(totalScore.value);
+    }
+    if (innerTenCount.present) {
+      map['inner_ten_count'] = Variable<int>(innerTenCount.value);
+    }
+    if (missCount.present) {
+      map['miss_count'] = Variable<int>(missCount.value);
+    }
+    if (scorePenalty.present) {
+      map['score_penalty'] = Variable<int>(scorePenalty.value);
+    }
+    if (scoredBullCount.present) {
+      map['scored_bull_count'] = Variable<int>(scoredBullCount.value);
+    }
+    if (hasBoundaryWarnings.present) {
+      map['has_boundary_warnings'] = Variable<int>(hasBoundaryWarnings.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<int>(createdAtUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<int>(updatedAtUtc.value);
+    }
+    if (confirmedAtUtc.present) {
+      map['confirmed_at_utc'] = Variable<int>(confirmedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShootingSeriesCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('sequenceNumber: $sequenceNumber, ')
+          ..write('status: $status, ')
+          ..write('targetProfileVersionedId: $targetProfileVersionedId, ')
+          ..write('targetProfileJson: $targetProfileJson, ')
+          ..write('distanceMeters: $distanceMeters, ')
+          ..write('projectileDiameterMm: $projectileDiameterMm, ')
+          ..write('cartridgeId: $cartridgeId, ')
+          ..write('shotCount: $shotCount, ')
+          ..write('maximumPossibleScore: $maximumPossibleScore, ')
+          ..write('firearmId: $firearmId, ')
+          ..write('ammoLotId: $ammoLotId, ')
+          ..write('notes: $notes, ')
+          ..write('totalScore: $totalScore, ')
+          ..write('innerTenCount: $innerTenCount, ')
+          ..write('missCount: $missCount, ')
+          ..write('scorePenalty: $scorePenalty, ')
+          ..write('scoredBullCount: $scoredBullCount, ')
+          ..write('hasBoundaryWarnings: $hasBoundaryWarnings, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('confirmedAtUtc: $confirmedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class ImageAssets extends Table with TableInfo<ImageAssets, ImageAssetsData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -925,8 +3529,58 @@ class ImageAssets extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  ImageAssetsData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ImageAssetsData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      seriesId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}series_id'],
+      ),
+      role: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}role'],
+      )!,
+      path: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}path'],
+      )!,
+      sha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sha256'],
+      )!,
+      width: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}width'],
+      )!,
+      height: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}height'],
+      )!,
+      sizeBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}size_bytes'],
+      )!,
+      caption: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}caption'],
+      ),
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
   }
 
   @override
@@ -940,7 +3594,399 @@ class ImageAssets extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class ShotImpacts extends Table with TableInfo {
+class ImageAssetsData extends DataClass implements Insertable<ImageAssetsData> {
+  final String id;
+  final String sessionId;
+  final String? seriesId;
+  final String role;
+  final String path;
+  final String sha256;
+  final int width;
+  final int height;
+  final int sizeBytes;
+  final String? caption;
+  final int createdAtUtc;
+  final int updatedAtUtc;
+  const ImageAssetsData({
+    required this.id,
+    required this.sessionId,
+    this.seriesId,
+    required this.role,
+    required this.path,
+    required this.sha256,
+    required this.width,
+    required this.height,
+    required this.sizeBytes,
+    this.caption,
+    required this.createdAtUtc,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['session_id'] = Variable<String>(sessionId);
+    if (!nullToAbsent || seriesId != null) {
+      map['series_id'] = Variable<String>(seriesId);
+    }
+    map['role'] = Variable<String>(role);
+    map['path'] = Variable<String>(path);
+    map['sha256'] = Variable<String>(sha256);
+    map['width'] = Variable<int>(width);
+    map['height'] = Variable<int>(height);
+    map['size_bytes'] = Variable<int>(sizeBytes);
+    if (!nullToAbsent || caption != null) {
+      map['caption'] = Variable<String>(caption);
+    }
+    map['created_at_utc'] = Variable<int>(createdAtUtc);
+    map['updated_at_utc'] = Variable<int>(updatedAtUtc);
+    return map;
+  }
+
+  ImageAssetsCompanion toCompanion(bool nullToAbsent) {
+    return ImageAssetsCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      seriesId: seriesId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(seriesId),
+      role: Value(role),
+      path: Value(path),
+      sha256: Value(sha256),
+      width: Value(width),
+      height: Value(height),
+      sizeBytes: Value(sizeBytes),
+      caption: caption == null && nullToAbsent
+          ? const Value.absent()
+          : Value(caption),
+      createdAtUtc: Value(createdAtUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory ImageAssetsData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ImageAssetsData(
+      id: serializer.fromJson<String>(json['id']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      seriesId: serializer.fromJson<String?>(json['seriesId']),
+      role: serializer.fromJson<String>(json['role']),
+      path: serializer.fromJson<String>(json['path']),
+      sha256: serializer.fromJson<String>(json['sha256']),
+      width: serializer.fromJson<int>(json['width']),
+      height: serializer.fromJson<int>(json['height']),
+      sizeBytes: serializer.fromJson<int>(json['sizeBytes']),
+      caption: serializer.fromJson<String?>(json['caption']),
+      createdAtUtc: serializer.fromJson<int>(json['createdAtUtc']),
+      updatedAtUtc: serializer.fromJson<int>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'seriesId': serializer.toJson<String?>(seriesId),
+      'role': serializer.toJson<String>(role),
+      'path': serializer.toJson<String>(path),
+      'sha256': serializer.toJson<String>(sha256),
+      'width': serializer.toJson<int>(width),
+      'height': serializer.toJson<int>(height),
+      'sizeBytes': serializer.toJson<int>(sizeBytes),
+      'caption': serializer.toJson<String?>(caption),
+      'createdAtUtc': serializer.toJson<int>(createdAtUtc),
+      'updatedAtUtc': serializer.toJson<int>(updatedAtUtc),
+    };
+  }
+
+  ImageAssetsData copyWith({
+    String? id,
+    String? sessionId,
+    Value<String?> seriesId = const Value.absent(),
+    String? role,
+    String? path,
+    String? sha256,
+    int? width,
+    int? height,
+    int? sizeBytes,
+    Value<String?> caption = const Value.absent(),
+    int? createdAtUtc,
+    int? updatedAtUtc,
+  }) => ImageAssetsData(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    seriesId: seriesId.present ? seriesId.value : this.seriesId,
+    role: role ?? this.role,
+    path: path ?? this.path,
+    sha256: sha256 ?? this.sha256,
+    width: width ?? this.width,
+    height: height ?? this.height,
+    sizeBytes: sizeBytes ?? this.sizeBytes,
+    caption: caption.present ? caption.value : this.caption,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  ImageAssetsData copyWithCompanion(ImageAssetsCompanion data) {
+    return ImageAssetsData(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      seriesId: data.seriesId.present ? data.seriesId.value : this.seriesId,
+      role: data.role.present ? data.role.value : this.role,
+      path: data.path.present ? data.path.value : this.path,
+      sha256: data.sha256.present ? data.sha256.value : this.sha256,
+      width: data.width.present ? data.width.value : this.width,
+      height: data.height.present ? data.height.value : this.height,
+      sizeBytes: data.sizeBytes.present ? data.sizeBytes.value : this.sizeBytes,
+      caption: data.caption.present ? data.caption.value : this.caption,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImageAssetsData(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('seriesId: $seriesId, ')
+          ..write('role: $role, ')
+          ..write('path: $path, ')
+          ..write('sha256: $sha256, ')
+          ..write('width: $width, ')
+          ..write('height: $height, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('caption: $caption, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    sessionId,
+    seriesId,
+    role,
+    path,
+    sha256,
+    width,
+    height,
+    sizeBytes,
+    caption,
+    createdAtUtc,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ImageAssetsData &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.seriesId == this.seriesId &&
+          other.role == this.role &&
+          other.path == this.path &&
+          other.sha256 == this.sha256 &&
+          other.width == this.width &&
+          other.height == this.height &&
+          other.sizeBytes == this.sizeBytes &&
+          other.caption == this.caption &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class ImageAssetsCompanion extends UpdateCompanion<ImageAssetsData> {
+  final Value<String> id;
+  final Value<String> sessionId;
+  final Value<String?> seriesId;
+  final Value<String> role;
+  final Value<String> path;
+  final Value<String> sha256;
+  final Value<int> width;
+  final Value<int> height;
+  final Value<int> sizeBytes;
+  final Value<String?> caption;
+  final Value<int> createdAtUtc;
+  final Value<int> updatedAtUtc;
+  final Value<int> rowid;
+  const ImageAssetsCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.seriesId = const Value.absent(),
+    this.role = const Value.absent(),
+    this.path = const Value.absent(),
+    this.sha256 = const Value.absent(),
+    this.width = const Value.absent(),
+    this.height = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
+    this.caption = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ImageAssetsCompanion.insert({
+    required String id,
+    required String sessionId,
+    this.seriesId = const Value.absent(),
+    required String role,
+    required String path,
+    required String sha256,
+    required int width,
+    required int height,
+    required int sizeBytes,
+    this.caption = const Value.absent(),
+    required int createdAtUtc,
+    required int updatedAtUtc,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       sessionId = Value(sessionId),
+       role = Value(role),
+       path = Value(path),
+       sha256 = Value(sha256),
+       width = Value(width),
+       height = Value(height),
+       sizeBytes = Value(sizeBytes),
+       createdAtUtc = Value(createdAtUtc),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<ImageAssetsData> custom({
+    Expression<String>? id,
+    Expression<String>? sessionId,
+    Expression<String>? seriesId,
+    Expression<String>? role,
+    Expression<String>? path,
+    Expression<String>? sha256,
+    Expression<int>? width,
+    Expression<int>? height,
+    Expression<int>? sizeBytes,
+    Expression<String>? caption,
+    Expression<int>? createdAtUtc,
+    Expression<int>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (seriesId != null) 'series_id': seriesId,
+      if (role != null) 'role': role,
+      if (path != null) 'path': path,
+      if (sha256 != null) 'sha256': sha256,
+      if (width != null) 'width': width,
+      if (height != null) 'height': height,
+      if (sizeBytes != null) 'size_bytes': sizeBytes,
+      if (caption != null) 'caption': caption,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ImageAssetsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? sessionId,
+    Value<String?>? seriesId,
+    Value<String>? role,
+    Value<String>? path,
+    Value<String>? sha256,
+    Value<int>? width,
+    Value<int>? height,
+    Value<int>? sizeBytes,
+    Value<String?>? caption,
+    Value<int>? createdAtUtc,
+    Value<int>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return ImageAssetsCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      seriesId: seriesId ?? this.seriesId,
+      role: role ?? this.role,
+      path: path ?? this.path,
+      sha256: sha256 ?? this.sha256,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      sizeBytes: sizeBytes ?? this.sizeBytes,
+      caption: caption ?? this.caption,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (seriesId.present) {
+      map['series_id'] = Variable<String>(seriesId.value);
+    }
+    if (role.present) {
+      map['role'] = Variable<String>(role.value);
+    }
+    if (path.present) {
+      map['path'] = Variable<String>(path.value);
+    }
+    if (sha256.present) {
+      map['sha256'] = Variable<String>(sha256.value);
+    }
+    if (width.present) {
+      map['width'] = Variable<int>(width.value);
+    }
+    if (height.present) {
+      map['height'] = Variable<int>(height.value);
+    }
+    if (sizeBytes.present) {
+      map['size_bytes'] = Variable<int>(sizeBytes.value);
+    }
+    if (caption.present) {
+      map['caption'] = Variable<String>(caption.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<int>(createdAtUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<int>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImageAssetsCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('seriesId: $seriesId, ')
+          ..write('role: $role, ')
+          ..write('path: $path, ')
+          ..write('sha256: $sha256, ')
+          ..write('width: $width, ')
+          ..write('height: $height, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('caption: $caption, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class ShotImpacts extends Table with TableInfo<ShotImpacts, ShotImpactsData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -1110,8 +4156,74 @@ class ShotImpacts extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  ShotImpactsData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ShotImpactsData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      seriesId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}series_id'],
+      )!,
+      xMm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}x_mm'],
+      )!,
+      yMm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}y_mm'],
+      )!,
+      sourceImageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_image_id'],
+      ),
+      imageXNormalized: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}image_x_normalized'],
+      ),
+      imageYNormalized: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}image_y_normalized'],
+      ),
+      multiplicity: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}multiplicity'],
+      )!,
+      isMiss: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}is_miss'],
+      )!,
+      isPositionUncertain: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}is_position_uncertain'],
+      )!,
+      targetBullId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_bull_id'],
+      ),
+      scoreValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}score_value'],
+      )!,
+      rawScoreValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}raw_score_value'],
+      )!,
+      scoreDisposition: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}score_disposition'],
+      )!,
+      isInnerTen: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}is_inner_ten'],
+      )!,
+      isBoundaryUncertain: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}is_boundary_uncertain'],
+      )!,
+    );
   }
 
   @override
@@ -1125,7 +4237,525 @@ class ShotImpacts extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class PhotoAlignments extends Table with TableInfo {
+class ShotImpactsData extends DataClass implements Insertable<ShotImpactsData> {
+  final String id;
+  final String seriesId;
+  final double xMm;
+  final double yMm;
+  final String? sourceImageId;
+  final double? imageXNormalized;
+  final double? imageYNormalized;
+  final int multiplicity;
+  final int isMiss;
+  final int isPositionUncertain;
+  final String? targetBullId;
+  final int scoreValue;
+  final int rawScoreValue;
+  final String scoreDisposition;
+  final int isInnerTen;
+  final int isBoundaryUncertain;
+  const ShotImpactsData({
+    required this.id,
+    required this.seriesId,
+    required this.xMm,
+    required this.yMm,
+    this.sourceImageId,
+    this.imageXNormalized,
+    this.imageYNormalized,
+    required this.multiplicity,
+    required this.isMiss,
+    required this.isPositionUncertain,
+    this.targetBullId,
+    required this.scoreValue,
+    required this.rawScoreValue,
+    required this.scoreDisposition,
+    required this.isInnerTen,
+    required this.isBoundaryUncertain,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['series_id'] = Variable<String>(seriesId);
+    map['x_mm'] = Variable<double>(xMm);
+    map['y_mm'] = Variable<double>(yMm);
+    if (!nullToAbsent || sourceImageId != null) {
+      map['source_image_id'] = Variable<String>(sourceImageId);
+    }
+    if (!nullToAbsent || imageXNormalized != null) {
+      map['image_x_normalized'] = Variable<double>(imageXNormalized);
+    }
+    if (!nullToAbsent || imageYNormalized != null) {
+      map['image_y_normalized'] = Variable<double>(imageYNormalized);
+    }
+    map['multiplicity'] = Variable<int>(multiplicity);
+    map['is_miss'] = Variable<int>(isMiss);
+    map['is_position_uncertain'] = Variable<int>(isPositionUncertain);
+    if (!nullToAbsent || targetBullId != null) {
+      map['target_bull_id'] = Variable<String>(targetBullId);
+    }
+    map['score_value'] = Variable<int>(scoreValue);
+    map['raw_score_value'] = Variable<int>(rawScoreValue);
+    map['score_disposition'] = Variable<String>(scoreDisposition);
+    map['is_inner_ten'] = Variable<int>(isInnerTen);
+    map['is_boundary_uncertain'] = Variable<int>(isBoundaryUncertain);
+    return map;
+  }
+
+  ShotImpactsCompanion toCompanion(bool nullToAbsent) {
+    return ShotImpactsCompanion(
+      id: Value(id),
+      seriesId: Value(seriesId),
+      xMm: Value(xMm),
+      yMm: Value(yMm),
+      sourceImageId: sourceImageId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceImageId),
+      imageXNormalized: imageXNormalized == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imageXNormalized),
+      imageYNormalized: imageYNormalized == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imageYNormalized),
+      multiplicity: Value(multiplicity),
+      isMiss: Value(isMiss),
+      isPositionUncertain: Value(isPositionUncertain),
+      targetBullId: targetBullId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetBullId),
+      scoreValue: Value(scoreValue),
+      rawScoreValue: Value(rawScoreValue),
+      scoreDisposition: Value(scoreDisposition),
+      isInnerTen: Value(isInnerTen),
+      isBoundaryUncertain: Value(isBoundaryUncertain),
+    );
+  }
+
+  factory ShotImpactsData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ShotImpactsData(
+      id: serializer.fromJson<String>(json['id']),
+      seriesId: serializer.fromJson<String>(json['seriesId']),
+      xMm: serializer.fromJson<double>(json['xMm']),
+      yMm: serializer.fromJson<double>(json['yMm']),
+      sourceImageId: serializer.fromJson<String?>(json['sourceImageId']),
+      imageXNormalized: serializer.fromJson<double?>(json['imageXNormalized']),
+      imageYNormalized: serializer.fromJson<double?>(json['imageYNormalized']),
+      multiplicity: serializer.fromJson<int>(json['multiplicity']),
+      isMiss: serializer.fromJson<int>(json['isMiss']),
+      isPositionUncertain: serializer.fromJson<int>(
+        json['isPositionUncertain'],
+      ),
+      targetBullId: serializer.fromJson<String?>(json['targetBullId']),
+      scoreValue: serializer.fromJson<int>(json['scoreValue']),
+      rawScoreValue: serializer.fromJson<int>(json['rawScoreValue']),
+      scoreDisposition: serializer.fromJson<String>(json['scoreDisposition']),
+      isInnerTen: serializer.fromJson<int>(json['isInnerTen']),
+      isBoundaryUncertain: serializer.fromJson<int>(
+        json['isBoundaryUncertain'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'seriesId': serializer.toJson<String>(seriesId),
+      'xMm': serializer.toJson<double>(xMm),
+      'yMm': serializer.toJson<double>(yMm),
+      'sourceImageId': serializer.toJson<String?>(sourceImageId),
+      'imageXNormalized': serializer.toJson<double?>(imageXNormalized),
+      'imageYNormalized': serializer.toJson<double?>(imageYNormalized),
+      'multiplicity': serializer.toJson<int>(multiplicity),
+      'isMiss': serializer.toJson<int>(isMiss),
+      'isPositionUncertain': serializer.toJson<int>(isPositionUncertain),
+      'targetBullId': serializer.toJson<String?>(targetBullId),
+      'scoreValue': serializer.toJson<int>(scoreValue),
+      'rawScoreValue': serializer.toJson<int>(rawScoreValue),
+      'scoreDisposition': serializer.toJson<String>(scoreDisposition),
+      'isInnerTen': serializer.toJson<int>(isInnerTen),
+      'isBoundaryUncertain': serializer.toJson<int>(isBoundaryUncertain),
+    };
+  }
+
+  ShotImpactsData copyWith({
+    String? id,
+    String? seriesId,
+    double? xMm,
+    double? yMm,
+    Value<String?> sourceImageId = const Value.absent(),
+    Value<double?> imageXNormalized = const Value.absent(),
+    Value<double?> imageYNormalized = const Value.absent(),
+    int? multiplicity,
+    int? isMiss,
+    int? isPositionUncertain,
+    Value<String?> targetBullId = const Value.absent(),
+    int? scoreValue,
+    int? rawScoreValue,
+    String? scoreDisposition,
+    int? isInnerTen,
+    int? isBoundaryUncertain,
+  }) => ShotImpactsData(
+    id: id ?? this.id,
+    seriesId: seriesId ?? this.seriesId,
+    xMm: xMm ?? this.xMm,
+    yMm: yMm ?? this.yMm,
+    sourceImageId: sourceImageId.present
+        ? sourceImageId.value
+        : this.sourceImageId,
+    imageXNormalized: imageXNormalized.present
+        ? imageXNormalized.value
+        : this.imageXNormalized,
+    imageYNormalized: imageYNormalized.present
+        ? imageYNormalized.value
+        : this.imageYNormalized,
+    multiplicity: multiplicity ?? this.multiplicity,
+    isMiss: isMiss ?? this.isMiss,
+    isPositionUncertain: isPositionUncertain ?? this.isPositionUncertain,
+    targetBullId: targetBullId.present ? targetBullId.value : this.targetBullId,
+    scoreValue: scoreValue ?? this.scoreValue,
+    rawScoreValue: rawScoreValue ?? this.rawScoreValue,
+    scoreDisposition: scoreDisposition ?? this.scoreDisposition,
+    isInnerTen: isInnerTen ?? this.isInnerTen,
+    isBoundaryUncertain: isBoundaryUncertain ?? this.isBoundaryUncertain,
+  );
+  ShotImpactsData copyWithCompanion(ShotImpactsCompanion data) {
+    return ShotImpactsData(
+      id: data.id.present ? data.id.value : this.id,
+      seriesId: data.seriesId.present ? data.seriesId.value : this.seriesId,
+      xMm: data.xMm.present ? data.xMm.value : this.xMm,
+      yMm: data.yMm.present ? data.yMm.value : this.yMm,
+      sourceImageId: data.sourceImageId.present
+          ? data.sourceImageId.value
+          : this.sourceImageId,
+      imageXNormalized: data.imageXNormalized.present
+          ? data.imageXNormalized.value
+          : this.imageXNormalized,
+      imageYNormalized: data.imageYNormalized.present
+          ? data.imageYNormalized.value
+          : this.imageYNormalized,
+      multiplicity: data.multiplicity.present
+          ? data.multiplicity.value
+          : this.multiplicity,
+      isMiss: data.isMiss.present ? data.isMiss.value : this.isMiss,
+      isPositionUncertain: data.isPositionUncertain.present
+          ? data.isPositionUncertain.value
+          : this.isPositionUncertain,
+      targetBullId: data.targetBullId.present
+          ? data.targetBullId.value
+          : this.targetBullId,
+      scoreValue: data.scoreValue.present
+          ? data.scoreValue.value
+          : this.scoreValue,
+      rawScoreValue: data.rawScoreValue.present
+          ? data.rawScoreValue.value
+          : this.rawScoreValue,
+      scoreDisposition: data.scoreDisposition.present
+          ? data.scoreDisposition.value
+          : this.scoreDisposition,
+      isInnerTen: data.isInnerTen.present
+          ? data.isInnerTen.value
+          : this.isInnerTen,
+      isBoundaryUncertain: data.isBoundaryUncertain.present
+          ? data.isBoundaryUncertain.value
+          : this.isBoundaryUncertain,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShotImpactsData(')
+          ..write('id: $id, ')
+          ..write('seriesId: $seriesId, ')
+          ..write('xMm: $xMm, ')
+          ..write('yMm: $yMm, ')
+          ..write('sourceImageId: $sourceImageId, ')
+          ..write('imageXNormalized: $imageXNormalized, ')
+          ..write('imageYNormalized: $imageYNormalized, ')
+          ..write('multiplicity: $multiplicity, ')
+          ..write('isMiss: $isMiss, ')
+          ..write('isPositionUncertain: $isPositionUncertain, ')
+          ..write('targetBullId: $targetBullId, ')
+          ..write('scoreValue: $scoreValue, ')
+          ..write('rawScoreValue: $rawScoreValue, ')
+          ..write('scoreDisposition: $scoreDisposition, ')
+          ..write('isInnerTen: $isInnerTen, ')
+          ..write('isBoundaryUncertain: $isBoundaryUncertain')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    seriesId,
+    xMm,
+    yMm,
+    sourceImageId,
+    imageXNormalized,
+    imageYNormalized,
+    multiplicity,
+    isMiss,
+    isPositionUncertain,
+    targetBullId,
+    scoreValue,
+    rawScoreValue,
+    scoreDisposition,
+    isInnerTen,
+    isBoundaryUncertain,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ShotImpactsData &&
+          other.id == this.id &&
+          other.seriesId == this.seriesId &&
+          other.xMm == this.xMm &&
+          other.yMm == this.yMm &&
+          other.sourceImageId == this.sourceImageId &&
+          other.imageXNormalized == this.imageXNormalized &&
+          other.imageYNormalized == this.imageYNormalized &&
+          other.multiplicity == this.multiplicity &&
+          other.isMiss == this.isMiss &&
+          other.isPositionUncertain == this.isPositionUncertain &&
+          other.targetBullId == this.targetBullId &&
+          other.scoreValue == this.scoreValue &&
+          other.rawScoreValue == this.rawScoreValue &&
+          other.scoreDisposition == this.scoreDisposition &&
+          other.isInnerTen == this.isInnerTen &&
+          other.isBoundaryUncertain == this.isBoundaryUncertain);
+}
+
+class ShotImpactsCompanion extends UpdateCompanion<ShotImpactsData> {
+  final Value<String> id;
+  final Value<String> seriesId;
+  final Value<double> xMm;
+  final Value<double> yMm;
+  final Value<String?> sourceImageId;
+  final Value<double?> imageXNormalized;
+  final Value<double?> imageYNormalized;
+  final Value<int> multiplicity;
+  final Value<int> isMiss;
+  final Value<int> isPositionUncertain;
+  final Value<String?> targetBullId;
+  final Value<int> scoreValue;
+  final Value<int> rawScoreValue;
+  final Value<String> scoreDisposition;
+  final Value<int> isInnerTen;
+  final Value<int> isBoundaryUncertain;
+  final Value<int> rowid;
+  const ShotImpactsCompanion({
+    this.id = const Value.absent(),
+    this.seriesId = const Value.absent(),
+    this.xMm = const Value.absent(),
+    this.yMm = const Value.absent(),
+    this.sourceImageId = const Value.absent(),
+    this.imageXNormalized = const Value.absent(),
+    this.imageYNormalized = const Value.absent(),
+    this.multiplicity = const Value.absent(),
+    this.isMiss = const Value.absent(),
+    this.isPositionUncertain = const Value.absent(),
+    this.targetBullId = const Value.absent(),
+    this.scoreValue = const Value.absent(),
+    this.rawScoreValue = const Value.absent(),
+    this.scoreDisposition = const Value.absent(),
+    this.isInnerTen = const Value.absent(),
+    this.isBoundaryUncertain = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ShotImpactsCompanion.insert({
+    required String id,
+    required String seriesId,
+    required double xMm,
+    required double yMm,
+    this.sourceImageId = const Value.absent(),
+    this.imageXNormalized = const Value.absent(),
+    this.imageYNormalized = const Value.absent(),
+    this.multiplicity = const Value.absent(),
+    this.isMiss = const Value.absent(),
+    this.isPositionUncertain = const Value.absent(),
+    this.targetBullId = const Value.absent(),
+    required int scoreValue,
+    this.rawScoreValue = const Value.absent(),
+    this.scoreDisposition = const Value.absent(),
+    this.isInnerTen = const Value.absent(),
+    this.isBoundaryUncertain = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       seriesId = Value(seriesId),
+       xMm = Value(xMm),
+       yMm = Value(yMm),
+       scoreValue = Value(scoreValue);
+  static Insertable<ShotImpactsData> custom({
+    Expression<String>? id,
+    Expression<String>? seriesId,
+    Expression<double>? xMm,
+    Expression<double>? yMm,
+    Expression<String>? sourceImageId,
+    Expression<double>? imageXNormalized,
+    Expression<double>? imageYNormalized,
+    Expression<int>? multiplicity,
+    Expression<int>? isMiss,
+    Expression<int>? isPositionUncertain,
+    Expression<String>? targetBullId,
+    Expression<int>? scoreValue,
+    Expression<int>? rawScoreValue,
+    Expression<String>? scoreDisposition,
+    Expression<int>? isInnerTen,
+    Expression<int>? isBoundaryUncertain,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (seriesId != null) 'series_id': seriesId,
+      if (xMm != null) 'x_mm': xMm,
+      if (yMm != null) 'y_mm': yMm,
+      if (sourceImageId != null) 'source_image_id': sourceImageId,
+      if (imageXNormalized != null) 'image_x_normalized': imageXNormalized,
+      if (imageYNormalized != null) 'image_y_normalized': imageYNormalized,
+      if (multiplicity != null) 'multiplicity': multiplicity,
+      if (isMiss != null) 'is_miss': isMiss,
+      if (isPositionUncertain != null)
+        'is_position_uncertain': isPositionUncertain,
+      if (targetBullId != null) 'target_bull_id': targetBullId,
+      if (scoreValue != null) 'score_value': scoreValue,
+      if (rawScoreValue != null) 'raw_score_value': rawScoreValue,
+      if (scoreDisposition != null) 'score_disposition': scoreDisposition,
+      if (isInnerTen != null) 'is_inner_ten': isInnerTen,
+      if (isBoundaryUncertain != null)
+        'is_boundary_uncertain': isBoundaryUncertain,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ShotImpactsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? seriesId,
+    Value<double>? xMm,
+    Value<double>? yMm,
+    Value<String?>? sourceImageId,
+    Value<double?>? imageXNormalized,
+    Value<double?>? imageYNormalized,
+    Value<int>? multiplicity,
+    Value<int>? isMiss,
+    Value<int>? isPositionUncertain,
+    Value<String?>? targetBullId,
+    Value<int>? scoreValue,
+    Value<int>? rawScoreValue,
+    Value<String>? scoreDisposition,
+    Value<int>? isInnerTen,
+    Value<int>? isBoundaryUncertain,
+    Value<int>? rowid,
+  }) {
+    return ShotImpactsCompanion(
+      id: id ?? this.id,
+      seriesId: seriesId ?? this.seriesId,
+      xMm: xMm ?? this.xMm,
+      yMm: yMm ?? this.yMm,
+      sourceImageId: sourceImageId ?? this.sourceImageId,
+      imageXNormalized: imageXNormalized ?? this.imageXNormalized,
+      imageYNormalized: imageYNormalized ?? this.imageYNormalized,
+      multiplicity: multiplicity ?? this.multiplicity,
+      isMiss: isMiss ?? this.isMiss,
+      isPositionUncertain: isPositionUncertain ?? this.isPositionUncertain,
+      targetBullId: targetBullId ?? this.targetBullId,
+      scoreValue: scoreValue ?? this.scoreValue,
+      rawScoreValue: rawScoreValue ?? this.rawScoreValue,
+      scoreDisposition: scoreDisposition ?? this.scoreDisposition,
+      isInnerTen: isInnerTen ?? this.isInnerTen,
+      isBoundaryUncertain: isBoundaryUncertain ?? this.isBoundaryUncertain,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (seriesId.present) {
+      map['series_id'] = Variable<String>(seriesId.value);
+    }
+    if (xMm.present) {
+      map['x_mm'] = Variable<double>(xMm.value);
+    }
+    if (yMm.present) {
+      map['y_mm'] = Variable<double>(yMm.value);
+    }
+    if (sourceImageId.present) {
+      map['source_image_id'] = Variable<String>(sourceImageId.value);
+    }
+    if (imageXNormalized.present) {
+      map['image_x_normalized'] = Variable<double>(imageXNormalized.value);
+    }
+    if (imageYNormalized.present) {
+      map['image_y_normalized'] = Variable<double>(imageYNormalized.value);
+    }
+    if (multiplicity.present) {
+      map['multiplicity'] = Variable<int>(multiplicity.value);
+    }
+    if (isMiss.present) {
+      map['is_miss'] = Variable<int>(isMiss.value);
+    }
+    if (isPositionUncertain.present) {
+      map['is_position_uncertain'] = Variable<int>(isPositionUncertain.value);
+    }
+    if (targetBullId.present) {
+      map['target_bull_id'] = Variable<String>(targetBullId.value);
+    }
+    if (scoreValue.present) {
+      map['score_value'] = Variable<int>(scoreValue.value);
+    }
+    if (rawScoreValue.present) {
+      map['raw_score_value'] = Variable<int>(rawScoreValue.value);
+    }
+    if (scoreDisposition.present) {
+      map['score_disposition'] = Variable<String>(scoreDisposition.value);
+    }
+    if (isInnerTen.present) {
+      map['is_inner_ten'] = Variable<int>(isInnerTen.value);
+    }
+    if (isBoundaryUncertain.present) {
+      map['is_boundary_uncertain'] = Variable<int>(isBoundaryUncertain.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShotImpactsCompanion(')
+          ..write('id: $id, ')
+          ..write('seriesId: $seriesId, ')
+          ..write('xMm: $xMm, ')
+          ..write('yMm: $yMm, ')
+          ..write('sourceImageId: $sourceImageId, ')
+          ..write('imageXNormalized: $imageXNormalized, ')
+          ..write('imageYNormalized: $imageYNormalized, ')
+          ..write('multiplicity: $multiplicity, ')
+          ..write('isMiss: $isMiss, ')
+          ..write('isPositionUncertain: $isPositionUncertain, ')
+          ..write('targetBullId: $targetBullId, ')
+          ..write('scoreValue: $scoreValue, ')
+          ..write('rawScoreValue: $rawScoreValue, ')
+          ..write('scoreDisposition: $scoreDisposition, ')
+          ..write('isInnerTen: $isInnerTen, ')
+          ..write('isBoundaryUncertain: $isBoundaryUncertain, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class PhotoAlignments extends Table
+    with TableInfo<PhotoAlignments, PhotoAlignmentsData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -1186,8 +4816,30 @@ class PhotoAlignments extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {imageId};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  PhotoAlignmentsData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PhotoAlignmentsData(
+      imageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_id'],
+      )!,
+      cornersJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}corners_json'],
+      )!,
+      matrixJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}matrix_json'],
+      )!,
+      algorithmVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}algorithm_version'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
   }
 
   @override
@@ -1201,7 +4853,230 @@ class PhotoAlignments extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class Goals extends Table with TableInfo {
+class PhotoAlignmentsData extends DataClass
+    implements Insertable<PhotoAlignmentsData> {
+  final String imageId;
+  final String cornersJson;
+  final String matrixJson;
+  final String algorithmVersion;
+  final int updatedAtUtc;
+  const PhotoAlignmentsData({
+    required this.imageId,
+    required this.cornersJson,
+    required this.matrixJson,
+    required this.algorithmVersion,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['image_id'] = Variable<String>(imageId);
+    map['corners_json'] = Variable<String>(cornersJson);
+    map['matrix_json'] = Variable<String>(matrixJson);
+    map['algorithm_version'] = Variable<String>(algorithmVersion);
+    map['updated_at_utc'] = Variable<int>(updatedAtUtc);
+    return map;
+  }
+
+  PhotoAlignmentsCompanion toCompanion(bool nullToAbsent) {
+    return PhotoAlignmentsCompanion(
+      imageId: Value(imageId),
+      cornersJson: Value(cornersJson),
+      matrixJson: Value(matrixJson),
+      algorithmVersion: Value(algorithmVersion),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory PhotoAlignmentsData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PhotoAlignmentsData(
+      imageId: serializer.fromJson<String>(json['imageId']),
+      cornersJson: serializer.fromJson<String>(json['cornersJson']),
+      matrixJson: serializer.fromJson<String>(json['matrixJson']),
+      algorithmVersion: serializer.fromJson<String>(json['algorithmVersion']),
+      updatedAtUtc: serializer.fromJson<int>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'imageId': serializer.toJson<String>(imageId),
+      'cornersJson': serializer.toJson<String>(cornersJson),
+      'matrixJson': serializer.toJson<String>(matrixJson),
+      'algorithmVersion': serializer.toJson<String>(algorithmVersion),
+      'updatedAtUtc': serializer.toJson<int>(updatedAtUtc),
+    };
+  }
+
+  PhotoAlignmentsData copyWith({
+    String? imageId,
+    String? cornersJson,
+    String? matrixJson,
+    String? algorithmVersion,
+    int? updatedAtUtc,
+  }) => PhotoAlignmentsData(
+    imageId: imageId ?? this.imageId,
+    cornersJson: cornersJson ?? this.cornersJson,
+    matrixJson: matrixJson ?? this.matrixJson,
+    algorithmVersion: algorithmVersion ?? this.algorithmVersion,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  PhotoAlignmentsData copyWithCompanion(PhotoAlignmentsCompanion data) {
+    return PhotoAlignmentsData(
+      imageId: data.imageId.present ? data.imageId.value : this.imageId,
+      cornersJson: data.cornersJson.present
+          ? data.cornersJson.value
+          : this.cornersJson,
+      matrixJson: data.matrixJson.present
+          ? data.matrixJson.value
+          : this.matrixJson,
+      algorithmVersion: data.algorithmVersion.present
+          ? data.algorithmVersion.value
+          : this.algorithmVersion,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PhotoAlignmentsData(')
+          ..write('imageId: $imageId, ')
+          ..write('cornersJson: $cornersJson, ')
+          ..write('matrixJson: $matrixJson, ')
+          ..write('algorithmVersion: $algorithmVersion, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    imageId,
+    cornersJson,
+    matrixJson,
+    algorithmVersion,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PhotoAlignmentsData &&
+          other.imageId == this.imageId &&
+          other.cornersJson == this.cornersJson &&
+          other.matrixJson == this.matrixJson &&
+          other.algorithmVersion == this.algorithmVersion &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentsData> {
+  final Value<String> imageId;
+  final Value<String> cornersJson;
+  final Value<String> matrixJson;
+  final Value<String> algorithmVersion;
+  final Value<int> updatedAtUtc;
+  final Value<int> rowid;
+  const PhotoAlignmentsCompanion({
+    this.imageId = const Value.absent(),
+    this.cornersJson = const Value.absent(),
+    this.matrixJson = const Value.absent(),
+    this.algorithmVersion = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PhotoAlignmentsCompanion.insert({
+    required String imageId,
+    required String cornersJson,
+    required String matrixJson,
+    required String algorithmVersion,
+    required int updatedAtUtc,
+    this.rowid = const Value.absent(),
+  }) : imageId = Value(imageId),
+       cornersJson = Value(cornersJson),
+       matrixJson = Value(matrixJson),
+       algorithmVersion = Value(algorithmVersion),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<PhotoAlignmentsData> custom({
+    Expression<String>? imageId,
+    Expression<String>? cornersJson,
+    Expression<String>? matrixJson,
+    Expression<String>? algorithmVersion,
+    Expression<int>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (imageId != null) 'image_id': imageId,
+      if (cornersJson != null) 'corners_json': cornersJson,
+      if (matrixJson != null) 'matrix_json': matrixJson,
+      if (algorithmVersion != null) 'algorithm_version': algorithmVersion,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PhotoAlignmentsCompanion copyWith({
+    Value<String>? imageId,
+    Value<String>? cornersJson,
+    Value<String>? matrixJson,
+    Value<String>? algorithmVersion,
+    Value<int>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return PhotoAlignmentsCompanion(
+      imageId: imageId ?? this.imageId,
+      cornersJson: cornersJson ?? this.cornersJson,
+      matrixJson: matrixJson ?? this.matrixJson,
+      algorithmVersion: algorithmVersion ?? this.algorithmVersion,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (imageId.present) {
+      map['image_id'] = Variable<String>(imageId.value);
+    }
+    if (cornersJson.present) {
+      map['corners_json'] = Variable<String>(cornersJson.value);
+    }
+    if (matrixJson.present) {
+      map['matrix_json'] = Variable<String>(matrixJson.value);
+    }
+    if (algorithmVersion.present) {
+      map['algorithm_version'] = Variable<String>(algorithmVersion.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<int>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PhotoAlignmentsCompanion(')
+          ..write('imageId: $imageId, ')
+          ..write('cornersJson: $cornersJson, ')
+          ..write('matrixJson: $matrixJson, ')
+          ..write('algorithmVersion: $algorithmVersion, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class Goals extends Table with TableInfo<Goals, GoalsData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -1300,8 +5175,46 @@ class Goals extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  GoalsData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GoalsData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      targetProfileVersionedId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_profile_versioned_id'],
+      )!,
+      distanceMeters: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}distance_meters'],
+      )!,
+      firearmId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}firearm_id'],
+      ),
+      ammoLotId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ammo_lot_id'],
+      ),
+      metric: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metric'],
+      )!,
+      targetValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}target_value'],
+      )!,
+      comparison: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}comparison'],
+      )!,
+      active: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}active'],
+      )!,
+    );
   }
 
   @override
@@ -1315,7 +5228,342 @@ class Goals extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class SeriesReflections extends Table with TableInfo {
+class GoalsData extends DataClass implements Insertable<GoalsData> {
+  final String id;
+  final String targetProfileVersionedId;
+  final double distanceMeters;
+  final String? firearmId;
+  final String? ammoLotId;
+  final String metric;
+  final double targetValue;
+  final String comparison;
+  final int active;
+  const GoalsData({
+    required this.id,
+    required this.targetProfileVersionedId,
+    required this.distanceMeters,
+    this.firearmId,
+    this.ammoLotId,
+    required this.metric,
+    required this.targetValue,
+    required this.comparison,
+    required this.active,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['target_profile_versioned_id'] = Variable<String>(
+      targetProfileVersionedId,
+    );
+    map['distance_meters'] = Variable<double>(distanceMeters);
+    if (!nullToAbsent || firearmId != null) {
+      map['firearm_id'] = Variable<String>(firearmId);
+    }
+    if (!nullToAbsent || ammoLotId != null) {
+      map['ammo_lot_id'] = Variable<String>(ammoLotId);
+    }
+    map['metric'] = Variable<String>(metric);
+    map['target_value'] = Variable<double>(targetValue);
+    map['comparison'] = Variable<String>(comparison);
+    map['active'] = Variable<int>(active);
+    return map;
+  }
+
+  GoalsCompanion toCompanion(bool nullToAbsent) {
+    return GoalsCompanion(
+      id: Value(id),
+      targetProfileVersionedId: Value(targetProfileVersionedId),
+      distanceMeters: Value(distanceMeters),
+      firearmId: firearmId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firearmId),
+      ammoLotId: ammoLotId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ammoLotId),
+      metric: Value(metric),
+      targetValue: Value(targetValue),
+      comparison: Value(comparison),
+      active: Value(active),
+    );
+  }
+
+  factory GoalsData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GoalsData(
+      id: serializer.fromJson<String>(json['id']),
+      targetProfileVersionedId: serializer.fromJson<String>(
+        json['targetProfileVersionedId'],
+      ),
+      distanceMeters: serializer.fromJson<double>(json['distanceMeters']),
+      firearmId: serializer.fromJson<String?>(json['firearmId']),
+      ammoLotId: serializer.fromJson<String?>(json['ammoLotId']),
+      metric: serializer.fromJson<String>(json['metric']),
+      targetValue: serializer.fromJson<double>(json['targetValue']),
+      comparison: serializer.fromJson<String>(json['comparison']),
+      active: serializer.fromJson<int>(json['active']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'targetProfileVersionedId': serializer.toJson<String>(
+        targetProfileVersionedId,
+      ),
+      'distanceMeters': serializer.toJson<double>(distanceMeters),
+      'firearmId': serializer.toJson<String?>(firearmId),
+      'ammoLotId': serializer.toJson<String?>(ammoLotId),
+      'metric': serializer.toJson<String>(metric),
+      'targetValue': serializer.toJson<double>(targetValue),
+      'comparison': serializer.toJson<String>(comparison),
+      'active': serializer.toJson<int>(active),
+    };
+  }
+
+  GoalsData copyWith({
+    String? id,
+    String? targetProfileVersionedId,
+    double? distanceMeters,
+    Value<String?> firearmId = const Value.absent(),
+    Value<String?> ammoLotId = const Value.absent(),
+    String? metric,
+    double? targetValue,
+    String? comparison,
+    int? active,
+  }) => GoalsData(
+    id: id ?? this.id,
+    targetProfileVersionedId:
+        targetProfileVersionedId ?? this.targetProfileVersionedId,
+    distanceMeters: distanceMeters ?? this.distanceMeters,
+    firearmId: firearmId.present ? firearmId.value : this.firearmId,
+    ammoLotId: ammoLotId.present ? ammoLotId.value : this.ammoLotId,
+    metric: metric ?? this.metric,
+    targetValue: targetValue ?? this.targetValue,
+    comparison: comparison ?? this.comparison,
+    active: active ?? this.active,
+  );
+  GoalsData copyWithCompanion(GoalsCompanion data) {
+    return GoalsData(
+      id: data.id.present ? data.id.value : this.id,
+      targetProfileVersionedId: data.targetProfileVersionedId.present
+          ? data.targetProfileVersionedId.value
+          : this.targetProfileVersionedId,
+      distanceMeters: data.distanceMeters.present
+          ? data.distanceMeters.value
+          : this.distanceMeters,
+      firearmId: data.firearmId.present ? data.firearmId.value : this.firearmId,
+      ammoLotId: data.ammoLotId.present ? data.ammoLotId.value : this.ammoLotId,
+      metric: data.metric.present ? data.metric.value : this.metric,
+      targetValue: data.targetValue.present
+          ? data.targetValue.value
+          : this.targetValue,
+      comparison: data.comparison.present
+          ? data.comparison.value
+          : this.comparison,
+      active: data.active.present ? data.active.value : this.active,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoalsData(')
+          ..write('id: $id, ')
+          ..write('targetProfileVersionedId: $targetProfileVersionedId, ')
+          ..write('distanceMeters: $distanceMeters, ')
+          ..write('firearmId: $firearmId, ')
+          ..write('ammoLotId: $ammoLotId, ')
+          ..write('metric: $metric, ')
+          ..write('targetValue: $targetValue, ')
+          ..write('comparison: $comparison, ')
+          ..write('active: $active')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    targetProfileVersionedId,
+    distanceMeters,
+    firearmId,
+    ammoLotId,
+    metric,
+    targetValue,
+    comparison,
+    active,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GoalsData &&
+          other.id == this.id &&
+          other.targetProfileVersionedId == this.targetProfileVersionedId &&
+          other.distanceMeters == this.distanceMeters &&
+          other.firearmId == this.firearmId &&
+          other.ammoLotId == this.ammoLotId &&
+          other.metric == this.metric &&
+          other.targetValue == this.targetValue &&
+          other.comparison == this.comparison &&
+          other.active == this.active);
+}
+
+class GoalsCompanion extends UpdateCompanion<GoalsData> {
+  final Value<String> id;
+  final Value<String> targetProfileVersionedId;
+  final Value<double> distanceMeters;
+  final Value<String?> firearmId;
+  final Value<String?> ammoLotId;
+  final Value<String> metric;
+  final Value<double> targetValue;
+  final Value<String> comparison;
+  final Value<int> active;
+  final Value<int> rowid;
+  const GoalsCompanion({
+    this.id = const Value.absent(),
+    this.targetProfileVersionedId = const Value.absent(),
+    this.distanceMeters = const Value.absent(),
+    this.firearmId = const Value.absent(),
+    this.ammoLotId = const Value.absent(),
+    this.metric = const Value.absent(),
+    this.targetValue = const Value.absent(),
+    this.comparison = const Value.absent(),
+    this.active = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GoalsCompanion.insert({
+    required String id,
+    required String targetProfileVersionedId,
+    required double distanceMeters,
+    this.firearmId = const Value.absent(),
+    this.ammoLotId = const Value.absent(),
+    required String metric,
+    required double targetValue,
+    required String comparison,
+    this.active = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       targetProfileVersionedId = Value(targetProfileVersionedId),
+       distanceMeters = Value(distanceMeters),
+       metric = Value(metric),
+       targetValue = Value(targetValue),
+       comparison = Value(comparison);
+  static Insertable<GoalsData> custom({
+    Expression<String>? id,
+    Expression<String>? targetProfileVersionedId,
+    Expression<double>? distanceMeters,
+    Expression<String>? firearmId,
+    Expression<String>? ammoLotId,
+    Expression<String>? metric,
+    Expression<double>? targetValue,
+    Expression<String>? comparison,
+    Expression<int>? active,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (targetProfileVersionedId != null)
+        'target_profile_versioned_id': targetProfileVersionedId,
+      if (distanceMeters != null) 'distance_meters': distanceMeters,
+      if (firearmId != null) 'firearm_id': firearmId,
+      if (ammoLotId != null) 'ammo_lot_id': ammoLotId,
+      if (metric != null) 'metric': metric,
+      if (targetValue != null) 'target_value': targetValue,
+      if (comparison != null) 'comparison': comparison,
+      if (active != null) 'active': active,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GoalsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? targetProfileVersionedId,
+    Value<double>? distanceMeters,
+    Value<String?>? firearmId,
+    Value<String?>? ammoLotId,
+    Value<String>? metric,
+    Value<double>? targetValue,
+    Value<String>? comparison,
+    Value<int>? active,
+    Value<int>? rowid,
+  }) {
+    return GoalsCompanion(
+      id: id ?? this.id,
+      targetProfileVersionedId:
+          targetProfileVersionedId ?? this.targetProfileVersionedId,
+      distanceMeters: distanceMeters ?? this.distanceMeters,
+      firearmId: firearmId ?? this.firearmId,
+      ammoLotId: ammoLotId ?? this.ammoLotId,
+      metric: metric ?? this.metric,
+      targetValue: targetValue ?? this.targetValue,
+      comparison: comparison ?? this.comparison,
+      active: active ?? this.active,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (targetProfileVersionedId.present) {
+      map['target_profile_versioned_id'] = Variable<String>(
+        targetProfileVersionedId.value,
+      );
+    }
+    if (distanceMeters.present) {
+      map['distance_meters'] = Variable<double>(distanceMeters.value);
+    }
+    if (firearmId.present) {
+      map['firearm_id'] = Variable<String>(firearmId.value);
+    }
+    if (ammoLotId.present) {
+      map['ammo_lot_id'] = Variable<String>(ammoLotId.value);
+    }
+    if (metric.present) {
+      map['metric'] = Variable<String>(metric.value);
+    }
+    if (targetValue.present) {
+      map['target_value'] = Variable<double>(targetValue.value);
+    }
+    if (comparison.present) {
+      map['comparison'] = Variable<String>(comparison.value);
+    }
+    if (active.present) {
+      map['active'] = Variable<int>(active.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GoalsCompanion(')
+          ..write('id: $id, ')
+          ..write('targetProfileVersionedId: $targetProfileVersionedId, ')
+          ..write('distanceMeters: $distanceMeters, ')
+          ..write('firearmId: $firearmId, ')
+          ..write('ammoLotId: $ammoLotId, ')
+          ..write('metric: $metric, ')
+          ..write('targetValue: $targetValue, ')
+          ..write('comparison: $comparison, ')
+          ..write('active: $active, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class SeriesReflections extends Table
+    with TableInfo<SeriesReflections, SeriesReflectionsData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -1387,8 +5635,34 @@ class SeriesReflections extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {seriesId};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  SeriesReflectionsData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SeriesReflectionsData(
+      seriesId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}series_id'],
+      )!,
+      perceivedQuality: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}perceived_quality'],
+      )!,
+      contextTagsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}context_tags_json'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
   }
 
   @override
@@ -1402,7 +5676,256 @@ class SeriesReflections extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class CoachFeedback extends Table with TableInfo {
+class SeriesReflectionsData extends DataClass
+    implements Insertable<SeriesReflectionsData> {
+  final String seriesId;
+  final String perceivedQuality;
+  final String contextTagsJson;
+  final String? note;
+  final int createdAtUtc;
+  final int updatedAtUtc;
+  const SeriesReflectionsData({
+    required this.seriesId,
+    required this.perceivedQuality,
+    required this.contextTagsJson,
+    this.note,
+    required this.createdAtUtc,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['series_id'] = Variable<String>(seriesId);
+    map['perceived_quality'] = Variable<String>(perceivedQuality);
+    map['context_tags_json'] = Variable<String>(contextTagsJson);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['created_at_utc'] = Variable<int>(createdAtUtc);
+    map['updated_at_utc'] = Variable<int>(updatedAtUtc);
+    return map;
+  }
+
+  SeriesReflectionsCompanion toCompanion(bool nullToAbsent) {
+    return SeriesReflectionsCompanion(
+      seriesId: Value(seriesId),
+      perceivedQuality: Value(perceivedQuality),
+      contextTagsJson: Value(contextTagsJson),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      createdAtUtc: Value(createdAtUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory SeriesReflectionsData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SeriesReflectionsData(
+      seriesId: serializer.fromJson<String>(json['seriesId']),
+      perceivedQuality: serializer.fromJson<String>(json['perceivedQuality']),
+      contextTagsJson: serializer.fromJson<String>(json['contextTagsJson']),
+      note: serializer.fromJson<String?>(json['note']),
+      createdAtUtc: serializer.fromJson<int>(json['createdAtUtc']),
+      updatedAtUtc: serializer.fromJson<int>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'seriesId': serializer.toJson<String>(seriesId),
+      'perceivedQuality': serializer.toJson<String>(perceivedQuality),
+      'contextTagsJson': serializer.toJson<String>(contextTagsJson),
+      'note': serializer.toJson<String?>(note),
+      'createdAtUtc': serializer.toJson<int>(createdAtUtc),
+      'updatedAtUtc': serializer.toJson<int>(updatedAtUtc),
+    };
+  }
+
+  SeriesReflectionsData copyWith({
+    String? seriesId,
+    String? perceivedQuality,
+    String? contextTagsJson,
+    Value<String?> note = const Value.absent(),
+    int? createdAtUtc,
+    int? updatedAtUtc,
+  }) => SeriesReflectionsData(
+    seriesId: seriesId ?? this.seriesId,
+    perceivedQuality: perceivedQuality ?? this.perceivedQuality,
+    contextTagsJson: contextTagsJson ?? this.contextTagsJson,
+    note: note.present ? note.value : this.note,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  SeriesReflectionsData copyWithCompanion(SeriesReflectionsCompanion data) {
+    return SeriesReflectionsData(
+      seriesId: data.seriesId.present ? data.seriesId.value : this.seriesId,
+      perceivedQuality: data.perceivedQuality.present
+          ? data.perceivedQuality.value
+          : this.perceivedQuality,
+      contextTagsJson: data.contextTagsJson.present
+          ? data.contextTagsJson.value
+          : this.contextTagsJson,
+      note: data.note.present ? data.note.value : this.note,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeriesReflectionsData(')
+          ..write('seriesId: $seriesId, ')
+          ..write('perceivedQuality: $perceivedQuality, ')
+          ..write('contextTagsJson: $contextTagsJson, ')
+          ..write('note: $note, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    seriesId,
+    perceivedQuality,
+    contextTagsJson,
+    note,
+    createdAtUtc,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SeriesReflectionsData &&
+          other.seriesId == this.seriesId &&
+          other.perceivedQuality == this.perceivedQuality &&
+          other.contextTagsJson == this.contextTagsJson &&
+          other.note == this.note &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class SeriesReflectionsCompanion
+    extends UpdateCompanion<SeriesReflectionsData> {
+  final Value<String> seriesId;
+  final Value<String> perceivedQuality;
+  final Value<String> contextTagsJson;
+  final Value<String?> note;
+  final Value<int> createdAtUtc;
+  final Value<int> updatedAtUtc;
+  final Value<int> rowid;
+  const SeriesReflectionsCompanion({
+    this.seriesId = const Value.absent(),
+    this.perceivedQuality = const Value.absent(),
+    this.contextTagsJson = const Value.absent(),
+    this.note = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SeriesReflectionsCompanion.insert({
+    required String seriesId,
+    required String perceivedQuality,
+    this.contextTagsJson = const Value.absent(),
+    this.note = const Value.absent(),
+    required int createdAtUtc,
+    required int updatedAtUtc,
+    this.rowid = const Value.absent(),
+  }) : seriesId = Value(seriesId),
+       perceivedQuality = Value(perceivedQuality),
+       createdAtUtc = Value(createdAtUtc),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<SeriesReflectionsData> custom({
+    Expression<String>? seriesId,
+    Expression<String>? perceivedQuality,
+    Expression<String>? contextTagsJson,
+    Expression<String>? note,
+    Expression<int>? createdAtUtc,
+    Expression<int>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (seriesId != null) 'series_id': seriesId,
+      if (perceivedQuality != null) 'perceived_quality': perceivedQuality,
+      if (contextTagsJson != null) 'context_tags_json': contextTagsJson,
+      if (note != null) 'note': note,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SeriesReflectionsCompanion copyWith({
+    Value<String>? seriesId,
+    Value<String>? perceivedQuality,
+    Value<String>? contextTagsJson,
+    Value<String?>? note,
+    Value<int>? createdAtUtc,
+    Value<int>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return SeriesReflectionsCompanion(
+      seriesId: seriesId ?? this.seriesId,
+      perceivedQuality: perceivedQuality ?? this.perceivedQuality,
+      contextTagsJson: contextTagsJson ?? this.contextTagsJson,
+      note: note ?? this.note,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (seriesId.present) {
+      map['series_id'] = Variable<String>(seriesId.value);
+    }
+    if (perceivedQuality.present) {
+      map['perceived_quality'] = Variable<String>(perceivedQuality.value);
+    }
+    if (contextTagsJson.present) {
+      map['context_tags_json'] = Variable<String>(contextTagsJson.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<int>(createdAtUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<int>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeriesReflectionsCompanion(')
+          ..write('seriesId: $seriesId, ')
+          ..write('perceivedQuality: $perceivedQuality, ')
+          ..write('contextTagsJson: $contextTagsJson, ')
+          ..write('note: $note, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class CoachFeedback extends Table
+    with TableInfo<CoachFeedback, CoachFeedbackData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -1473,8 +5996,34 @@ class CoachFeedback extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {insightFingerprint};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  CoachFeedbackData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CoachFeedbackData(
+      insightFingerprint: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}insight_fingerprint'],
+      )!,
+      ruleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rule_id'],
+      )!,
+      ruleVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rule_version'],
+      )!,
+      response: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}response'],
+      )!,
+      snoozedUntilUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}snoozed_until_utc'],
+      ),
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
   }
 
   @override
@@ -1490,7 +6039,261 @@ class CoachFeedback extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class Preferences extends Table with TableInfo {
+class CoachFeedbackData extends DataClass
+    implements Insertable<CoachFeedbackData> {
+  final String insightFingerprint;
+  final String ruleId;
+  final int ruleVersion;
+  final String response;
+  final int? snoozedUntilUtc;
+  final int updatedAtUtc;
+  const CoachFeedbackData({
+    required this.insightFingerprint,
+    required this.ruleId,
+    required this.ruleVersion,
+    required this.response,
+    this.snoozedUntilUtc,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['insight_fingerprint'] = Variable<String>(insightFingerprint);
+    map['rule_id'] = Variable<String>(ruleId);
+    map['rule_version'] = Variable<int>(ruleVersion);
+    map['response'] = Variable<String>(response);
+    if (!nullToAbsent || snoozedUntilUtc != null) {
+      map['snoozed_until_utc'] = Variable<int>(snoozedUntilUtc);
+    }
+    map['updated_at_utc'] = Variable<int>(updatedAtUtc);
+    return map;
+  }
+
+  CoachFeedbackCompanion toCompanion(bool nullToAbsent) {
+    return CoachFeedbackCompanion(
+      insightFingerprint: Value(insightFingerprint),
+      ruleId: Value(ruleId),
+      ruleVersion: Value(ruleVersion),
+      response: Value(response),
+      snoozedUntilUtc: snoozedUntilUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(snoozedUntilUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory CoachFeedbackData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CoachFeedbackData(
+      insightFingerprint: serializer.fromJson<String>(
+        json['insightFingerprint'],
+      ),
+      ruleId: serializer.fromJson<String>(json['ruleId']),
+      ruleVersion: serializer.fromJson<int>(json['ruleVersion']),
+      response: serializer.fromJson<String>(json['response']),
+      snoozedUntilUtc: serializer.fromJson<int?>(json['snoozedUntilUtc']),
+      updatedAtUtc: serializer.fromJson<int>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'insightFingerprint': serializer.toJson<String>(insightFingerprint),
+      'ruleId': serializer.toJson<String>(ruleId),
+      'ruleVersion': serializer.toJson<int>(ruleVersion),
+      'response': serializer.toJson<String>(response),
+      'snoozedUntilUtc': serializer.toJson<int?>(snoozedUntilUtc),
+      'updatedAtUtc': serializer.toJson<int>(updatedAtUtc),
+    };
+  }
+
+  CoachFeedbackData copyWith({
+    String? insightFingerprint,
+    String? ruleId,
+    int? ruleVersion,
+    String? response,
+    Value<int?> snoozedUntilUtc = const Value.absent(),
+    int? updatedAtUtc,
+  }) => CoachFeedbackData(
+    insightFingerprint: insightFingerprint ?? this.insightFingerprint,
+    ruleId: ruleId ?? this.ruleId,
+    ruleVersion: ruleVersion ?? this.ruleVersion,
+    response: response ?? this.response,
+    snoozedUntilUtc: snoozedUntilUtc.present
+        ? snoozedUntilUtc.value
+        : this.snoozedUntilUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  CoachFeedbackData copyWithCompanion(CoachFeedbackCompanion data) {
+    return CoachFeedbackData(
+      insightFingerprint: data.insightFingerprint.present
+          ? data.insightFingerprint.value
+          : this.insightFingerprint,
+      ruleId: data.ruleId.present ? data.ruleId.value : this.ruleId,
+      ruleVersion: data.ruleVersion.present
+          ? data.ruleVersion.value
+          : this.ruleVersion,
+      response: data.response.present ? data.response.value : this.response,
+      snoozedUntilUtc: data.snoozedUntilUtc.present
+          ? data.snoozedUntilUtc.value
+          : this.snoozedUntilUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CoachFeedbackData(')
+          ..write('insightFingerprint: $insightFingerprint, ')
+          ..write('ruleId: $ruleId, ')
+          ..write('ruleVersion: $ruleVersion, ')
+          ..write('response: $response, ')
+          ..write('snoozedUntilUtc: $snoozedUntilUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    insightFingerprint,
+    ruleId,
+    ruleVersion,
+    response,
+    snoozedUntilUtc,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CoachFeedbackData &&
+          other.insightFingerprint == this.insightFingerprint &&
+          other.ruleId == this.ruleId &&
+          other.ruleVersion == this.ruleVersion &&
+          other.response == this.response &&
+          other.snoozedUntilUtc == this.snoozedUntilUtc &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class CoachFeedbackCompanion extends UpdateCompanion<CoachFeedbackData> {
+  final Value<String> insightFingerprint;
+  final Value<String> ruleId;
+  final Value<int> ruleVersion;
+  final Value<String> response;
+  final Value<int?> snoozedUntilUtc;
+  final Value<int> updatedAtUtc;
+  final Value<int> rowid;
+  const CoachFeedbackCompanion({
+    this.insightFingerprint = const Value.absent(),
+    this.ruleId = const Value.absent(),
+    this.ruleVersion = const Value.absent(),
+    this.response = const Value.absent(),
+    this.snoozedUntilUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CoachFeedbackCompanion.insert({
+    required String insightFingerprint,
+    required String ruleId,
+    required int ruleVersion,
+    required String response,
+    this.snoozedUntilUtc = const Value.absent(),
+    required int updatedAtUtc,
+    this.rowid = const Value.absent(),
+  }) : insightFingerprint = Value(insightFingerprint),
+       ruleId = Value(ruleId),
+       ruleVersion = Value(ruleVersion),
+       response = Value(response),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<CoachFeedbackData> custom({
+    Expression<String>? insightFingerprint,
+    Expression<String>? ruleId,
+    Expression<int>? ruleVersion,
+    Expression<String>? response,
+    Expression<int>? snoozedUntilUtc,
+    Expression<int>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (insightFingerprint != null) 'insight_fingerprint': insightFingerprint,
+      if (ruleId != null) 'rule_id': ruleId,
+      if (ruleVersion != null) 'rule_version': ruleVersion,
+      if (response != null) 'response': response,
+      if (snoozedUntilUtc != null) 'snoozed_until_utc': snoozedUntilUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CoachFeedbackCompanion copyWith({
+    Value<String>? insightFingerprint,
+    Value<String>? ruleId,
+    Value<int>? ruleVersion,
+    Value<String>? response,
+    Value<int?>? snoozedUntilUtc,
+    Value<int>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return CoachFeedbackCompanion(
+      insightFingerprint: insightFingerprint ?? this.insightFingerprint,
+      ruleId: ruleId ?? this.ruleId,
+      ruleVersion: ruleVersion ?? this.ruleVersion,
+      response: response ?? this.response,
+      snoozedUntilUtc: snoozedUntilUtc ?? this.snoozedUntilUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (insightFingerprint.present) {
+      map['insight_fingerprint'] = Variable<String>(insightFingerprint.value);
+    }
+    if (ruleId.present) {
+      map['rule_id'] = Variable<String>(ruleId.value);
+    }
+    if (ruleVersion.present) {
+      map['rule_version'] = Variable<int>(ruleVersion.value);
+    }
+    if (response.present) {
+      map['response'] = Variable<String>(response.value);
+    }
+    if (snoozedUntilUtc.present) {
+      map['snoozed_until_utc'] = Variable<int>(snoozedUntilUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<int>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CoachFeedbackCompanion(')
+          ..write('insightFingerprint: $insightFingerprint, ')
+          ..write('ruleId: $ruleId, ')
+          ..write('ruleVersion: $ruleVersion, ')
+          ..write('response: $response, ')
+          ..write('snoozedUntilUtc: $snoozedUntilUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class Preferences extends Table with TableInfo<Preferences, PreferencesData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -1521,8 +6324,18 @@ class Preferences extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {key};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  PreferencesData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PreferencesData(
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}value'],
+      )!,
+    );
   }
 
   @override
@@ -1536,7 +6349,136 @@ class Preferences extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
-class TargetProfiles extends Table with TableInfo {
+class PreferencesData extends DataClass implements Insertable<PreferencesData> {
+  final String key;
+  final String value;
+  const PreferencesData({required this.key, required this.value});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['value'] = Variable<String>(value);
+    return map;
+  }
+
+  PreferencesCompanion toCompanion(bool nullToAbsent) {
+    return PreferencesCompanion(key: Value(key), value: Value(value));
+  }
+
+  factory PreferencesData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PreferencesData(
+      key: serializer.fromJson<String>(json['key']),
+      value: serializer.fromJson<String>(json['value']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'value': serializer.toJson<String>(value),
+    };
+  }
+
+  PreferencesData copyWith({String? key, String? value}) =>
+      PreferencesData(key: key ?? this.key, value: value ?? this.value);
+  PreferencesData copyWithCompanion(PreferencesCompanion data) {
+    return PreferencesData(
+      key: data.key.present ? data.key.value : this.key,
+      value: data.value.present ? data.value.value : this.value,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PreferencesData(')
+          ..write('key: $key, ')
+          ..write('value: $value')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, value);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PreferencesData &&
+          other.key == this.key &&
+          other.value == this.value);
+}
+
+class PreferencesCompanion extends UpdateCompanion<PreferencesData> {
+  final Value<String> key;
+  final Value<String> value;
+  final Value<int> rowid;
+  const PreferencesCompanion({
+    this.key = const Value.absent(),
+    this.value = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PreferencesCompanion.insert({
+    required String key,
+    required String value,
+    this.rowid = const Value.absent(),
+  }) : key = Value(key),
+       value = Value(value);
+  static Insertable<PreferencesData> custom({
+    Expression<String>? key,
+    Expression<String>? value,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (value != null) 'value': value,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PreferencesCompanion copyWith({
+    Value<String>? key,
+    Value<String>? value,
+    Value<int>? rowid,
+  }) {
+    return PreferencesCompanion(
+      key: key ?? this.key,
+      value: value ?? this.value,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PreferencesCompanion(')
+          ..write('key: $key, ')
+          ..write('value: $value, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class TargetProfiles extends Table
+    with TableInfo<TargetProfiles, TargetProfilesData> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -1635,8 +6577,46 @@ class TargetProfiles extends Table with TableInfo {
   @override
   Set<GeneratedColumn> get $primaryKey => {versionedId};
   @override
-  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
-    throw UnsupportedError('TableInfo.map in schema verification code');
+  TargetProfilesData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TargetProfilesData(
+      versionedId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}versioned_id'],
+      )!,
+      profileId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}profile_id'],
+      )!,
+      profileVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}profile_version'],
+      )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      )!,
+      validationStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}validation_status'],
+      )!,
+      profileJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}profile_json'],
+      )!,
+      builtIn: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}built_in'],
+      )!,
+      archived: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}archived'],
+      )!,
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+    );
   }
 
   @override
@@ -1648,6 +6628,327 @@ class TargetProfiles extends Table with TableInfo {
   List<String> get customConstraints => const ['PRIMARY KEY(versioned_id)'];
   @override
   bool get dontWriteConstraints => true;
+}
+
+class TargetProfilesData extends DataClass
+    implements Insertable<TargetProfilesData> {
+  final String versionedId;
+  final String profileId;
+  final int profileVersion;
+  final String displayName;
+  final String validationStatus;
+  final String profileJson;
+  final int builtIn;
+  final int archived;
+  final int createdAtUtc;
+  const TargetProfilesData({
+    required this.versionedId,
+    required this.profileId,
+    required this.profileVersion,
+    required this.displayName,
+    required this.validationStatus,
+    required this.profileJson,
+    required this.builtIn,
+    required this.archived,
+    required this.createdAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['versioned_id'] = Variable<String>(versionedId);
+    map['profile_id'] = Variable<String>(profileId);
+    map['profile_version'] = Variable<int>(profileVersion);
+    map['display_name'] = Variable<String>(displayName);
+    map['validation_status'] = Variable<String>(validationStatus);
+    map['profile_json'] = Variable<String>(profileJson);
+    map['built_in'] = Variable<int>(builtIn);
+    map['archived'] = Variable<int>(archived);
+    map['created_at_utc'] = Variable<int>(createdAtUtc);
+    return map;
+  }
+
+  TargetProfilesCompanion toCompanion(bool nullToAbsent) {
+    return TargetProfilesCompanion(
+      versionedId: Value(versionedId),
+      profileId: Value(profileId),
+      profileVersion: Value(profileVersion),
+      displayName: Value(displayName),
+      validationStatus: Value(validationStatus),
+      profileJson: Value(profileJson),
+      builtIn: Value(builtIn),
+      archived: Value(archived),
+      createdAtUtc: Value(createdAtUtc),
+    );
+  }
+
+  factory TargetProfilesData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TargetProfilesData(
+      versionedId: serializer.fromJson<String>(json['versionedId']),
+      profileId: serializer.fromJson<String>(json['profileId']),
+      profileVersion: serializer.fromJson<int>(json['profileVersion']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      validationStatus: serializer.fromJson<String>(json['validationStatus']),
+      profileJson: serializer.fromJson<String>(json['profileJson']),
+      builtIn: serializer.fromJson<int>(json['builtIn']),
+      archived: serializer.fromJson<int>(json['archived']),
+      createdAtUtc: serializer.fromJson<int>(json['createdAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'versionedId': serializer.toJson<String>(versionedId),
+      'profileId': serializer.toJson<String>(profileId),
+      'profileVersion': serializer.toJson<int>(profileVersion),
+      'displayName': serializer.toJson<String>(displayName),
+      'validationStatus': serializer.toJson<String>(validationStatus),
+      'profileJson': serializer.toJson<String>(profileJson),
+      'builtIn': serializer.toJson<int>(builtIn),
+      'archived': serializer.toJson<int>(archived),
+      'createdAtUtc': serializer.toJson<int>(createdAtUtc),
+    };
+  }
+
+  TargetProfilesData copyWith({
+    String? versionedId,
+    String? profileId,
+    int? profileVersion,
+    String? displayName,
+    String? validationStatus,
+    String? profileJson,
+    int? builtIn,
+    int? archived,
+    int? createdAtUtc,
+  }) => TargetProfilesData(
+    versionedId: versionedId ?? this.versionedId,
+    profileId: profileId ?? this.profileId,
+    profileVersion: profileVersion ?? this.profileVersion,
+    displayName: displayName ?? this.displayName,
+    validationStatus: validationStatus ?? this.validationStatus,
+    profileJson: profileJson ?? this.profileJson,
+    builtIn: builtIn ?? this.builtIn,
+    archived: archived ?? this.archived,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+  );
+  TargetProfilesData copyWithCompanion(TargetProfilesCompanion data) {
+    return TargetProfilesData(
+      versionedId: data.versionedId.present
+          ? data.versionedId.value
+          : this.versionedId,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      profileVersion: data.profileVersion.present
+          ? data.profileVersion.value
+          : this.profileVersion,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
+      validationStatus: data.validationStatus.present
+          ? data.validationStatus.value
+          : this.validationStatus,
+      profileJson: data.profileJson.present
+          ? data.profileJson.value
+          : this.profileJson,
+      builtIn: data.builtIn.present ? data.builtIn.value : this.builtIn,
+      archived: data.archived.present ? data.archived.value : this.archived,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TargetProfilesData(')
+          ..write('versionedId: $versionedId, ')
+          ..write('profileId: $profileId, ')
+          ..write('profileVersion: $profileVersion, ')
+          ..write('displayName: $displayName, ')
+          ..write('validationStatus: $validationStatus, ')
+          ..write('profileJson: $profileJson, ')
+          ..write('builtIn: $builtIn, ')
+          ..write('archived: $archived, ')
+          ..write('createdAtUtc: $createdAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    versionedId,
+    profileId,
+    profileVersion,
+    displayName,
+    validationStatus,
+    profileJson,
+    builtIn,
+    archived,
+    createdAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TargetProfilesData &&
+          other.versionedId == this.versionedId &&
+          other.profileId == this.profileId &&
+          other.profileVersion == this.profileVersion &&
+          other.displayName == this.displayName &&
+          other.validationStatus == this.validationStatus &&
+          other.profileJson == this.profileJson &&
+          other.builtIn == this.builtIn &&
+          other.archived == this.archived &&
+          other.createdAtUtc == this.createdAtUtc);
+}
+
+class TargetProfilesCompanion extends UpdateCompanion<TargetProfilesData> {
+  final Value<String> versionedId;
+  final Value<String> profileId;
+  final Value<int> profileVersion;
+  final Value<String> displayName;
+  final Value<String> validationStatus;
+  final Value<String> profileJson;
+  final Value<int> builtIn;
+  final Value<int> archived;
+  final Value<int> createdAtUtc;
+  final Value<int> rowid;
+  const TargetProfilesCompanion({
+    this.versionedId = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.profileVersion = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.validationStatus = const Value.absent(),
+    this.profileJson = const Value.absent(),
+    this.builtIn = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TargetProfilesCompanion.insert({
+    required String versionedId,
+    required String profileId,
+    required int profileVersion,
+    required String displayName,
+    required String validationStatus,
+    required String profileJson,
+    this.builtIn = const Value.absent(),
+    this.archived = const Value.absent(),
+    required int createdAtUtc,
+    this.rowid = const Value.absent(),
+  }) : versionedId = Value(versionedId),
+       profileId = Value(profileId),
+       profileVersion = Value(profileVersion),
+       displayName = Value(displayName),
+       validationStatus = Value(validationStatus),
+       profileJson = Value(profileJson),
+       createdAtUtc = Value(createdAtUtc);
+  static Insertable<TargetProfilesData> custom({
+    Expression<String>? versionedId,
+    Expression<String>? profileId,
+    Expression<int>? profileVersion,
+    Expression<String>? displayName,
+    Expression<String>? validationStatus,
+    Expression<String>? profileJson,
+    Expression<int>? builtIn,
+    Expression<int>? archived,
+    Expression<int>? createdAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (versionedId != null) 'versioned_id': versionedId,
+      if (profileId != null) 'profile_id': profileId,
+      if (profileVersion != null) 'profile_version': profileVersion,
+      if (displayName != null) 'display_name': displayName,
+      if (validationStatus != null) 'validation_status': validationStatus,
+      if (profileJson != null) 'profile_json': profileJson,
+      if (builtIn != null) 'built_in': builtIn,
+      if (archived != null) 'archived': archived,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TargetProfilesCompanion copyWith({
+    Value<String>? versionedId,
+    Value<String>? profileId,
+    Value<int>? profileVersion,
+    Value<String>? displayName,
+    Value<String>? validationStatus,
+    Value<String>? profileJson,
+    Value<int>? builtIn,
+    Value<int>? archived,
+    Value<int>? createdAtUtc,
+    Value<int>? rowid,
+  }) {
+    return TargetProfilesCompanion(
+      versionedId: versionedId ?? this.versionedId,
+      profileId: profileId ?? this.profileId,
+      profileVersion: profileVersion ?? this.profileVersion,
+      displayName: displayName ?? this.displayName,
+      validationStatus: validationStatus ?? this.validationStatus,
+      profileJson: profileJson ?? this.profileJson,
+      builtIn: builtIn ?? this.builtIn,
+      archived: archived ?? this.archived,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (versionedId.present) {
+      map['versioned_id'] = Variable<String>(versionedId.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<String>(profileId.value);
+    }
+    if (profileVersion.present) {
+      map['profile_version'] = Variable<int>(profileVersion.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (validationStatus.present) {
+      map['validation_status'] = Variable<String>(validationStatus.value);
+    }
+    if (profileJson.present) {
+      map['profile_json'] = Variable<String>(profileJson.value);
+    }
+    if (builtIn.present) {
+      map['built_in'] = Variable<int>(builtIn.value);
+    }
+    if (archived.present) {
+      map['archived'] = Variable<int>(archived.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<int>(createdAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TargetProfilesCompanion(')
+          ..write('versionedId: $versionedId, ')
+          ..write('profileId: $profileId, ')
+          ..write('profileVersion: $profileVersion, ')
+          ..write('displayName: $displayName, ')
+          ..write('validationStatus: $validationStatus, ')
+          ..write('profileJson: $profileJson, ')
+          ..write('builtIn: $builtIn, ')
+          ..write('archived: $archived, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
 }
 
 class DatabaseAtV5 extends GeneratedDatabase {

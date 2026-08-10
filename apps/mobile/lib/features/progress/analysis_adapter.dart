@@ -69,6 +69,12 @@ domain.ShotImpact impactRecordToDomain(ImpactRecord record) =>
         (value) => value.name == record.scoreDisposition,
         orElse: () => domain.ScoreDisposition.counted,
       ),
+      placementMethod: domain.ImpactPlacementMethod.values.firstWhere(
+        (value) => value.name == record.placementMethod,
+        orElse: () => domain.ImpactPlacementMethod.manual,
+      ),
+      visionAnalysisId: record.visionAnalysisId,
+      positionalUncertaintyMm: record.positionalUncertaintyMm,
     );
 
 List<CoachInsight> buildCoachInsights(Iterable<AnalyzedSeriesView> source) {

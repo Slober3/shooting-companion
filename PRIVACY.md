@@ -4,7 +4,7 @@ Shooting Companion is local-only. It has no account, cloud backend, telemetry,
 advertising SDK or internet permission. It does not automatically collect GPS or
 firearm serial numbers.
 
-Version `0.5.1+3` declares `RECORD_AUDIO` for the live-fire shot timer. Android
+Version `0.6.0+2` declares `RECORD_AUDIO` for the live-fire shot timer. Android
 asks for microphone access only after the user explicitly opens and activates
 that tool. Refusing access does not block scoring, photos, analysis, coaching,
 par timing, cadence timing or external timer entry.
@@ -19,9 +19,18 @@ interrupted. Acoustic results are training measurements, not certified match
 timing or a guarantee that nearby shooters can be distinguished.
 
 Imported photos are decoded, orientation-corrected and re-encoded as JPEG so
-source EXIF is not retained. Images and database records live in Android internal
-app storage. The app contains no recognition model. The user explicitly initiates
-every export or share action.
+source EXIF is not retained. Images and database records live in Android
+internal app storage. Experimental photo scoring uses a bundled classical
+OpenCV pipeline, not an ML model, and performs no upload or network request.
+Unfinished scan photos remain local until the user links or deletes the concept
+and are included in encrypted full backups. The user explicitly initiates every
+export or share action.
+
+Developer validation photos, annotations and derived reports belong only in
+the Git-ignored `.local/vision-validation/` workspace. CI rejects tracked local
+validation data, personal camera filenames, unreviewed media fixtures, backups,
+APKs and signing material. Only synthetic or explicitly licensed fixtures with
+a privacy-review sidecar may enter the public repository.
 
 Deleting a session removes its database records and linked private photo files.
 Transactional restore stages and verifies new files before replacing existing

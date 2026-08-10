@@ -7,8 +7,9 @@ internetpermission.
 
 ## Huidige status
 
-Versie `0.5.0` behoudt de snelle puntplaatsing van 0.3 en voegt lokale,
-verklaarbare analyse, optionele coaching en gestructureerde trainingstools toe:
+Versie `0.6.0` behoudt de snelle puntplaatsing van 0.3 en voegt lokale,
+verklaarbare analyse, optionele coaching, trainingstools en een afzonderlijke
+experimentele fotoscoreflow toe:
 
 - lokale bibliotheken voor wapens, kalibers, munitielots, standen en kaarten;
 - bibliotheekitems bekijken, bewerken, dupliceren en veilig verwijderen;
@@ -21,11 +22,12 @@ verklaarbare analyse, optionele coaching en gestructureerde trainingstools toe:
   nieuwe treffer onderschept;
 - pinch-zoom, pan, zoomknoppen, precisiekruis, puntenlijst en echte undo;
 - visueel plaatsen, verslepen en vermenigvuldigen van treffers en missers;
-- versioned ISSF 2026-profielen voor 25 m Precision / 50 m Pistol en 25 m Rapid Fire;
+- geversioneerde ISSF-profielen (Edition 2025, Second Print 07/2026) voor 25 m Precision / 50 m Pistol en 25 m Rapid Fire;
 - een ingebouwd WRABF BR50-profiel met 25 handmatig scorebare wedstrijdroosjes,
   proefroosjes, laagste-scorebeleid, X-count en straf voor extra schoten;
 - scores en maximum op basis van het werkelijk geregistreerde schotaantal;
-- handmatig scoren op een getekende kaart of een zelf uitgelijnde kaartfoto;
+- handmatig scoren op een getekende kaart of een kaartfoto met vierhoeks- of
+  ring-assisted uitlijning, kwartslagrotatie en controleerbare ringoverlay;
 - meerdere sessie- en reeksfoto's met een onveranderlijk origineel;
 - compacte Logboekfilters en één geaggregeerde SQLite-query zonder query per rij;
 - groepsanalyse met centroid, bias, extreme spread, mean radius, R50/R90,
@@ -46,10 +48,17 @@ verklaarbare analyse, optionele coaching en gestructureerde trainingstools toe:
 - een begeleide akoestische live-firetimer plus par-, cadans- en externe
   invoermodus, reviewbare events, lokale geschiedenis en reekskoppeling;
 - gestructureerde timerexports en compacte timerinformatie in het PDF-rapport;
+- `Meer > Experimentele fotoscore` voor één schone ISSF Precision-kaart met
+  .22 LR, met lokale kwaliteitscontrole, automatische kaartregistratie,
+  klassieke OpenCV-gatkandidaten en verplichte menselijke review;
+- hervatbare conceptscans, handmatige vierpunts- en ring-assisted fallback en transactionele
+  koppeling aan een actieve of nieuwe snelle sessie;
+- candidate-provenance, onzekerheid, rotatie, alignmentankers, residualen en
+  reviewbeslissingen in schema/back-up 8;
 - systeem/licht/donker met vier lokaal opgeslagen kleurpaletten;
 - CSV, Unicode-PDF met ingebedde fonts en AES-256-GCM/Argon2id-back-up;
 - migratie en back-upcompatibiliteit voor lokale gegevens uit versie 0.1;
-- databaseschema 6 en back-upmanifest 6, met import van v1-v5-back-ups.
+- databaseschema 8 en back-upmanifest 8, met import van v1-v7-back-ups.
 
 De live-firetimer vraagt microfoontoegang pas nadat de gebruiker de begeleide
 toestelcontrole start. Audio wordt tijdens de zichtbare run in het geheugen
@@ -58,12 +67,13 @@ trainingshulpmiddel, geen gecertificeerde wedstrijdtimer. De fysieke
 validatiematrix en grenzen staan in
 [`docs/shot-timer.md`](docs/shot-timer.md).
 
-Er is nog geen automatische trefferdetectie in de app. De schutter duidt iedere
-treffer of misser expliciet aan; de deterministische score-engine berekent daarna
-ringwaarde, X-count, totaal en percentage. De repository bevat wel afzonderlijke
-visioncontracten, een fail-closed native onderzoeksbasis en een versleutelde,
-privacyveilige `.scvision`-export. Die onderdelen maken geen score en krijgen pas
-een gebruikersflow nadat de vastgelegde validatiedrempels zijn gehaald.
+De fotoscore is nadrukkelijk een experiment en geen automatische eindscore. Hoge
+en middelmatige kandidaten zijn slechts voorstellen; lage kandidaten tellen
+standaard niet mee. De gebruiker bevestigt, verplaatst, verwijdert of voegt
+punten toe voordat de bestaande deterministische Dart-score-engine ringwaarde,
+X-count, totaal en percentage berekent. Handmatige scoring blijft altijd
+beschikbaar. De huidige detector heeft nog geen validatieset van voldoende
+omvang om een betrouwbaarheidsclaim te rechtvaardigen.
 
 ## Snel starten
 
@@ -73,6 +83,7 @@ Vereisten:
 - Android Studio met Android SDK;
 - Android 13 of hoger voor het toestel;
 - Java 17.
+- de vastgezette OpenCV 4.13.0 Android SDK voor een vision-enabled APK.
 
 ```powershell
 cd apps/mobile
@@ -84,7 +95,22 @@ flutter run
 
 De app declareert camera- en microfoontoegang. Microfoontoegang wordt pas in de
 begeleide live-firetimer gevraagd en de audiostroom wordt uitsluitend tijdens
-de zichtbare run in het geheugen verwerkt. Controleer voor een release:
+de zichtbare run in het geheugen verwerkt.
+
+De officiële OpenCV-SDK kan reproduceerbaar worden klaargezet met:
+
+```powershell
+$env:OPENCV_ANDROID_SDK = & .\tools\setup_opencv_android.ps1
+cd apps/mobile
+flutter build apk --release --target-platform android-arm64
+```
+
+Het script controleert SHA-256
+`edfda20fdf65d0bd45391d168ec5261dd30b600b00279c4d910d7f1c3e020f0f`
+voordat de SDK wordt gebruikt. Zonder een OpenCV-capabele native library faalt
+de detector gesloten en blijft handmatig uitlijnen/scoren beschikbaar.
+
+Controleer voor een release ook de verpakte Android-permissies:
 
 ```powershell
 flutter build apk --release
@@ -97,20 +123,27 @@ receiver- en vibratiepermission tonen. `INTERNET`, opslag-, locatie- en
 netwerkstatuspermissions blijven verboden. De timer is een controleerbaar
 trainingshulpmiddel en geen gecertificeerde wedstrijdtimer.
 
+Het gebundelde [releasecontract](docs/release-integrity.md) voorkomt dat
+appversie, database, back-up, routes, permissies en native engines ongemerkt uit
+elkaar lopen. Echte vision-validatiefoto’s blijven uitsluitend in de genegeerde
+[lokale validatiewerkruimte](docs/vision-validation-privacy.md).
+
 ## Monorepo
 
 - `apps/mobile` — Flutter Android-app en Drift-database.
 - `packages/domain` — platformonafhankelijke domeintypen.
 - `packages/scoring` — deterministische score- en spreidingsberekening.
 - `packages/target_profiles` — officiële, versioned kaartdefinities.
-- `packages/photo_geometry` — reproduceerbare vierpuntsuitlijning en homografie.
+- `packages/photo_geometry` — reproduceerbare vierpunts- en ring-assisted
+  uitlijning, rotatie, homografie en residualcontrole.
 - `packages/analysis` — pure, afgeleide groeps- en cohortanalyse.
 - `packages/coaching` — lokale, bewijsgebonden coachregels zonder generatief model.
 - `packages/training` — versioned drills, experimentplanning en vizierberekening.
 - `packages/shot_timer` — pure timerlogica, testklok en lokale Android-audio-engine.
 - `packages/vision_api` — immutable onderzoekscontracten voor kandidaten.
+- `packages/vision_ffi` — annuleerbare Flutter-FFI-adapter en Androidbuildhook.
 - `packages/vision_research` — versleutelde, opgeschoonde onderzoeks-export.
-- `native/vision_core` — C++/C-ABI/CLI-basis met optionele OpenCV-backend.
+- `native/vision_core` — C++17, C-ABI v2 en klassieke OpenCV-pipeline.
 - `docs` — architectuur, scoreregels, back-up en releasebeleid.
 
 ## Belangrijke grens
@@ -124,9 +157,11 @@ kaart wordt als `Misser / 0` geregistreerd.
 De broncode is MIT. Ingebedde Noto Sans-fonts vallen onder de SIL Open Font
 License 1.1; zie `THIRD_PARTY_NOTICES.md`. Doelkaartafmetingen zijn vastgelegd
 als feitelijke geometrie uit het
-[ISSF Rule Book 2026](https://backoffice.issf-sports.org/getfile.aspx?file=ISSF-Rule-Book-2026-Edition-2025-First-Print-12-2025-Effective-1-January-2026.pdf&inst=455&mod=docf&pane=1).
+[ISSF Edition 2025, Second Print 07/2026](https://backoffice.issf-sports.org/getfile.aspx?file=ISSF-Rule-Book-2026-Edition-2025-Second-Print-07-2026-Effective-1-July-2026.pdf&inst=455&mod=docf&pane=1).
 ISSF-beeldmateriaal of logo's worden niet meegeleverd. De BR50-weergave gebruikt
 uitsluitend een neutrale geometrische trainingsrenderer op basis van de
 [WRABF-regels](https://www.wrabf.com/WRABF%20Rules.htm) en
 [doelkaartreferentie](https://www.wrabf.com/WRABF%20Targets.htm); er wordt geen
 officiële printkaart, federatiestijl of verkopersafbeelding gebundeld.
+OpenCV 4.13.0 wordt onder Apache License 2.0 gebruikt; versie, bron en checksum
+staan in `THIRD_PARTY_NOTICES.md` en `docs/vision-foundation.md`.

@@ -30,6 +30,13 @@ android {
             // Local release builds use the debug key until a GitHub signing
             // secret is configured. No signing material belongs in source.
             signingConfig = signingConfigs.getByName("debug")
+            ndk {
+                // The first public Android release is intentionally arm64-only.
+                // Flutter's target-platform limits AOT output but does not
+                // automatically filter every FFI plugin library.
+                abiFilters.clear()
+                abiFilters.add("arm64-v8a")
+            }
         }
     }
 }
@@ -42,4 +49,15 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        // Native-assets plugins can contribute libraries outside the app
+        // module's ndk.abiFilters. Strip every non-arm64 payload from the
+        // release variant while retaining x86_64 for debug/emulator builds.
+        variant.packaging.jniLibs.excludes.add("**/armeabi-v7a/**")
+        variant.packaging.jniLibs.excludes.add("**/x86/**")
+        variant.packaging.jniLibs.excludes.add("**/x86_64/**")
+    }
 }

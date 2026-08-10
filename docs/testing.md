@@ -17,7 +17,7 @@ Pure Dart packages are also tested independently. Acceptance covers:
 - scoring boundaries, non-ten target maxima, misses and multiplicity;
 - BR50 A3 geometry, 25 record bulls, sighters, duplicate shots, X ties,
   incomplete cards, multiplicity, fixed maximum and excess-shot penalties;
-- v1/v2/v3/v4/v5-to-v6 migration and all six backup manifest versions;
+- v1/v2/v3/v4/v5/v6/v7-to-v8 migration and all eight backup manifest versions;
 - contextual series, session and historical-comparison analysis, including
   strict cohorts, visit-date chronology and archived material references;
 - metric explanation and chart accessibility at narrow widths and large text;
@@ -26,7 +26,9 @@ Pure Dart packages are also tested independently. Acceptance covers:
 - one-active-session and one-draft-series invariants;
 - draft autosave, confirm/edit replacement and sequence renumbering;
 - image staging, missing-file deletion and primary-image replacement;
-- homography identity, rotation, perspective and roundtrip precision;
+- four-corner and ring-assisted homography identity, all quarter-turns,
+  perspective, conditioning, anchor/matrix cross-checking and roundtrip
+  precision;
 - place/edit hit testing at 0, 5, 15 and 25 dp, exact overlaps, zoomed inverse
   transforms, precision placement and one-step drag undo;
 - 320, 360 and 412 dp widths at 1.0, 1.3 and 2.0 text scales;
@@ -42,6 +44,15 @@ Pure Dart packages are also tested independently. Acceptance covers:
 - absence of internet and external-storage permissions in the built APK;
 - just-in-time microphone permission, foreground-only capture and proof that no
   raw audio enters storage, diagnostics, export or backup.
+- vision contract/ABI compatibility, cancellation, manual candidate
+  reprojection, low-confidence defaults and atomic reviewed-scan commit;
+- v8 vision draft/analysis/media/alignment backup roundtrips, legacy adapters,
+  runtime target/impact validation and invalid provenance;
+- independent ISSF boundary goldens for both built-in pistol profiles and
+  .22 LR, 9x19 mm, .38 Special and .357 Magnum, including exact tangency and
+  +/-0.01 mm in every axis and diagonal direction;
+- release-contract source and APK checks, private-data leak prevention and a
+  Windows native build from checkout and build paths containing spaces;
 
 Device-only camera permission and navigation-mode checks are documented as a
 manual gate when no Android device is connected to CI.
@@ -73,7 +84,10 @@ BR50-local coordinates, cautious coaching thresholds, built-in drills,
 experiment planning, sight corrections, vision wire contracts and encrypted
 research-export validation.
 
-## Native vision fallback gate
+`packages/vision_ffi` is resolved, analyzed and tested separately as a Flutter
+FFI package.
+
+## Native vision gates
 
 Linux CI always builds one native configuration with OpenCV forcibly disabled:
 
@@ -89,8 +103,10 @@ ctest --test-dir native/vision_core/build_ci \
   --output-on-failure
 ```
 
-The final CLI assertion checks structured JSON, including an empty candidate
+The fallback CLI assertion checks structured JSON, including an empty candidate
 list. A successful build therefore proves fallback honesty and ABI portability,
 not registration or hole-detection accuracy. OpenCV-enabled results remain
 research-gated until the real-photo release criteria in
-`docs/vision-foundation.md` are met.
+`docs/vision-foundation.md` are met. CI additionally downloads the pinned
+official OpenCV 4.13.0 Android SDK, verifies its SHA-256, builds an arm64 release
+APK and asserts that `libshooting_companion_vision.so` is packaged.

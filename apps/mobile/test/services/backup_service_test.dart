@@ -14,7 +14,7 @@ import 'package:shooting_companion/data/shooting_repository.dart';
 import 'package:shooting_companion/services/backup_service.dart';
 
 void main() {
-  group('BackupPayloadAdapter v1-v5 -> v6', () {
+  group('BackupPayloadAdapter v1-v7 -> v8', () {
     test('uses impact multiplicity for actual count and ignores scans', () {
       final data = _v1Data(
         expectedShots: 99,
@@ -80,7 +80,7 @@ void main() {
     test('rejects future versions and inconsistent record counts', () {
       expect(
         () => BackupPayloadAdapter.normalize(
-          manifest: _manifest(version: 7),
+          manifest: _manifest(version: 9),
           data: _v1Data(expectedShots: 1),
         ),
         throwsFormatException,
@@ -89,6 +89,226 @@ void main() {
         () => BackupPayloadAdapter.normalize(
           manifest: {..._manifest(version: 1), 'seriesCount': 2},
           data: _v1Data(expectedShots: 1),
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('upgrades v7 vision drafts with deterministic alignment defaults', () {
+      final legacy = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 1),
+        data: _v1Data(expectedShots: 1),
+      ).data;
+      legacy['visionScanDrafts'] = [
+        {
+          'id': 'draft-v7',
+          'status': 'reviewNeeded',
+          'originalImagePath': 'private/fixture.jpg',
+          'sha256': '0' * 64,
+          'width': 1200,
+          'height': 900,
+          'sizeBytes': 42,
+          'targetProfileJson': _validTargetJson(),
+          'projectileDiameterMm': 5.6,
+          'qualityJson': '{}',
+          'registrationJson': '{}',
+          'candidatesJson': '[]',
+          'reviewJson': '{}',
+          'engineVersion': 'vision-v7',
+          'failureCode': null,
+          'createdAtUtc': '2026-01-01T10:00:00.000Z',
+          'updatedAtUtc': '2026-01-01T10:01:00.000Z',
+        },
+      ];
+
+      final payload = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 7),
+        data: legacy,
+      );
+      final draft = (payload.data['visionScanDrafts']! as List).single as Map;
+
+      expect(draft['rotationQuarterTurns'], 0);
+      expect(draft['alignmentMode'], 'fullCard');
+      expect(draft['planarityStatus'], 'unknown');
+      expect(draft['anchorsJson'], isNull);
+      expect(draft['reprojectionRmsMm'], isNull);
+      expect(draft['reprojectionMaxMm'], isNull);
+    });
+
+    test('rejects invalid v8 alignment rotation and residuals', () {
+      final data = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 1),
+        data: _v1Data(expectedShots: 1),
+      ).data;
+      data['photoAlignments'] = [
+        {
+          'imageId': 'image-1',
+          'cornersJson': '[]',
+          'matrixJson': '[1,0,0,0,1,0,0,0,1]',
+          'algorithmVersion': 'manual-homography-v1',
+          'rotationQuarterTurns': 4,
+          'alignmentMode': 'fullCard',
+          'anchorsJson': '[]',
+          'reprojectionRmsMm': -0.1,
+          'reprojectionMaxMm': 0.2,
+          'planarityStatus': 'accepted',
+          'confirmedAtUtc': '2026-01-01T10:00:00.000Z',
+          'updatedAtUtc': '2026-01-01T10:00:00.000Z',
+        },
+      ];
+
+      expect(
+        () => BackupPayloadAdapter.normalize(
+          manifest: _manifest(version: 8),
+          data: data,
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('accepts a runtime-valid modern target snapshot', () {
+      final data = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 1),
+        data: _v1Data(
+          expectedShots: 1,
+          impacts: const [
+            {'id': 'impact-1', 'seriesId': 'series-1'},
+          ],
+        ),
+      ).data;
+      final series = (data['series']! as List).cast<Map>().single;
+      series['targetProfileVersionedId'] = 'runtime-target@1';
+      series['targetProfileJson'] = _validTargetJson();
+
+      expect(
+        () => BackupPayloadAdapter.normalize(
+          manifest: _manifest(version: 8),
+          data: data,
+        ),
+        returnsNormally,
+      );
+    });
+
+    test('rejects non-finite target geometry at the import boundary', () {
+      final data = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 1),
+        data: _v1Data(expectedShots: 1),
+      ).data;
+      final series = (data['series']! as List).cast<Map>().single;
+      series['targetProfileVersionedId'] = 'runtime-target@1';
+      series['targetProfileJson'] = _validTargetJson().replaceFirst(
+        '"physicalCardWidthMm":200.0',
+        '"physicalCardWidthMm":1e999',
+      );
+
+      expect(
+        () => BackupPayloadAdapter.normalize(
+          manifest: _manifest(version: 8),
+          data: data,
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('rejects duplicate target bull and impact identifiers', () {
+      final data = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 1),
+        data: _v1Data(
+          expectedShots: 1,
+          impacts: const [
+            {'id': 'impact-1', 'seriesId': 'series-1'},
+          ],
+        ),
+      ).data;
+      final duplicateImpacts = [
+        for (final value in data['impacts']! as List)
+          Map<String, dynamic>.from(value as Map),
+        Map<String, dynamic>.from((data['impacts']! as List).single as Map),
+      ];
+      expect(
+        () => BackupPayloadAdapter.normalize(
+          manifest: _manifest(version: 8),
+          data: {...data, 'impacts': duplicateImpacts},
+        ),
+        throwsFormatException,
+      );
+
+      final series = (data['series']! as List).cast<Map>().single;
+      series['targetProfileVersionedId'] = 'multi-target@1';
+      series['targetProfileJson'] = _validMultiBullTargetJson(
+        duplicateBullIds: true,
+      );
+      expect(
+        () => BackupPayloadAdapter.normalize(
+          manifest: _manifest(version: 8),
+          data: data,
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('rejects invalid impact multiplicity and image coordinates', () {
+      final valid = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 1),
+        data: _v1Data(
+          expectedShots: 1,
+          impacts: const [
+            {'id': 'impact-1', 'seriesId': 'series-1'},
+          ],
+        ),
+      ).data;
+
+      for (final mutation in <void Function(Map<String, dynamic>)>[
+        (impact) => impact['multiplicity'] = 0,
+        (impact) => impact['xMm'] = double.nan,
+        (impact) {
+          impact['imageXNormalized'] = 1.01;
+          impact['imageYNormalized'] = 0.5;
+        },
+        (impact) {
+          impact['imageXNormalized'] = 0.5;
+          impact['imageYNormalized'] = null;
+        },
+      ]) {
+        final impact = Map<String, dynamic>.from(
+          (valid['impacts']! as List).single as Map,
+        );
+        mutation(impact);
+        expect(
+          () => BackupPayloadAdapter.normalize(
+            manifest: _manifest(version: 8),
+            data: {
+              ...valid,
+              'impacts': [impact],
+            },
+          ),
+          throwsFormatException,
+        );
+      }
+    });
+
+    test('rejects a multi-bull impact whose position and bull disagree', () {
+      final data = BackupPayloadAdapter.normalize(
+        manifest: _manifest(version: 1),
+        data: _v1Data(
+          expectedShots: 1,
+          impacts: const [
+            {'id': 'impact-1', 'seriesId': 'series-1'},
+          ],
+        ),
+      ).data;
+      final series = (data['series']! as List).cast<Map>().single;
+      series['targetProfileVersionedId'] = 'multi-target@1';
+      series['targetProfileJson'] = _validMultiBullTargetJson();
+      final impact = (data['impacts']! as List).cast<Map>().single;
+      impact['xMm'] = 50.0;
+      impact['yMm'] = 0.0;
+      impact['targetBullId'] = 'left';
+
+      expect(
+        () => BackupPayloadAdapter.normalize(
+          manifest: _manifest(version: 8),
+          data: data,
         ),
         throwsFormatException,
       );
@@ -389,7 +609,48 @@ void main() {
   });
 
   test(
-    'SCB1 v6 roundtrip preserves training, insights, media and settings',
+    'backup creation rejects invalid domain records before export',
+    () async {
+      final workspace = await Directory.systemTemp.createTemp(
+        'shooting-companion-invalid-backup-test-',
+      );
+      final documents = Directory(path.join(workspace.path, 'documents'));
+      final temporary = Directory(path.join(workspace.path, 'temporary'));
+      await documents.create(recursive: true);
+      await temporary.create(recursive: true);
+      final database = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(() async {
+        await database.close();
+        if (await workspace.exists()) await workspace.delete(recursive: true);
+      });
+      await database
+          .into(database.targetProfiles)
+          .insert(
+            TargetProfilesCompanion.insert(
+              versionedId: 'corrupt@1',
+              profileId: 'corrupt',
+              profileVersion: 1,
+              displayName: 'Corrupt fixture',
+              validationStatus: 'experimental',
+              profileJson: '{"schemaVersion":1}',
+              createdAtUtc: DateTime.utc(2026, 1, 1),
+            ),
+          );
+      final service = BackupService(
+        database,
+        temporaryDirectory: () async => temporary,
+        applicationDocumentsDirectory: () async => documents,
+      );
+
+      await expectLater(
+        service.createEncryptedBackup('test-password-123'),
+        throwsFormatException,
+      );
+    },
+  );
+
+  test(
+    'SCB1 v8 roundtrip preserves alignment, vision, training and media',
     () async {
       final workspace = await Directory.systemTemp.createTemp(
         'shooting-companion-backup-test-',
@@ -405,13 +666,7 @@ void main() {
       });
 
       final now = DateTime.utc(2026, 1, 2, 9);
-      final targetJson = jsonEncode({
-        'displayName': 'Synthetische zevenring',
-        'rings': [
-          {'value': 7},
-          {'value': 3},
-        ],
-      });
+      final targetJson = _validTargetJson(profileId: 'target');
       await database
           .into(database.cartridges)
           .insert(
@@ -495,6 +750,23 @@ void main() {
             ),
           );
       await database
+          .into(database.visionAnalyses)
+          .insert(
+            VisionAnalysesCompanion.insert(
+              id: 'vision-analysis-1',
+              seriesId: 'series-1',
+              imageId: 'image-1',
+              engineVersion: 'vision-core-test',
+              backendVersion: 'opencv-4.13.0',
+              qualityJson: '{"status":"accepted"}',
+              registrationJson:
+                  '{"status":"registered","orderedSourceCornersNormalized":[]}',
+              candidatesJson: '[]',
+              reviewJson: '{"schemaVersion":1,"entries":[]}',
+              createdAtUtc: now,
+            ),
+          );
+      await database
           .into(database.shotImpacts)
           .insert(
             const ShotImpactsCompanion(
@@ -507,6 +779,9 @@ void main() {
               imageYNormalized: Value(0.5),
               multiplicity: Value(2),
               scoreValue: Value(7),
+              placementMethod: Value('assistedEdited'),
+              visionAnalysisId: Value('vision-analysis-1'),
+              positionalUncertaintyMm: Value(0.7),
             ),
           );
       await database
@@ -516,7 +791,50 @@ void main() {
               imageId: 'image-1',
               cornersJson: '[[0,0],[1,0],[1,1],[0,1]]',
               matrixJson: '[1,0,0,0,1,0,0,0,1]',
-              algorithmVersion: 'manual-homography-v1',
+              algorithmVersion: 'ring-assisted-homography-v1',
+              rotationQuarterTurns: const Value(3),
+              alignmentMode: const Value('ringAssisted'),
+              anchorsJson: const Value('{"schemaVersion":2,"anchors":[]}'),
+              reprojectionRmsMm: const Value(0.42),
+              reprojectionMaxMm: const Value(0.9),
+              planarityStatus: const Value('accepted'),
+              confirmedAtUtc: Value(now),
+              updatedAtUtc: now,
+            ),
+          );
+      final draftBytes = utf8.encode('synthetic-vision-draft-photo');
+      final draftHash = sha256.convert(draftBytes).toString();
+      final draftFile = File(path.join(originals.path, 'vision-draft.jpg'));
+      await draftFile.writeAsBytes(draftBytes, flush: true);
+      await database
+          .into(database.visionScanDrafts)
+          .insert(
+            VisionScanDraftsCompanion.insert(
+              id: 'vision-draft-1',
+              status: 'reviewNeeded',
+              originalImagePath: draftFile.path,
+              sha256: draftHash,
+              width: 20,
+              height: 20,
+              sizeBytes: draftBytes.length,
+              targetProfileJson: targetJson,
+              projectileDiameterMm: 5.6,
+              qualityJson: const Value('{"status":"review"}'),
+              registrationJson: const Value('{"status":"registered"}'),
+              candidatesJson: const Value('[]'),
+              reviewJson: const Value('{"schemaVersion":1,"entries":[]}'),
+              engineVersion: const Value('vision-core-test'),
+              rotationQuarterTurns: const Value(1),
+              alignmentMode: const Value('ringAssisted'),
+              anchorsJson: const Value('{"schemaVersion":2,"anchors":[]}'),
+              reprojectionRmsMm: const Value(0.5),
+              reprojectionMaxMm: const Value(1.0),
+              planarityStatus: const Value('manualReviewOnly'),
+              alignmentAlgorithmVersion: const Value(
+                'ring-assisted-homography-v1',
+              ),
+              alignmentConfirmedAtUtc: Value(now),
+              createdAtUtc: now,
               updatedAtUtc: now,
             ),
           );
@@ -701,7 +1019,7 @@ void main() {
         backup,
         'test-password-123',
       );
-      expect(inspected.formatVersion, 6);
+      expect(inspected.formatVersion, 8);
       expect(inspected.sessionCount, 1);
       expect(inspected.seriesCount, 1);
       expect(inspected.imageCount, 1);
@@ -710,13 +1028,15 @@ void main() {
       await database.delete(database.preferences).go();
       await database.delete(database.timerPresets).go();
       await database.delete(database.acousticCalibrationProfiles).go();
+      await database.delete(database.visionScanDrafts).go();
       if (await original.exists()) await original.delete();
+      if (await draftFile.exists()) await draftFile.delete();
 
       final restored = await service.restoreEncryptedBackup(
         backup,
         'test-password-123',
       );
-      expect(restored.summary.formatVersion, 6);
+      expect(restored.summary.formatVersion, 8);
       expect(
         await database.select(database.trainingSessions).get(),
         hasLength(1),
@@ -730,15 +1050,44 @@ void main() {
           (await database.select(database.shotImpacts).get()).single;
       expect(restoredImpact.sourceImageId, 'image-1');
       expect(restoredImpact.multiplicity, 2);
+      expect(restoredImpact.placementMethod, 'assistedEdited');
+      expect(restoredImpact.visionAnalysisId, 'vision-analysis-1');
+      expect(restoredImpact.positionalUncertaintyMm, 0.7);
+      final restoredAnalysis =
+          (await database.select(database.visionAnalyses).get()).single;
+      expect(restoredAnalysis.engineVersion, 'vision-core-test');
+      expect(restoredAnalysis.backendVersion, 'opencv-4.13.0');
+      final restoredDraft =
+          (await database.select(database.visionScanDrafts).get()).single;
+      expect(restoredDraft.status, 'reviewNeeded');
+      expect(restoredDraft.rotationQuarterTurns, 1);
+      expect(restoredDraft.alignmentMode, 'ringAssisted');
+      expect(restoredDraft.anchorsJson, '{"schemaVersion":2,"anchors":[]}');
+      expect(restoredDraft.reprojectionRmsMm, 0.5);
+      expect(restoredDraft.reprojectionMaxMm, 1.0);
+      expect(restoredDraft.planarityStatus, 'manualReviewOnly');
+      expect(
+        restoredDraft.alignmentAlgorithmVersion,
+        'ring-assisted-homography-v1',
+      );
+      expect(restoredDraft.alignmentConfirmedAtUtc?.toUtc(), now);
+      expect(
+        await File(restoredDraft.originalImagePath).readAsBytes(),
+        draftBytes,
+      );
       final restoredImage =
           (await database.select(database.imageAssets).get()).single;
       expect(await File(restoredImage.path).readAsBytes(), imageBytes);
-      expect(
-        (await database.select(database.photoAlignments).get())
-            .single
-            .algorithmVersion,
-        'manual-homography-v1',
-      );
+      final restoredAlignment =
+          (await database.select(database.photoAlignments).get()).single;
+      expect(restoredAlignment.algorithmVersion, 'ring-assisted-homography-v1');
+      expect(restoredAlignment.rotationQuarterTurns, 3);
+      expect(restoredAlignment.alignmentMode, 'ringAssisted');
+      expect(restoredAlignment.anchorsJson, '{"schemaVersion":2,"anchors":[]}');
+      expect(restoredAlignment.reprojectionRmsMm, 0.42);
+      expect(restoredAlignment.reprojectionMaxMm, 0.9);
+      expect(restoredAlignment.planarityStatus, 'accepted');
+      expect(restoredAlignment.confirmedAtUtc?.toUtc(), now);
       final restoredPreferences = {
         for (final item in await database.select(database.preferences).get())
           item.key: item.value,
@@ -976,7 +1325,21 @@ Map<String, dynamic> _v1Data({
     },
   ],
   'impacts': impacts
-      .map((impact) => {'origin': 'manual', 'confidence': null, ...impact})
+      .map(
+        (impact) => {
+          'origin': 'manual',
+          'confidence': null,
+          'xMm': 0.0,
+          'yMm': 0.0,
+          'multiplicity': 1,
+          'isMiss': false,
+          'isPositionUncertain': false,
+          'scoreValue': 0,
+          'isInnerTen': false,
+          'isBoundaryUncertain': false,
+          ...impact,
+        },
+      )
       .toList(),
   'images': images,
   'firearms': <Map<String, dynamic>>[],
@@ -1003,6 +1366,83 @@ Map<String, dynamic> _v1Data({
     {'id': 'discard-me-too'},
   ],
 };
+
+String _validTargetJson({String profileId = 'runtime-target'}) => jsonEncode({
+  'schemaVersion': 1,
+  'profileId': profileId,
+  'profileVersion': 1,
+  'displayName': 'Runtime target',
+  'authority': 'Test',
+  'rulesEdition': 'Fixture',
+  'targetKind': 'concentricRings',
+  'physicalCardWidthMm': 200.0,
+  'physicalCardHeightMm': 200.0,
+  'rings': [
+    {'value': 10, 'outerDiameterMm': 20.0},
+    {'value': 9, 'outerDiameterMm': 40.0},
+  ],
+  'innerTenDiameterMm': 10.0,
+  'blackOuterDiameterMm': 40.0,
+  'lineThicknessMm': 0.2,
+  'lineBreakingRule': 'bulletEdgeTouchesHigherRing',
+  'validationStatus': 'experimental',
+  'defaultDistanceMeters': 25.0,
+  'supportedDistancesMeters': [25.0],
+  'bulls': <Object?>[],
+  'multiBullScoringPolicy': null,
+  'rendererKind': 'standard',
+});
+
+String _validMultiBullTargetJson({bool duplicateBullIds = false}) =>
+    jsonEncode({
+      'schemaVersion': 2,
+      'profileId': 'multi-target',
+      'profileVersion': 1,
+      'displayName': 'Multi target',
+      'authority': 'Test',
+      'rulesEdition': 'Fixture',
+      'targetKind': 'multiBullConcentric',
+      'physicalCardWidthMm': 200.0,
+      'physicalCardHeightMm': 100.0,
+      'rings': [
+        {'value': 10, 'outerDiameterMm': 20.0},
+      ],
+      'innerTenDiameterMm': 5.0,
+      'blackOuterDiameterMm': 20.0,
+      'lineThicknessMm': 0.2,
+      'lineBreakingRule': 'bulletEdgeTouchesHigherRing',
+      'validationStatus': 'experimental',
+      'defaultDistanceMeters': 50.0,
+      'supportedDistancesMeters': [50.0],
+      'bulls': [
+        {
+          'id': 'left',
+          'label': '1',
+          'centerXMm': -50.0,
+          'centerYMm': 0.0,
+          'role': 'record',
+          'scoringWidthMm': 40.0,
+          'scoringHeightMm': 40.0,
+        },
+        {
+          'id': duplicateBullIds ? 'left' : 'right',
+          'label': '2',
+          'centerXMm': 50.0,
+          'centerYMm': 0.0,
+          'role': 'record',
+          'scoringWidthMm': 40.0,
+          'scoringHeightMm': 40.0,
+        },
+      ],
+      'multiBullScoringPolicy': {
+        'recordBullCount': 2,
+        'maximumShotsPerBull': 1,
+        'duplicatePolicy': 'lowestScoreCounts',
+        'excessShotPenalty': 1,
+        'fixedMaximumScore': 20,
+      },
+      'rendererKind': 'standard',
+    });
 
 Future<File> _writeEncryptedFixture({
   required Directory directory,

@@ -5,6 +5,7 @@ import 'dart:math' as math;
 
 import 'package:drift/drift.dart';
 import 'package:shooting_companion_domain/domain.dart' as domain;
+import 'package:shooting_companion_photo_geometry/photo_geometry.dart' as geo;
 import 'package:shooting_companion_scoring/scoring.dart';
 import 'package:shooting_companion_target_profiles/target_profiles.dart';
 import 'package:uuid/uuid.dart';
@@ -2450,30 +2451,47 @@ class ShootingRepository {
         await _touchSession(image.sessionId, now);
       });
 
-  Future<void> savePhotoAlignment(
-    domain.StoredPhotoAlignment alignment,
-  ) => database.transaction(() async {
-    final image = await _image(alignment.imageId);
-    if (image == null ||
-        image.seriesId == null ||
-        image.role != domain.ImageRole.primaryScoringPhoto.name) {
-      throw StateError('Alleen een primaire scorefoto kan worden uitgelijnd.');
-    }
-    await database
-        .into(database.photoAlignments)
-        .insertOnConflictUpdate(
-          PhotoAlignmentsCompanion.insert(
-            imageId: alignment.imageId,
-            cornersJson: jsonEncode(
-              alignment.orderedCorners.map((point) => point.toJson()).toList(),
-            ),
-            matrixJson: jsonEncode(alignment.homographyMatrix),
-            algorithmVersion: alignment.algorithmVersion,
-            updatedAtUtc: alignment.updatedAtUtc.toUtc(),
-          ),
+  Future<void> savePhotoAlignment(domain.StoredPhotoAlignment alignment) =>
+      database.transaction(() async {
+        final image = await _image(alignment.imageId);
+        if (image == null ||
+            image.seriesId == null ||
+            image.role != domain.ImageRole.primaryScoringPhoto.name) {
+          throw StateError(
+            'Alleen een primaire scorefoto kan worden uitgelijnd.',
+          );
+        }
+        final series = await _series(image.seriesId!);
+        if (series == null) throw StateError('De reeks bestaat niet meer.');
+        final target = domain.TargetProfile.fromJsonString(
+          series.targetProfileJson,
         );
-    await _touchSession(image.sessionId, alignment.updatedAtUtc.toUtc());
-  });
+        target.validateRuntime().requireValid(argumentName: 'target');
+        final checked = _validateAlignment(alignment, target: target);
+        await database
+            .into(database.photoAlignments)
+            .insertOnConflictUpdate(
+              PhotoAlignmentsCompanion.insert(
+                imageId: alignment.imageId,
+                cornersJson: jsonEncode(
+                  checked.geometry.corners.points
+                      .map((point) => point.toJson())
+                      .toList(),
+                ),
+                matrixJson: jsonEncode(checked.geometry.homographyMatrix),
+                algorithmVersion: checked.geometry.algorithmVersion,
+                rotationQuarterTurns: Value(alignment.rotationQuarterTurns),
+                alignmentMode: Value(checked.persistedMode),
+                anchorsJson: Value(checked.anchorsJson),
+                reprojectionRmsMm: Value(checked.geometry.residuals.rmsMm),
+                reprojectionMaxMm: Value(checked.geometry.residuals.maximumMm),
+                planarityStatus: Value(checked.planarityStatus),
+                confirmedAtUtc: Value(checked.confirmedAtUtc),
+                updatedAtUtc: alignment.updatedAtUtc.toUtc(),
+              ),
+            );
+        await _touchSession(image.sessionId, alignment.updatedAtUtc.toUtc());
+      });
 
   /// Stores a new alignment and the recalculated positions that depend on its
   /// primary image as one indivisible operation.
@@ -2491,7 +2509,7 @@ class ShootingRepository {
   }) => database.transaction(() async {
     final series = await _series(seriesId);
     if (series == null) throw StateError('De reeks bestaat niet.');
-    if (projectileDiameterMm <= 0) {
+    if (!projectileDiameterMm.isFinite || projectileDiameterMm <= 0) {
       throw ArgumentError.value(
         projectileDiameterMm,
         'projectileDiameterMm',
@@ -2516,15 +2534,34 @@ class ShootingRepository {
       throw StateError('Deze foto kan niet als primaire scorefoto dienen.');
     }
 
+    target.validateRuntime().requireValid(argumentName: 'target');
+    final checkedAlignment = _validateAlignment(alignment, target: target);
+
+    // Image coordinates are canonical: they always refer to the immutable,
+    // EXIF-normalized original.  A rotation is a view/alignment concern only.
+    // The old alignment is loaded deliberately so legacy view-relative data
+    // can be detected before it is silently reinterpreted.
+    final previousAlignmentRecord = await (database.select(
+      database.photoAlignments,
+    )..where((row) => row.imageId.equals(alignment.imageId))).getSingleOrNull();
+    final previousAlignment = previousAlignmentRecord == null
+        ? null
+        : _tryDecodePersistedAlignment(previousAlignmentRecord, target: target);
+
     final existingRecords = await (database.select(
       database.shotImpacts,
     )..where((row) => row.seriesId.equals(seriesId))).get();
     final existingById = {
       for (final impact in existingRecords) impact.id: impact,
     };
-    final resultingById = {
-      for (final impact in resultingImpacts) impact.id: impact,
-    };
+    final resultingById = <String, domain.ShotImpact>{};
+    for (var index = 0; index < resultingImpacts.length; index++) {
+      final impact = resultingImpacts[index];
+      impact.validateRuntime().requireValid(
+        argumentName: 'resultingImpacts[$index]',
+      );
+      resultingById[impact.id] = impact;
+    }
     if (resultingById.length != resultingImpacts.length ||
         resultingById.length != existingById.length ||
         !resultingById.keys.toSet().containsAll(existingById.keys)) {
@@ -2533,6 +2570,7 @@ class ShootingRepository {
       );
     }
 
+    final authoritativeImpacts = <domain.ShotImpact>[];
     for (final entry in existingById.entries) {
       final existing = entry.value;
       final resulting = resultingById[entry.key]!;
@@ -2550,16 +2588,70 @@ class ShootingRepository {
             'foto-afhankelijke treffers wijzigen.',
           );
         }
+
+        final storedSourcePoint = geo.NormalizedPoint(
+          existing.imageXNormalized!,
+          existing.imageYNormalized!,
+        );
+        if (!storedSourcePoint.isInsideImage) {
+          throw StateError(
+            'Een foto-afhankelijke treffer heeft ongeldige broncoordinaten.',
+          );
+        }
+        final originalPoint = _canonicalOriginalSourcePoint(
+          existing: existing,
+          storedSourcePoint: storedSourcePoint,
+          previousAlignment: previousAlignment,
+        );
+        final rotatedPoint = geo.rotateNormalizedPoint(
+          originalPoint,
+          alignment.rotationQuarterTurns,
+        );
+        final physical = checkedAlignment.geometry.normalizedToPhysical(
+          rotatedPoint,
+        );
+        final authoritative = _domainImpact(existing).copyWith(
+          xMm: physical.x,
+          yMm: physical.y,
+          imageXNormalized: originalPoint.x,
+          imageYNormalized: originalPoint.y,
+          targetBullId:
+              target.targetKind == domain.TargetKind.multiBullConcentric
+              ? target.bullAt(physical.x, physical.y, recordOnly: true)?.id
+              : existing.targetBullId,
+          clearTargetBull:
+              target.targetKind == domain.TargetKind.multiBullConcentric &&
+              target.bullAt(physical.x, physical.y, recordOnly: true) == null,
+        );
+        if ((resulting.xMm - authoritative.xMm).abs() >
+                _alignmentPreviewToleranceMm ||
+            (resulting.yMm - authoritative.yMm).abs() >
+                _alignmentPreviewToleranceMm) {
+          throw StateError(
+            'De getoonde uitlijningspreview wijkt af van de autoritatieve '
+            'herberekening.',
+          );
+        }
+        authoritative.validateRuntime().requireValid(
+          argumentName: 'authoritativeImpacts[${entry.key}]',
+        );
+        authoritativeImpacts.add(authoritative);
       } else if (!_sameStoredImpact(existing, resulting)) {
         throw StateError(
           'Heruitlijning mag handmatige of andere fototreffers niet wijzigen.',
         );
+      } else {
+        final authoritative = _domainImpact(existing);
+        authoritative.validateRuntime().requireValid(
+          argumentName: 'authoritativeImpacts[${entry.key}]',
+        );
+        authoritativeImpacts.add(authoritative);
       }
     }
 
     final score = ScoreEngine.score(
       target: target,
-      impacts: resultingImpacts,
+      impacts: authoritativeImpacts,
       projectileDiameterMm: projectileDiameterMm,
     );
     final updatedAtUtc = alignment.updatedAtUtc.toUtc();
@@ -2605,10 +2697,21 @@ class ShootingRepository {
           PhotoAlignmentsCompanion.insert(
             imageId: alignment.imageId,
             cornersJson: jsonEncode(
-              alignment.orderedCorners.map((point) => point.toJson()).toList(),
+              checkedAlignment.geometry.corners.points
+                  .map((point) => point.toJson())
+                  .toList(),
             ),
-            matrixJson: jsonEncode(alignment.homographyMatrix),
-            algorithmVersion: alignment.algorithmVersion,
+            matrixJson: jsonEncode(checkedAlignment.geometry.homographyMatrix),
+            algorithmVersion: checkedAlignment.geometry.algorithmVersion,
+            rotationQuarterTurns: Value(alignment.rotationQuarterTurns),
+            alignmentMode: Value(checkedAlignment.persistedMode),
+            anchorsJson: Value(checkedAlignment.anchorsJson),
+            reprojectionRmsMm: Value(checkedAlignment.geometry.residuals.rmsMm),
+            reprojectionMaxMm: Value(
+              checkedAlignment.geometry.residuals.maximumMm,
+            ),
+            planarityStatus: Value(checkedAlignment.planarityStatus),
+            confirmedAtUtc: Value(checkedAlignment.confirmedAtUtc),
             updatedAtUtc: updatedAtUtc,
           ),
         );
@@ -2619,6 +2722,11 @@ class ShootingRepository {
           existing.sourceImageId == alignment.imageId &&
           existing.imageXNormalized != null &&
           existing.imageYNormalized != null;
+      if (!dependsOnPhoto) {
+        // The score aggregate is recalculated from all impacts, but a photo
+        // realignment must leave every stored non-photo impact byte-identical.
+        continue;
+      }
       final changed =
           await (database.update(database.shotImpacts)..where(
                 (row) =>
@@ -2627,12 +2735,10 @@ class ShootingRepository {
               ))
               .write(
                 ShotImpactsCompanion(
-                  xMm: dependsOnPhoto
-                      ? Value(shot.impact.xMm)
-                      : const Value.absent(),
-                  yMm: dependsOnPhoto
-                      ? Value(shot.impact.yMm)
-                      : const Value.absent(),
+                  xMm: Value(shot.impact.xMm),
+                  yMm: Value(shot.impact.yMm),
+                  imageXNormalized: Value(shot.impact.imageXNormalized),
+                  imageYNormalized: Value(shot.impact.imageYNormalized),
                   scoreValue: Value(shot.value),
                   rawScoreValue: Value(shot.value),
                   targetBullId: Value(shot.targetBullId),
@@ -2931,6 +3037,11 @@ class ShootingRepository {
               scoreDisposition: Value(shot.disposition.name),
               isInnerTen: Value(shot.isInnerTen),
               isBoundaryUncertain: Value(shot.isBoundaryUncertain),
+              placementMethod: Value(shot.impact.placementMethod.name),
+              visionAnalysisId: Value(shot.impact.visionAnalysisId),
+              positionalUncertaintyMm: Value(
+                shot.impact.positionalUncertaintyMm,
+              ),
             ),
           );
     }
@@ -3395,6 +3506,179 @@ class ShootingRepository {
     }
   }
 
+  _ValidatedPhotoAlignment _validateAlignment(
+    domain.StoredPhotoAlignment alignment, {
+    required domain.TargetProfile target,
+  }) {
+    final reportedStatus = alignment.planarityStatus.trim().toLowerCase();
+    if (reportedStatus == 'rejected' ||
+        reportedStatus == 'unstable' ||
+        reportedStatus == 'unknown') {
+      throw StateError('Deze uitlijning is afgekeurd of numeriek onstabiel.');
+    }
+    final mode = switch (alignment.alignmentMode.trim()) {
+      'fullCard' || 'fourCorners' => geo.PhotoAlignmentMode.fourCorners,
+      'ringAssisted' => geo.PhotoAlignmentMode.ringAssisted,
+      _ => throw StateError('Onbekende foto-uitlijningsmodus.'),
+    };
+    Object? decodedAnchors;
+    if (alignment.anchorsJson != null) {
+      try {
+        decodedAnchors = jsonDecode(alignment.anchorsJson!);
+      } on Object {
+        throw StateError('De opgeslagen uitlijningsankers zijn ongeldig.');
+      }
+      if (decodedAnchors is! List) {
+        throw StateError('De opgeslagen uitlijningsankers zijn ongeldig.');
+      }
+    } else if (mode == geo.PhotoAlignmentMode.ringAssisted) {
+      throw StateError('Ringuitlijning vereist opgeslagen ankers.');
+    }
+
+    final points = alignment.orderedCorners
+        .map((point) => geo.NormalizedPoint(point.x, point.y))
+        .toList(growable: false);
+    final payload = <String, Object?>{
+      'schemaVersion': geo.photoAlignmentSchemaVersion,
+      'algorithmVersion': alignment.algorithmVersion,
+      'alignmentMode': mode.name,
+      'anchors': ?decodedAnchors,
+      'cardWidthMm': target.physicalCardWidthMm,
+      'cardHeightMm': target.physicalCardHeightMm,
+      'corners': geo.NormalizedQuad.fromOrderedPoints(points).toJson(),
+      'homographyMatrix': alignment.homographyMatrix,
+      'rotationQuarterTurns': alignment.rotationQuarterTurns,
+    };
+    late final geo.ManualPhotoAlignment geometry;
+    try {
+      geometry = geo.ManualPhotoAlignment.fromJson(payload);
+    } on Object catch (error) {
+      throw StateError('De foto-uitlijning is ongeldig: $error');
+    }
+    final residuals = geometry.residuals;
+    if (!residuals.conditionEstimate.isFinite ||
+        residuals.conditionEstimate > 1e10) {
+      throw StateError('De foto-uitlijning is numeriek onstabiel.');
+    }
+    for (final pair in [
+      (alignment.reprojectionRmsMm, residuals.rmsMm),
+      (alignment.reprojectionMaxMm, residuals.maximumMm),
+    ]) {
+      final supplied = pair.$1;
+      if (supplied != null &&
+          (supplied - pair.$2).abs() > _alignmentPreviewToleranceMm) {
+        throw StateError(
+          'De opgegeven uitlijningsresiduen wijken af van de '
+          'autoritatieve herberekening.',
+        );
+      }
+    }
+    final planarityStatus = switch ((residuals.rmsMm, residuals.maximumMm)) {
+      (final rms, final maximum) when rms <= 0.75 && maximum <= 1.5 =>
+        'accepted',
+      (final rms, final maximum) when rms <= 1.5 && maximum <= 3.0 =>
+        'manualReviewOnly',
+      _ => throw StateError(
+        'De foto-uitlijning overschrijdt de toegestane foutmarge.',
+      ),
+    };
+    return _ValidatedPhotoAlignment(
+      geometry: geometry,
+      persistedMode: mode == geo.PhotoAlignmentMode.fourCorners
+          ? 'fullCard'
+          : 'ringAssisted',
+      anchorsJson: jsonEncode(
+        geometry.anchors.map((anchor) => anchor.toJson()).toList(),
+      ),
+      planarityStatus: planarityStatus,
+      confirmedAtUtc:
+          alignment.confirmedAtUtc?.toUtc() ?? alignment.updatedAtUtc.toUtc(),
+    );
+  }
+
+  _PersistedPhotoAlignment? _tryDecodePersistedAlignment(
+    PhotoAlignmentRecord record, {
+    required domain.TargetProfile target,
+  }) {
+    try {
+      final matrix = (jsonDecode(record.matrixJson) as List<Object?>)
+          .map((value) => (value! as num).toDouble())
+          .toList(growable: false);
+      if (record.rotationQuarterTurns < 0 ||
+          record.rotationQuarterTurns > 3 ||
+          target.physicalCardWidthMm <= 0 ||
+          target.physicalCardHeightMm <= 0) {
+        return null;
+      }
+      return _PersistedPhotoAlignment(
+        transform: geo.ProjectiveTransform(matrix),
+        rotationQuarterTurns: record.rotationQuarterTurns,
+      );
+    } on Object {
+      // A malformed legacy alignment must not be allowed to redefine the
+      // canonical source coordinate. The new alignment remains authoritative.
+      return null;
+    }
+  }
+
+  geo.NormalizedPoint _canonicalOriginalSourcePoint({
+    required ImpactRecord existing,
+    required geo.NormalizedPoint storedSourcePoint,
+    required _PersistedPhotoAlignment? previousAlignment,
+  }) {
+    if (previousAlignment == null ||
+        previousAlignment.rotationQuarterTurns == 0) {
+      return storedSourcePoint;
+    }
+
+    // Schema 8 defines stored image coordinates in the immutable original
+    // EXIF-normalized image. A short-lived pre-schema implementation stored
+    // coordinates in the rotated view. Detect that representation against the
+    // previous physical position and migrate it deterministically.
+    final canonicalProjection = previousAlignment.fromOriginal(
+      storedSourcePoint,
+    );
+    final legacyProjection = previousAlignment.fromDisplayed(storedSourcePoint);
+    final canonicalError = math.sqrt(
+      math.pow(canonicalProjection.x - existing.xMm, 2) +
+          math.pow(canonicalProjection.y - existing.yMm, 2),
+    );
+    final legacyError = math.sqrt(
+      math.pow(legacyProjection.x - existing.xMm, 2) +
+          math.pow(legacyProjection.y - existing.yMm, 2),
+    );
+    if (legacyError + _alignmentPreviewToleranceMm < canonicalError &&
+        legacyError <= 3.0) {
+      return geo.unrotateNormalizedPoint(
+        storedSourcePoint,
+        previousAlignment.rotationQuarterTurns,
+      );
+    }
+    return storedSourcePoint;
+  }
+
+  domain.ShotImpact _domainImpact(ImpactRecord record) => domain.ShotImpact(
+    id: record.id,
+    xMm: record.xMm,
+    yMm: record.yMm,
+    sourceImageId: record.sourceImageId,
+    imageXNormalized: record.imageXNormalized,
+    imageYNormalized: record.imageYNormalized,
+    multiplicity: record.multiplicity,
+    isMiss: record.isMiss,
+    isPositionUncertain: record.isPositionUncertain,
+    targetBullId: record.targetBullId,
+    rawScoreValue: record.rawScoreValue,
+    scoreDisposition: domain.ScoreDisposition.values.byName(
+      record.scoreDisposition,
+    ),
+    placementMethod: domain.ImpactPlacementMethod.values.byName(
+      record.placementMethod,
+    ),
+    visionAnalysisId: record.visionAnalysisId,
+    positionalUncertaintyMm: record.positionalUncertaintyMm,
+  );
+
   bool _sameImpactMetadata(
     ImpactRecord existing,
     domain.ShotImpact resulting,
@@ -3405,17 +3689,62 @@ class ShootingRepository {
       existing.imageYNormalized == resulting.imageYNormalized &&
       existing.multiplicity == resulting.multiplicity &&
       existing.isMiss == resulting.isMiss &&
-      existing.isPositionUncertain == resulting.isPositionUncertain;
+      existing.isPositionUncertain == resulting.isPositionUncertain &&
+      existing.placementMethod == resulting.placementMethod.name &&
+      existing.visionAnalysisId == resulting.visionAnalysisId &&
+      existing.positionalUncertaintyMm == resulting.positionalUncertaintyMm;
 
   bool _sameStoredImpact(ImpactRecord existing, domain.ShotImpact resulting) =>
       _sameImpactMetadata(existing, resulting) &&
       existing.targetBullId == resulting.targetBullId &&
+      existing.rawScoreValue == resulting.rawScoreValue &&
+      existing.scoreDisposition == resulting.scoreDisposition.name &&
       existing.xMm == resulting.xMm &&
       existing.yMm == resulting.yMm;
 
   String? _nullIfBlank(String? value) {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
+}
+
+const double _alignmentPreviewToleranceMm = 0.05;
+
+class _ValidatedPhotoAlignment {
+  const _ValidatedPhotoAlignment({
+    required this.geometry,
+    required this.persistedMode,
+    required this.anchorsJson,
+    required this.planarityStatus,
+    required this.confirmedAtUtc,
+  });
+
+  final geo.ManualPhotoAlignment geometry;
+  final String persistedMode;
+  final String anchorsJson;
+  final String planarityStatus;
+  final DateTime confirmedAtUtc;
+}
+
+class _PersistedPhotoAlignment {
+  const _PersistedPhotoAlignment({
+    required this.transform,
+    required this.rotationQuarterTurns,
+  });
+
+  final geo.ProjectiveTransform transform;
+  final int rotationQuarterTurns;
+
+  geo.PhysicalPointMm fromOriginal(geo.NormalizedPoint original) {
+    final displayed = geo.rotateNormalizedPoint(original, rotationQuarterTurns);
+    return fromDisplayed(displayed);
+  }
+
+  geo.PhysicalPointMm fromDisplayed(geo.NormalizedPoint displayed) {
+    final mapped = transform.apply(
+      geo.TransformPoint(displayed.x, displayed.y),
+    );
+    return geo.PhysicalPointMm(mapped.x, mapped.y);
   }
 }
 

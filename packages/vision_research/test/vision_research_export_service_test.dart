@@ -50,7 +50,7 @@ void main() {
     expect(decoded.targetProfileSnapshot.versionedId, 'test-target@1');
     expect(
       decoded.alignment.algorithmVersion,
-      geometry.manualHomographyAlgorithmVersion,
+      geometry.manualHomographyV2AlgorithmVersion,
     );
 
     final sanitizedText = latin1.decode(

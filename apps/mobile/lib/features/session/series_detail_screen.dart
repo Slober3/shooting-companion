@@ -311,6 +311,7 @@ class _SeriesDetailBody extends ConsumerWidget {
       if (alignment != null) {
         overlayData = PhotoViewerOverlayData(
           alignment: alignment,
+          targetProfile: detail.target,
           projectileDiameterMm: detail.series.projectileDiameterMm,
           impacts: [
             for (var index = 0; index < detail.impacts.length; index++)
@@ -485,6 +486,7 @@ class _TargetPreview extends StatelessWidget {
         imageProvider: FileImage(File(image.path)),
         imagePixelSize: Size(image.width.toDouble(), image.height.toDouble()),
         alignment: alignment,
+        targetProfile: detail.target,
         projectileDiameterMm: detail.series.projectileDiameterMm,
         accessMode: CanvasAccessMode.readOnly,
         impacts: [
@@ -541,8 +543,16 @@ geo.ManualPhotoAlignment? _decodeAlignment(SeriesDetail detail) {
           ),
         )
         .toList();
+    final decodedAnchors = record.anchorsJson == null
+        ? null
+        : jsonDecode(record.anchorsJson!);
     return geo.ManualPhotoAlignment.fromJson({
+      'schemaVersion': geo.photoAlignmentSchemaVersion,
       'algorithmVersion': record.algorithmVersion,
+      'alignmentMode': record.alignmentMode == 'fullCard'
+          ? geo.PhotoAlignmentMode.fourCorners.name
+          : record.alignmentMode,
+      'anchors': ?decodedAnchors,
       'cardWidthMm': detail.target.physicalCardWidthMm,
       'cardHeightMm': detail.target.physicalCardHeightMm,
       'corners': geo.NormalizedQuad.fromOrderedPoints(corners).toJson(),
@@ -550,6 +560,7 @@ geo.ManualPhotoAlignment? _decodeAlignment(SeriesDetail detail) {
           .cast<num>()
           .map((value) => value.toDouble())
           .toList(),
+      'rotationQuarterTurns': record.rotationQuarterTurns,
     });
   } catch (_) {
     return null;

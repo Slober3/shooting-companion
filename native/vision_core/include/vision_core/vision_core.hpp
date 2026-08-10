@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <map>
 #include <optional>
@@ -8,8 +9,8 @@
 
 namespace sc::vision {
 
-inline constexpr std::uint32_t kAbiVersion = 1;
-inline constexpr const char* kEngineVersion = "vision-core-0.1.0";
+inline constexpr std::uint32_t kAbiVersion = 2;
+inline constexpr const char* kEngineVersion = "vision-core-0.2.0";
 
 enum class AnalysisStatus { completed, unsupported, not_analyzed, failed };
 enum class QualityStatus { accepted, review, rejected, not_analyzed, unsupported };
@@ -82,23 +83,40 @@ struct QualityAssessment {
 
 struct RegistrationResult {
   RegistrationStatus status = RegistrationStatus::not_analyzed;
-  std::vector<Point> ordered_normalized_corners;
-  std::optional<std::vector<double>> homography_matrix;
+  std::vector<Point> ordered_source_corners_normalized;
+  std::optional<std::vector<double>> source_normalized_to_card_mm_homography;
   std::optional<double> reprojection_error_px;
   std::optional<double> estimated_perspective_angle_degrees;
   std::optional<std::string> algorithm_version;
 };
 
 struct CandidateImpact {
+  struct Evidence {
+    double local_contrast = 0.0;
+    double dark_core_contrast = 0.0;
+    double fiber_edge_contrast = 0.0;
+    double diameter_ratio = 0.0;
+    double circularity = 0.0;
+    double raggedness = 0.0;
+    double ring_line_overlap_fraction = 0.0;
+    double uniform_patch_edge_overlap_fraction = 0.0;
+    double black_zone_fraction = 0.0;
+    int distance_transform_peak_count = 0;
+    bool possible_overlap = false;
+    std::string zone;
+  };
+
   std::string id;
-  double image_x_normalized = 0.0;
-  double image_y_normalized = 0.0;
-  double x_mm = 0.0;
-  double y_mm = 0.0;
+  double source_image_x_normalized = 0.0;
+  double source_image_y_normalized = 0.0;
+  double card_x_mm = 0.0;
+  double card_y_mm = 0.0;
   double estimated_diameter_mm = 0.0;
   ConfidenceBand confidence = ConfidenceBand::low;
   std::vector<std::string> reasons;
   double boundary_uncertainty_mm = 0.0;
+  bool near_scoring_boundary = false;
+  Evidence evidence;
 };
 
 struct Warning {
@@ -121,11 +139,20 @@ struct ProcessingOptions {
 };
 
 struct AnalyzeRequest {
+  std::string job_id;
   std::string image_path;
   double card_width_mm = 0.0;
   double card_height_mm = 0.0;
   double projectile_diameter_mm = 0.0;
+  double line_thickness_mm = 0.0;
+  std::vector<double> ring_outer_diameters_mm;
+  std::optional<std::vector<Point>> manual_source_corners_normalized;
+  const std::atomic_bool* cancellation_flag = nullptr;
   ProcessingOptions options;
+
+  [[nodiscard]] bool cancelled() const noexcept {
+    return cancellation_flag != nullptr && cancellation_flag->load();
+  }
 };
 
 struct AnalyzeResult {

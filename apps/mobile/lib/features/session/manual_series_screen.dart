@@ -394,6 +394,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
         imageProvider: FileImage(File(image.path)),
         imagePixelSize: Size(image.width.toDouble(), image.height.toDouble()),
         alignment: alignment,
+        targetProfile: _target,
         projectileDiameterMm: _projectileDiameterMm,
         tool: _tool,
         precisionMode: _precisionMode,
@@ -816,6 +817,11 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
     scoreDisposition: domain.ScoreDisposition.values.byName(
       record.scoreDisposition,
     ),
+    placementMethod: domain.ImpactPlacementMethod.values.byName(
+      record.placementMethod,
+    ),
+    visionAnalysisId: record.visionAnalysisId,
+    positionalUncertaintyMm: record.positionalUncertaintyMm,
   );
 
   geo.ManualPhotoAlignment? _decodeAlignment(
@@ -831,8 +837,16 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
           ),
         )
         .toList();
+    final decodedAnchors = record.anchorsJson == null
+        ? null
+        : jsonDecode(record.anchorsJson!);
     return geo.ManualPhotoAlignment.fromJson({
+      'schemaVersion': geo.photoAlignmentSchemaVersion,
       'algorithmVersion': record.algorithmVersion,
+      'alignmentMode': record.alignmentMode == 'fullCard'
+          ? geo.PhotoAlignmentMode.fourCorners.name
+          : record.alignmentMode,
+      'anchors': ?decodedAnchors,
       'cardWidthMm': target.physicalCardWidthMm,
       'cardHeightMm': target.physicalCardHeightMm,
       'corners': geo.NormalizedQuad.fromOrderedPoints(corners).toJson(),
@@ -840,6 +854,7 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
           .cast<num>()
           .map((value) => value.toDouble())
           .toList(),
+      'rotationQuarterTurns': record.rotationQuarterTurns,
     });
   }
 
@@ -1560,31 +1575,77 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
       if (!mounted) return;
       final target = _target!;
       final isCurrentPrimary = image.id == _primaryImage?.id;
+      final alignmentMode = await _choosePhotoAlignmentMode(target);
+      if (alignmentMode == null || !mounted) return;
+      final currentAlignment = isCurrentPrimary ? _alignment : null;
+      final initialRotationQuarterTurns =
+          currentAlignment?.rotationQuarterTurns ?? 0;
+      final ringRadiiMm =
+          target.rings
+              .map((ring) => ring.outerDiameterMm / 2)
+              .where((radius) => radius > 0 && radius.isFinite)
+              .toSet()
+              .toList()
+            ..sort((a, b) => b.compareTo(a));
       final alignment = await Navigator.of(context)
           .push<geo.ManualPhotoAlignment>(
             MaterialPageRoute(
               builder: (context) => Scaffold(
-                appBar: AppBar(title: const Text('Foto uitlijnen')),
+                appBar: AppBar(
+                  title: Text(
+                    alignmentMode == geo.PhotoAlignmentMode.ringAssisted
+                        ? 'Ringen uitlijnen'
+                        : 'Foto uitlijnen',
+                  ),
+                ),
                 body: SafeArea(
                   top: false,
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(16),
-                    child: FourPointAlignmentEditor(
-                      imageProvider: FileImage(File(image.path)),
-                      imagePixelSize: Size(
-                        image.width.toDouble(),
-                        image.height.toDouble(),
-                      ),
-                      cardWidthMm: target.physicalCardWidthMm,
-                      cardHeightMm: target.physicalCardHeightMm,
-                      initialCorners: isCurrentPrimary
-                          ? _alignment?.corners
-                          : null,
-                      onConfirmed: (value) => Navigator.pop(context, value),
-                      onUseAsAttachment: isCurrentPrimary
-                          ? null
-                          : () => Navigator.pop(context),
-                    ),
+                    child: alignmentMode == geo.PhotoAlignmentMode.ringAssisted
+                        ? RingAssistedAlignmentEditor(
+                            imageProvider: FileImage(File(image.path)),
+                            imagePixelSize: Size(
+                              image.width.toDouble(),
+                              image.height.toDouble(),
+                            ),
+                            cardWidthMm: target.physicalCardWidthMm,
+                            cardHeightMm: target.physicalCardHeightMm,
+                            ringRadiiMm: ringRadiiMm,
+                            initialAlignment:
+                                currentAlignment?.alignmentMode == alignmentMode
+                                ? currentAlignment
+                                : null,
+                            initialRotationQuarterTurns:
+                                initialRotationQuarterTurns,
+                            targetProfile: target,
+                            onConfirmed: (value) =>
+                                Navigator.pop(context, value),
+                            onUseAsAttachment: isCurrentPrimary
+                                ? null
+                                : () => Navigator.pop(context),
+                          )
+                        : FourPointAlignmentEditor(
+                            imageProvider: FileImage(File(image.path)),
+                            imagePixelSize: Size(
+                              image.width.toDouble(),
+                              image.height.toDouble(),
+                            ),
+                            cardWidthMm: target.physicalCardWidthMm,
+                            cardHeightMm: target.physicalCardHeightMm,
+                            initialCorners:
+                                currentAlignment?.alignmentMode == alignmentMode
+                                ? currentAlignment?.corners
+                                : null,
+                            initialRotationQuarterTurns:
+                                initialRotationQuarterTurns,
+                            targetProfile: target,
+                            onConfirmed: (value) =>
+                                Navigator.pop(context, value),
+                            onUseAsAttachment: isCurrentPrimary
+                                ? null
+                                : () => Navigator.pop(context),
+                          ),
                   ),
                 ),
               ),
@@ -1614,6 +1675,18 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
             .toList(),
         homographyMatrix: alignment.homographyMatrix,
         algorithmVersion: alignment.algorithmVersion,
+        rotationQuarterTurns: alignment.rotationQuarterTurns,
+        alignmentMode:
+            alignment.alignmentMode == geo.PhotoAlignmentMode.fourCorners
+            ? 'fullCard'
+            : 'ringAssisted',
+        anchorsJson: jsonEncode(
+          alignment.anchors.map((anchor) => anchor.toJson()).toList(),
+        ),
+        reprojectionRmsMm: alignment.residuals.rmsMm,
+        reprojectionMaxMm: alignment.residuals.maximumMm,
+        planarityStatus: _alignmentPlanarityStatus(alignment),
+        confirmedAtUtc: DateTime.now().toUtc(),
         updatedAtUtc: DateTime.now().toUtc(),
       );
       await repository.realignSeriesPhoto(
@@ -1639,12 +1712,70 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
     }
   }
 
+  Future<geo.PhotoAlignmentMode?> _choosePhotoAlignmentMode(
+    domain.TargetProfile target,
+  ) async {
+    final supportsRingAssisted =
+        target.targetKind == domain.TargetKind.concentricRings &&
+        target.rings.map((ring) => ring.outerDiameterMm).toSet().length >= 2;
+    if (!supportsRingAssisted) return geo.PhotoAlignmentMode.fourCorners;
+    return showSafeModalSheet<geo.PhotoAlignmentMode>(
+      context: context,
+      presentation: SafeSheetPresentation.compact,
+      builder: (sheetContext) => SafeSheetScaffold(
+        title: 'Uitlijningsmethode',
+        contentSized: true,
+        actions: const [],
+        body: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.crop_free),
+              title: const Text('Volledige kaart'),
+              subtitle: const Text(
+                'Gebruik de vier kaarthoeken wanneer de hele kaart zichtbaar is.',
+              ),
+              trailing:
+                  _alignment?.alignmentMode ==
+                      geo.PhotoAlignmentMode.fourCorners
+                  ? const Icon(Icons.check)
+                  : null,
+              onTap: () => Navigator.pop(
+                sheetContext,
+                geo.PhotoAlignmentMode.fourCorners,
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.radio_button_checked),
+              title: const Text('Alleen ringen zichtbaar'),
+              subtitle: const Text(
+                'Gebruik richtpunt en twee ringen wanneer de kaarthoeken buiten beeld vallen.',
+              ),
+              trailing:
+                  _alignment?.alignmentMode ==
+                      geo.PhotoAlignmentMode.ringAssisted
+                  ? const Icon(Icons.check)
+                  : null,
+              onTap: () => Navigator.pop(
+                sheetContext,
+                geo.PhotoAlignmentMode.ringAssisted,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   domain.ShotImpact _impactFromAlignment(
     domain.ShotImpact impact,
     geo.ManualPhotoAlignment alignment,
   ) {
     final physical = alignment.normalizedToPhysical(
-      geo.NormalizedPoint(impact.imageXNormalized!, impact.imageYNormalized!),
+      geo.rotateNormalizedPoint(
+        geo.NormalizedPoint(impact.imageXNormalized!, impact.imageYNormalized!),
+        alignment.rotationQuarterTurns,
+      ),
     );
     final halfWidth = alignment.cardWidthMm / 2;
     final halfHeight = alignment.cardHeightMm / 2;
@@ -1658,6 +1789,17 @@ class _ManualSeriesScreenState extends ConsumerState<ManualSeriesScreen>
           _target?.targetKind == domain.TargetKind.multiBullConcentric &&
           _recordBullAt(xMm, yMm) == null,
     );
+  }
+
+  String _alignmentPlanarityStatus(geo.ManualPhotoAlignment alignment) {
+    final residuals = alignment.residuals;
+    if (residuals.rmsMm <= 0.75 && residuals.maximumMm <= 1.5) {
+      return 'accepted';
+    }
+    if (residuals.rmsMm <= 1.5 && residuals.maximumMm <= 3.0) {
+      return 'manualReviewOnly';
+    }
+    return 'rejected';
   }
 
   Future<bool> _confirmRealignmentScoreChange(

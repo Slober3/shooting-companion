@@ -1,24 +1,27 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../app/providers.dart';
 import '../../widgets/compact_page_scaffold.dart';
 
-class StorageDetailsScreen extends StatefulWidget {
+class StorageDetailsScreen extends ConsumerStatefulWidget {
   const StorageDetailsScreen({super.key});
 
   @override
-  State<StorageDetailsScreen> createState() => _StorageDetailsScreenState();
+  ConsumerState<StorageDetailsScreen> createState() =>
+      _StorageDetailsScreenState();
 }
 
-class _StorageDetailsScreenState extends State<StorageDetailsScreen> {
+class _StorageDetailsScreenState extends ConsumerState<StorageDetailsScreen> {
   late Future<_StorageBreakdown> _breakdown;
 
   @override
   void initState() {
     super.initState();
-    _breakdown = _calculateStorage();
+    _breakdown = _loadBreakdown();
   }
 
   @override
@@ -53,9 +56,19 @@ class _StorageDetailsScreenState extends State<StorageDetailsScreen> {
             const SizedBox(height: 16),
             ListTile(
               leading: const Icon(Icons.folder_outlined),
-              title: const Text('Lokale gegevens'),
+              title: const Text('Overige lokale gegevens'),
               subtitle: const Text('Database, originelen en bijlagen'),
-              trailing: Text(_formatBytes(value.documentsBytes)),
+              trailing: Text(_formatBytes(value.otherDocumentsBytes)),
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.science_outlined),
+              title: const Text('Conceptscanfoto’s'),
+              subtitle: Text(
+                '${value.visionDraftCount} onafgewerkte '
+                'experimentele scan${value.visionDraftCount == 1 ? '' : 's'}',
+              ),
+              trailing: Text(_formatBytes(value.visionDraftBytes)),
             ),
             const Divider(),
             ListTile(
@@ -80,7 +93,17 @@ class _StorageDetailsScreenState extends State<StorageDetailsScreen> {
     ),
   );
 
-  void _refresh() => setState(() => _breakdown = _calculateStorage());
+  Future<_StorageBreakdown> _loadBreakdown() async {
+    final repository = ref.read(visionScanRepositoryProvider);
+    final draftBytes = await repository.getDraftStorageBytes();
+    final drafts = await repository.watchDrafts().first;
+    return _calculateStorage(
+      visionDraftBytes: draftBytes,
+      visionDraftCount: drafts.length,
+    );
+  }
+
+  void _refresh() => setState(() => _breakdown = _loadBreakdown());
 }
 
 class _TotalStorageCard extends StatelessWidget {
@@ -155,15 +178,25 @@ class _StorageBreakdown {
   const _StorageBreakdown({
     required this.documentsBytes,
     required this.cacheBytes,
+    required this.visionDraftBytes,
+    required this.visionDraftCount,
   });
 
   final int documentsBytes;
   final int cacheBytes;
+  final int visionDraftBytes;
+  final int visionDraftCount;
+
+  int get otherDocumentsBytes =>
+      (documentsBytes - visionDraftBytes).clamp(0, documentsBytes);
 
   int get totalBytes => documentsBytes + cacheBytes;
 }
 
-Future<_StorageBreakdown> _calculateStorage() async {
+Future<_StorageBreakdown> _calculateStorage({
+  required int visionDraftBytes,
+  required int visionDraftCount,
+}) async {
   final documents = await getApplicationDocumentsDirectory();
   final cache = await getTemporaryDirectory();
   final documentsBytes = await _directorySize(documents);
@@ -171,6 +204,8 @@ Future<_StorageBreakdown> _calculateStorage() async {
   return _StorageBreakdown(
     documentsBytes: documentsBytes,
     cacheBytes: sameDirectory ? 0 : await _directorySize(cache),
+    visionDraftBytes: visionDraftBytes,
+    visionDraftCount: visionDraftCount,
   );
 }
 

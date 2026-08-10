@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/app_database.dart';
 import '../data/coaching_preferences_repository.dart';
 import '../data/shooting_repository.dart';
+import '../data/vision_scan_repository.dart';
 import '../features/progress/analysis_context.dart';
+import 'package:shooting_companion_vision_api/vision_api.dart';
+import 'package:shooting_companion_vision_ffi/vision_ffi.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final database = AppDatabase();
@@ -14,6 +17,32 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 final repositoryProvider = Provider<ShootingRepository>(
   (ref) => ShootingRepository(ref.watch(databaseProvider)),
 );
+
+final visionScanRepositoryProvider = Provider<VisionScanRepository>(
+  (ref) => VisionScanRepository(ref.watch(databaseProvider)),
+);
+
+final visionAnalyzerProvider = Provider<VisionAnalyzer>(
+  (ref) => VisionFfiAnalyzer(),
+);
+
+final visionCapabilitiesProvider = FutureProvider<VisionAnalyzerCapabilities>(
+  (ref) => ref.watch(visionAnalyzerProvider).capabilities(),
+);
+
+final visionScanDraftsProvider = StreamProvider<List<VisionScanDraftRecord>>(
+  (ref) => ref.watch(visionScanRepositoryProvider).watchDrafts(),
+);
+
+final visionScanDraftCountProvider = StreamProvider<int>(
+  (ref) => ref.watch(visionScanRepositoryProvider).watchDraftCount(),
+);
+
+final visionScanDraftProvider =
+    StreamProvider.family<VisionScanDraftRecord?, String>(
+      (ref, scanId) =>
+          ref.watch(visionScanRepositoryProvider).watchDraft(scanId),
+    );
 
 final coachingPreferencesRepositoryProvider =
     Provider<CoachingPreferencesRepository>(

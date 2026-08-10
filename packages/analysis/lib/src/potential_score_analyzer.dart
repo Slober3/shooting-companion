@@ -160,12 +160,24 @@ abstract final class PotentialScoreAnalyzer {
         else
           impact.copyWith(xMm: impact.xMm + dxMm, yMm: impact.yMm + dyMm),
     ];
-    final score = ScoreEngine.score(
-      target: target,
-      impacts: shifted,
-      projectileDiameterMm: projectileDiameterMm,
-      positionUncertaintyMm: positionUncertaintyMm,
-    ).total;
+    late final int score;
+    try {
+      score = ScoreEngine.score(
+        target: target,
+        impacts: shifted,
+        projectileDiameterMm: projectileDiameterMm,
+        positionUncertaintyMm: positionUncertaintyMm,
+      ).total;
+    } on ArgumentError {
+      // On a fixed multi-bull target a rigid translation can move an impact
+      // outside its original record bull. That is not a valid what-if result:
+      // the search must skip it instead of relabelling the impact to a
+      // neighbouring bull or failing the complete analysis.
+      if (target.targetKind == TargetKind.multiBullConcentric) {
+        return currentBest;
+      }
+      rethrow;
+    }
     final candidate = _TranslationCandidate(
       dxMm: _normalizedZero(dxMm),
       dyMm: _normalizedZero(dyMm),
