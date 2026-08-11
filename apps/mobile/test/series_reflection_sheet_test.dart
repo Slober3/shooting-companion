@@ -168,6 +168,56 @@ void main() {
     },
   );
 
+  testWidgets('series card shows and edits the stored self-evaluation', (
+    tester,
+  ) async {
+    final database = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = ShootingRepository(database);
+    await repository.seedDefaults();
+    final quick = await repository.startQuickSession();
+    await repository.saveSeriesReflection(
+      seriesId: quick.draftSeriesId,
+      perceivedQuality: PerceivedQuality.difficult,
+      contextTags: const {
+        ReflectionContextTag.trigger,
+        ReflectionContextTag.followThrough,
+      },
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(database)],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SeriesReflectionCard(seriesId: quick.draftSeriesId),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Zelfevaluatie'), findsOneWidget);
+    expect(find.text('Moeilijk'), findsOneWidget);
+    expect(find.text('Trekker'), findsOneWidget);
+    expect(find.text('Follow-through'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('edit-series-reflection')));
+    await tester.pumpAndSettle();
+    expect(find.text('Korte reflectie'), findsOneWidget);
+    expect(find.text('Context (maximaal 3)'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilterChip>(
+            find.byKey(const ValueKey('reflection-tag-trigger')),
+          )
+          .selected,
+      isTrue,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(Duration.zero);
+  });
+
   testWidgets('settings toggles coach mode as an offline preference', (
     tester,
   ) async {

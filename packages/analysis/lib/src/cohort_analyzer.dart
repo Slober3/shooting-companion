@@ -9,12 +9,16 @@ class ComparableCohortKey {
   const ComparableCohortKey({
     required this.targetProfileVersionedId,
     required this.distanceMeters,
+    required this.projectileDiameterMm,
+    this.cartridgeId,
     this.firearmId,
     this.ammoLotId,
   });
 
   final String targetProfileVersionedId;
   final double distanceMeters;
+  final double projectileDiameterMm;
+  final String? cartridgeId;
   final String? firearmId;
   final String? ammoLotId;
 
@@ -22,14 +26,19 @@ class ComparableCohortKey {
   bool operator ==(Object other) =>
       other is ComparableCohortKey &&
       other.targetProfileVersionedId == targetProfileVersionedId &&
-      (other.distanceMeters - distanceMeters).abs() < 0.000001 &&
+      _quantize(other.distanceMeters) == _quantize(distanceMeters) &&
+      _quantize(other.projectileDiameterMm) ==
+          _quantize(projectileDiameterMm) &&
+      other.cartridgeId == cartridgeId &&
       other.firearmId == firearmId &&
       other.ammoLotId == ammoLotId;
 
   @override
   int get hashCode => Object.hash(
     targetProfileVersionedId,
-    (distanceMeters * 1000000).round(),
+    _quantize(distanceMeters),
+    _quantize(projectileDiameterMm),
+    cartridgeId,
     firearmId,
     ammoLotId,
   );
@@ -39,22 +48,28 @@ class CohortSeriesInput {
   CohortSeriesInput({
     required this.seriesId,
     required this.occurredAtUtc,
+    required this.sequenceNumber,
     required this.updatedAtUtc,
     required this.targetProfileVersionedId,
     required this.targetProfile,
     required this.distanceMeters,
+    required this.projectileDiameterMm,
     required this.scorePercentage,
     required Iterable<ShotImpact> impacts,
+    this.cartridgeId,
     this.firearmId,
     this.ammoLotId,
   }) : impacts = List.unmodifiable(impacts);
 
   final String seriesId;
   final DateTime occurredAtUtc;
+  final int sequenceNumber;
   final DateTime updatedAtUtc;
   final String targetProfileVersionedId;
   final TargetProfile targetProfile;
   final double distanceMeters;
+  final double projectileDiameterMm;
+  final String? cartridgeId;
   final String? firearmId;
   final String? ammoLotId;
   final double scorePercentage;
@@ -63,6 +78,8 @@ class CohortSeriesInput {
   ComparableCohortKey key({bool includeAmmoLot = true}) => ComparableCohortKey(
     targetProfileVersionedId: targetProfileVersionedId,
     distanceMeters: distanceMeters,
+    projectileDiameterMm: projectileDiameterMm,
+    cartridgeId: cartridgeId,
     firearmId: firearmId,
     ammoLotId: includeAmmoLot ? ammoLotId : null,
   );
@@ -150,15 +167,20 @@ abstract final class CohortAnalyzer {
     final items = source.toList()
       ..sort((a, b) {
         final time = a.occurredAtUtc.compareTo(b.occurredAtUtc);
-        return time != 0 ? time : a.seriesId.compareTo(b.seriesId);
+        if (time != 0) return time;
+        final sequence = a.sequenceNumber.compareTo(b.sequenceNumber);
+        return sequence != 0 ? sequence : a.seriesId.compareTo(b.seriesId);
       });
     if (items.isEmpty) {
       throw ArgumentError.value(source, 'source', 'Cohort mag niet leeg zijn.');
     }
-    final key = cohort ?? items.first.key();
+    final key = cohort ?? items.first.key(includeAmmoLot: includeAmmoLot);
     for (final item in items) {
       if (item.targetProfileVersionedId != key.targetProfileVersionedId ||
-          (item.distanceMeters - key.distanceMeters).abs() >= 0.000001 ||
+          _quantize(item.distanceMeters) != _quantize(key.distanceMeters) ||
+          _quantize(item.projectileDiameterMm) !=
+              _quantize(key.projectileDiameterMm) ||
+          item.cartridgeId != key.cartridgeId ||
           item.firearmId != key.firearmId ||
           (includeAmmoLot && item.ammoLotId != key.ammoLotId)) {
         throw ArgumentError(
@@ -267,3 +289,5 @@ abstract final class CohortAnalyzer {
     return denominator == 0 ? 0 : numerator / denominator;
   }
 }
+
+int _quantize(double value) => (value * 1000000).round();

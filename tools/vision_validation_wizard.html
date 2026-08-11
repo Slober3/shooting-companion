@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="nl-BE">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src 'none'; img-src blob: data:; media-src 'none'; object-src 'none'; font-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+  <title>Shooting Companion — lokale vision-annotatie</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #101418; color: #eef2f5; }
+    header, main { width: min(1180px, 100%); margin: auto; padding: 20px; }
+    header { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+    h1 { font-size: 1.35rem; margin: 0; flex: 1; }
+    .privacy { background: #213222; border: 1px solid #4e7251; padding: 12px 16px; border-radius: 12px; width: 100%; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; }
+    .canvas-panel, .panel { background: #191f25; border: 1px solid #39434d; border-radius: 16px; padding: 16px; }
+    canvas { display: block; width: auto; max-width: 100%; height: auto; margin-inline: auto; background: #080b0e; border-radius: 10px; touch-action: none; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+    button, select, input { min-height: 44px; border-radius: 9px; border: 1px solid #687583; background: #222a31; color: inherit; padding: 8px 12px; font: inherit; }
+    button { cursor: pointer; }
+    button.primary { background: #d07a29; color: #111; border-color: #e29650; font-weight: 700; }
+    button.active { outline: 3px solid #8bc9ef; }
+    button:disabled { opacity: .45; cursor: default; }
+    label { display: grid; gap: 6px; margin: 0 0 14px; }
+    fieldset { border: 1px solid #47525d; border-radius: 12px; margin: 0 0 16px; padding: 12px; }
+    legend { padding: 0 6px; }
+    .checks label { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+    .checks input { min-height: auto; }
+    .status { min-height: 48px; padding: 10px 0; color: #b9c6d0; }
+    .file-nav { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+    .file-nav span { flex: 1; text-align: center; }
+    .annotation-list { max-height: 220px; overflow: auto; padding: 0; list-style: none; }
+    .annotation-list li { display: flex; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid #313a43; }
+    .annotation-list button { margin-left: auto; min-height: 36px; padding: 4px 9px; }
+    .hint { color: #aab6bf; font-size: .9rem; }
+    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Lokale vision-validatiewizard</h1>
+    <input id="files" type="file" accept="image/jpeg,image/png" multiple aria-label="Foto's kiezen">
+    <button id="chooseOutput">Uitvoermap kiezen</button>
+    <div class="privacy"><strong>Privé en offline.</strong> Deze pagina gebruikt geen netwerk. Originelen worden niet opgeslagen of gewijzigd. De export is een opnieuw gecodeerde targetcrop zonder metadata, plus een JSON-sidecar met annotaties en SHA-256. Deze lokale JPEG/JSON-uitvoer is niet versleuteld: kies uitsluitend de genegeerde privémap.</div>
+  </header>
+  <main class="layout">
+    <section class="canvas-panel">
+      <div class="toolbar">
+        <button id="cropMode" class="active">Crop tekenen</button>
+        <button id="annotateMode">Gat annoteren</button>
+        <button id="rotateLeft">90° links</button>
+        <button id="rotateRight">90° rechts</button>
+        <button id="resetCrop">Crop herstellen</button>
+      </div>
+      <canvas id="canvas" width="900" height="700" aria-label="Lokale targetfoto en annotaties"></canvas>
+      <div id="status" class="status">Kies een of meer foto's. Trek daarna een rechthoek rond de volledige kaart of zichtbare targetcrop.</div>
+      <div class="file-nav">
+        <button id="previous">Vorige</button>
+        <span id="filePosition">Geen foto</span>
+        <button id="next">Volgende</button>
+      </div>
+    </section>
+    <aside class="panel">
+      <label>Fysieke kaartgroep
+        <input id="cardGroup" placeholder="bijv. kaart-2026-04-10-a" autocomplete="off">
+      </label>
+      <button id="applyCardGroup" type="button" style="width:100%;margin:-4px 0 16px">Zelfde groep voor alle gekozen foto's</button>
+      <label>Doelprofiel
+        <select id="targetProfile">
+          <option value="issf-25m-precision-50m-pistol-v2">ISSF 25 m Precision / 50 m Pistol</option>
+          <option value="issf-25m-rapid-fire-v2">ISSF 25 m Rapid Fire Pistol</option>
+          <option value="wrabf-50m-rimfire-br50-v1">WRABF 50 m Rimfire Benchrest (BR50)</option>
+          <option value="other">Ander profiel</option>
+        </select>
+      </label>
+      <label>Afstand (m)
+        <input id="distance" type="number" min="1" step="0.1" value="25">
+      </label>
+      <label>Kaliber
+        <select id="cartridge">
+          <option value="22lr" data-diameter="5.60">.22 LR</option>
+          <option value="9x19" data-diameter="9.01">9×19 mm</option>
+          <option value="38special" data-diameter="9.07">.38 Special</option>
+          <option value="357magnum" data-diameter="9.07">.357 Magnum</option>
+          <option value="other" data-diameter="">Ander profiel</option>
+        </select>
+      </label>
+      <label>Projectieldiameter (mm)
+        <input id="diameter" type="number" min="0.01" step="0.01" value="5.60">
+      </label>
+      <label>Werkelijk afgevuurd schotaantal
+        <input id="shotCount" type="number" min="0" step="1" value="0">
+      </label>
+      <fieldset class="checks">
+        <legend>Kaartconditie</legend>
+        <label><input id="oldHoles" type="checkbox"> Oude gaten aanwezig</label>
+        <label><input id="patches" type="checkbox"> Afplakkers aanwezig</label>
+        <label><input id="multipleSeries" type="checkbox"> Meerdere reeksen zichtbaar</label>
+      </fieldset>
+      <label>Nieuw annotatielabel
+        <select id="annotationKind">
+          <option value="isolated">Geïsoleerd gat</option>
+          <option value="cluster">Cluster</option>
+          <option value="overlap">Overlap</option>
+          <option value="patch">Afplakker</option>
+          <option value="tear">Scheur / beschadiging</option>
+          <option value="uncertain">Onzeker</option>
+        </select>
+      </label>
+      <p class="hint">In annotatiemodus: tik op de crop om een punt toe te voegen. Selecteer een regel hieronder om ze te verwijderen.</p>
+      <ul id="annotations" class="annotation-list"></ul>
+      <button id="exportCurrent" class="primary" style="width:100%">EXIF-vrije crop + JSON exporteren</button>
+    </aside>
+  </main>
+  <script>
+    'use strict';
+    const $ = (id) => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const state = { files: [], index: -1, records: [], mode: 'crop', dragStart: null, cropBeforeDrag: null, output: null, view: null };
+    const remembered = loadRememberedDefaults();
+    const fields = ['cardGroup','targetProfile','distance','cartridge','diameter','shotCount','oldHoles','patches','multipleSeries'];
+
+    function loadRememberedDefaults() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem('scVisionWizardDefaults') || '{}');
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+      } catch (_) {
+        try { localStorage.removeItem('scVisionWizardDefaults'); } catch (_) { /* Storage can be unavailable for local files. */ }
+        return {};
+      }
+    }
+
+    function rememberNonIdentifyingDefaults(metadata) {
+      const safeDefaults = {
+        targetProfile: metadata.targetProfile,
+        distance: metadata.distance,
+        cartridge: metadata.cartridge,
+        diameter: metadata.diameter
+      };
+      try { localStorage.setItem('scVisionWizardDefaults', JSON.stringify(safeDefaults)); } catch (_) { /* The wizard remains usable without storage. */ }
+    }
+
+    function emptyRecord(file) {
+      const cartridge = validSelectValue('cartridge', remembered.cartridge, '22lr');
+      const defaultDiameter = [...$('cartridge').options].find(option=>option.value===cartridge)?.dataset.diameter || '5.60';
+      return { file, image: null, sourceSha256: null, rotation: 0, crop: null, annotations: [], metadata: {
+        cardGroup: '', targetProfile: validSelectValue('targetProfile', remembered.targetProfile, 'issf-25m-precision-50m-pistol-v2'),
+        distance: remembered.distance || '25', cartridge, diameter: cartridge===remembered.cartridge&&remembered.diameter?remembered.diameter:defaultDiameter,
+        shotCount: '0', oldHoles: false, patches: false, multipleSeries: false
+      }};
+    }
+
+    function validSelectValue(id,value,fallback){return [...$(id).options].some(option=>option.value===value)?value:fallback;}
+
+    $('files').addEventListener('change', async (event) => {
+      if (state.records.some(record => record.crop || record.annotations.length) &&
+          !confirm('De huidige, nog niet geëxporteerde annotaties vervangen?')) {
+        event.target.value = '';
+        return;
+      }
+      for (const record of state.records) record.image?.close?.();
+      state.files = [...event.target.files];
+      state.records = state.files.map(emptyRecord);
+      state.index = state.files.length ? 0 : -1;
+      await loadCurrent();
+    });
+    $('chooseOutput').addEventListener('click', async () => {
+      if (!window.showDirectoryPicker) return setStatus('Deze browser ondersteunt geen directe mapkeuze. Export gebruikt veilige downloads.');
+      try { state.output = await window.showDirectoryPicker({mode:'readwrite'}); setStatus('Uitvoermap gekozen. Crops en annotaties krijgen aparte submappen.'); }
+      catch (_) { setStatus('Mapkeuze geannuleerd.'); }
+    });
+
+    async function loadCurrent() {
+      if (state.index < 0) { drawEmpty(); return; }
+      const record = state.records[state.index];
+      if (!record.image) {
+        let bitmap = null;
+        try {
+          bitmap = await createImageBitmap(record.file, {imageOrientation:'from-image'});
+          const sourceSha256 = await sha256Hex(await record.file.arrayBuffer());
+          record.image = bitmap;
+          record.sourceSha256 = sourceSha256;
+        } catch (_) {
+          bitmap?.close?.();
+          record.image = null;
+          record.sourceSha256 = null;
+          drawEmpty();
+          $('filePosition').textContent = `${state.index + 1} / ${state.records.length}`;
+          setStatus('Deze foto kon niet veilig worden gelezen. Kies een geldige JPEG- of PNG-foto.');
+          return;
+        }
+      }
+      syncFieldsFromRecord();
+      fitCanvas(); render(); renderAnnotations();
+      $('filePosition').textContent = `${state.index + 1} / ${state.records.length}`;
+      setStatus('Teken een crop rond de volledige kaart. Gebruik bij afgesneden kaarten de grootst bruikbare targetzone.');
+    }
+
+    function rotatedSize(record) { return record.rotation % 2 ? {w:record.image.height,h:record.image.width} : {w:record.image.width,h:record.image.height}; }
+    function drawRotated(record, target) {
+      const {w,h} = rotatedSize(record); target.width = w; target.height = h;
+      const c = target.getContext('2d'); c.save(); c.translate(w/2,h/2); c.rotate(record.rotation*Math.PI/2);
+      c.drawImage(record.image,-record.image.width/2,-record.image.height/2); c.restore();
+    }
+    function fitCanvas() {
+      const record = current(); if (!record || !record.image) return;
+      const {w,h} = rotatedSize(record); const maxW = Math.max(320, canvas.clientWidth); const maxH = Math.max(280, innerHeight*.68);
+      const scale = Math.min(maxW/w,maxH/h); canvas.width = Math.round(w*scale); canvas.height = Math.round(h*scale);
+      state.view = {scale, x:0, y:0, imageW:w, imageH:h};
+    }
+    function render() {
+      const record=current(); if(!record?.image) return drawEmpty();
+      const off=document.createElement('canvas'); drawRotated(record,off); ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(off,0,0,canvas.width,canvas.height);
+      if(record.crop){ const c=record.crop,sx=canvas.width/state.view.imageW,sy=canvas.height/state.view.imageH; ctx.save(); ctx.fillStyle='rgba(0,0,0,.45)'; ctx.beginPath(); ctx.rect(0,0,canvas.width,canvas.height); ctx.rect(c.x*sx,c.y*sy,c.w*sx,c.h*sy); ctx.fill('evenodd'); ctx.strokeStyle='#ffd400';ctx.lineWidth=3;ctx.strokeRect(c.x*sx,c.y*sy,c.w*sx,c.h*sy);ctx.restore(); }
+      for(const [i,a] of record.annotations.entries()){ const p=annotationCanvasPoint(a,record); ctx.beginPath();ctx.arc(p.x,p.y,8,0,Math.PI*2);ctx.fillStyle=kindColor(a.kind);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#111';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(i+1),p.x,p.y); }
+    }
+    function annotationCanvasPoint(a,record){ const p=annotationSourcePoint(a,record.crop),sx=canvas.width/state.view.imageW,sy=canvas.height/state.view.imageH; return{x:p.x*sx,y:p.y*sy}; }
+    function kindColor(kind){ return ({isolated:'#67d391',cluster:'#8bc9ef',overlap:'#ffd400',patch:'#bd8ee8',tear:'#ff756d',uncertain:'#c2c8ce'})[kind]; }
+    function drawEmpty(){ canvas.width=Math.max(600,canvas.clientWidth);canvas.height=420;ctx.fillStyle='#080b0e';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#aab6bf';ctx.font='22px sans-serif';ctx.textAlign='center';ctx.fillText('Geen foto geselecteerd',canvas.width/2,canvas.height/2);$('filePosition').textContent='Geen foto'; }
+
+    canvas.addEventListener('pointerdown',(event)=>{ const r=current(); if(!r?.image || event.button>0) return; const p=pointerImagePoint(event);
+      if(state.mode==='crop'){ materializeAnnotationSourcePoints(r); state.dragStart=p; state.cropBeforeDrag=r.crop?{...r.crop}:null; canvas.setPointerCapture(event.pointerId); }
+      else if(r.crop && inside(p,r.crop)){ r.annotations.push({id:randomId(),kind:$('annotationKind').value,sourceX:p.x,sourceY:p.y,xNormalized:(p.x-r.crop.x)/r.crop.w,yNormalized:(p.y-r.crop.y)/r.crop.h});render();renderAnnotations(); }
+    });
+    canvas.addEventListener('pointermove',(event)=>{ if(!state.dragStart||state.mode!=='crop')return; const p=pointerImagePoint(event),r=current();r.crop=normalRect(state.dragStart,p,rotatedSize(r));render(); });
+    canvas.addEventListener('pointerup',finishCropDrag);
+    canvas.addEventListener('pointercancel',cancelCropDrag);
+    function finishCropDrag(){
+      if(!state.dragStart)return;
+      const r=current(),size=rotatedSize(r),minimumSide=Math.max(32,Math.min(size.w,size.h)*.01);
+      if(!r.crop||r.crop.w<minimumSide||r.crop.h<minimumSide){r.crop=state.cropBeforeDrag;setStatus('De crop was te klein en is niet toegepast. Sleep rond de volledige bruikbare targetzone.');}
+      else {const removed=renormalizeAnnotations(r);setStatus(removed?`${removed} annotatie(s) buiten de nieuwe crop verwijderd.`:'Crop bijgewerkt; bestaande annotaties bleven op dezelfde beeldpositie.');}
+      state.dragStart=null;state.cropBeforeDrag=null;render();renderAnnotations();
+    }
+    function cancelCropDrag(){const r=current();if(r)r.crop=state.cropBeforeDrag;state.dragStart=null;state.cropBeforeDrag=null;render();}
+    function pointerImagePoint(e){ const rect=canvas.getBoundingClientRect(); return{x:(e.clientX-rect.left)*state.view.imageW/rect.width,y:(e.clientY-rect.top)*state.view.imageH/rect.height}; }
+    function clamp(value,min,max){return Math.max(min,Math.min(max,value));}
+    function normalRect(a,b,size){ const ax=clamp(a.x,0,size.w),ay=clamp(a.y,0,size.h),bx=clamp(b.x,0,size.w),by=clamp(b.y,0,size.h);return{x:Math.min(ax,bx),y:Math.min(ay,by),w:Math.abs(bx-ax),h:Math.abs(by-ay)}; }
+    function inside(p,r){return p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h;}
+
+    function annotationSourcePoint(annotation,crop){return Number.isFinite(annotation.sourceX)&&Number.isFinite(annotation.sourceY)?{x:annotation.sourceX,y:annotation.sourceY}:{x:crop.x+annotation.xNormalized*crop.w,y:crop.y+annotation.yNormalized*crop.h};}
+    function materializeAnnotationSourcePoints(record){if(!record.crop)return;for(const annotation of record.annotations){const p=annotationSourcePoint(annotation,record.crop);annotation.sourceX=p.x;annotation.sourceY=p.y;}}
+    function renormalizeAnnotations(record){if(!record.crop)return 0;const before=record.annotations.length;record.annotations=record.annotations.filter(annotation=>inside(annotationSourcePoint(annotation,record.crop),record.crop));for(const annotation of record.annotations){const p=annotationSourcePoint(annotation,record.crop);annotation.sourceX=p.x;annotation.sourceY=p.y;annotation.xNormalized=(p.x-record.crop.x)/record.crop.w;annotation.yNormalized=(p.y-record.crop.y)/record.crop.h;}return before-record.annotations.length;}
+
+    function setMode(mode){state.mode=mode;$('cropMode').classList.toggle('active',mode==='crop');$('annotateMode').classList.toggle('active',mode==='annotate');setStatus(mode==='crop'?'Sleep om de targetcrop te bepalen.':'Tik zichtbare gaten, clusters, afplakkers of beschadigingen aan.');}
+    $('cropMode').onclick=()=>setMode('crop'); $('annotateMode').onclick=()=>setMode('annotate');
+    $('rotateLeft').onclick=()=>rotate(-1); $('rotateRight').onclick=()=>rotate(1);
+    function rotate(delta){const r=current();if(!r)return;const oldSize=rotatedSize(r);materializeAnnotationSourcePoints(r);if(r.crop)r.crop=rotateRect(r.crop,oldSize,delta);for(const annotation of r.annotations){const p=rotatePoint(annotationSourcePoint(annotation,r.crop),oldSize,delta);annotation.sourceX=p.x;annotation.sourceY=p.y;}r.rotation=(r.rotation+delta+4)%4;renormalizeAnnotations(r);fitCanvas();render();renderAnnotations();setStatus('Rotatie gewijzigd; crop en annotaties zijn behouden.');}
+    function rotatePoint(point,size,delta){return delta>0?{x:size.h-point.y,y:point.x}:{x:point.y,y:size.w-point.x};}
+    function rotateRect(rect,size,delta){const points=[{x:rect.x,y:rect.y},{x:rect.x+rect.w,y:rect.y},{x:rect.x+rect.w,y:rect.y+rect.h},{x:rect.x,y:rect.y+rect.h}].map(point=>rotatePoint(point,size,delta));const xs=points.map(p=>p.x),ys=points.map(p=>p.y);return{x:Math.min(...xs),y:Math.min(...ys),w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)};}
+    $('resetCrop').onclick=()=>{const r=current();if(!r)return;materializeAnnotationSourcePoints(r);const s=rotatedSize(r);r.crop={x:0,y:0,w:s.w,h:s.h};renormalizeAnnotations(r);render();renderAnnotations();};
+    $('previous').onclick=()=>navigate(-1);$('next').onclick=()=>navigate(1);
+    async function navigate(delta){if(!state.records.length)return;syncRecordFromFields();state.index=(state.index+delta+state.records.length)%state.records.length;await loadCurrent();}
+
+    $('applyCardGroup').onclick=()=>{syncRecordFromFields();const group=$('cardGroup').value.trim();if(!group)return setStatus('Vul eerst een fysieke kaartgroep in.');for(const record of state.records)record.metadata.cardGroup=group;syncFieldsFromRecord();setStatus(`Kaartgroep toegepast op ${state.records.length} gekozen foto('s).`);};
+
+    $('cartridge').addEventListener('change',()=>{const option=$('cartridge').selectedOptions[0];if(option.dataset.diameter)$('diameter').value=option.dataset.diameter;syncRecordFromFields();});
+    for(const id of fields) $(id).addEventListener('change',syncRecordFromFields);
+    function syncRecordFromFields(){const r=current();if(!r)return;for(const id of fields)r.metadata[id]=$(id).type==='checkbox'?$(id).checked:$(id).value;rememberNonIdentifyingDefaults(r.metadata);}
+    function syncFieldsFromRecord(){const m=current().metadata;for(const id of fields){if($(id).type==='checkbox')$(id).checked=!!m[id];else $(id).value=m[id]??'';}}
+    function renderAnnotations(){const list=$('annotations');list.replaceChildren();const r=current();if(!r)return;r.annotations.forEach((a,i)=>{const li=document.createElement('li');li.textContent=`${i+1}. ${labelFor(a.kind)} · ${(a.xNormalized*100).toFixed(1)}%, ${(a.yNormalized*100).toFixed(1)}%`;const b=document.createElement('button');b.textContent='Verwijder';b.onclick=()=>{r.annotations.splice(i,1);render();renderAnnotations();};li.appendChild(b);list.appendChild(li);});}
+    function labelFor(k){return({isolated:'Geïsoleerd',cluster:'Cluster',overlap:'Overlap',patch:'Afplakker',tear:'Schade',uncertain:'Onzeker'})[k];}
+
+    $('exportCurrent').onclick=exportCurrent;
+    async function exportCurrent(){syncRecordFromFields();const r=current();if(!r?.crop)return setStatus('Teken eerst een targetcrop.');if(!r.metadata.cardGroup.trim())return setStatus('Vul een fysieke kaartgroep in, zodat beelden van dezelfde kaart samen blijven.');
+      if(!validSelectValue('targetProfile',r.metadata.targetProfile,null)||!validSelectValue('cartridge',r.metadata.cartridge,null))return setStatus('Kies een geldig doelprofiel en kaliber.');
+      const diameter=Number(r.metadata.diameter),shots=Number(r.metadata.shotCount),distance=Number(r.metadata.distance);if(!(diameter>0)||!(distance>0)||!Number.isInteger(shots)||shots<0)return setStatus('Controleer afstand, projectieldiameter en werkelijk schotaantal.');
+      renormalizeAnnotations(r);if(r.annotations.some(a=>![a.xNormalized,a.yNormalized].every(v=>Number.isFinite(v)&&v>=0&&v<=1)))return setStatus('Een annotatie heeft ongeldige cropcoördinaten. Pas de crop opnieuw toe.');
+      const rotated=document.createElement('canvas');drawRotated(r,rotated);const crop=document.createElement('canvas');crop.width=Math.max(1,Math.round(r.crop.w));crop.height=Math.max(1,Math.round(r.crop.h));const cropContext=crop.getContext('2d');cropContext.fillStyle='#fff';cropContext.fillRect(0,0,crop.width,crop.height);cropContext.drawImage(rotated,r.crop.x,r.crop.y,r.crop.w,r.crop.h,0,0,crop.width,crop.height);
+      const blob=await new Promise(resolve=>crop.toBlob(resolve,'image/jpeg',.94));if(!blob)return setStatus('De browser kon geen veilige JPEG-crop maken. Probeer een kleinere foto.');const cropHash=await sha256Hex(await blob.arrayBuffer());const safeGroup=r.metadata.cardGroup.trim().replace(/[^a-zA-Z0-9_-]+/g,'-').replace(/^-|-$/g,'').slice(0,48)||'kaart';const createdAt=new Date().toISOString();const token=createdAt.replace(/[-:.TZ]/g,'').slice(0,14);const base=`card-${safeGroup}-${r.sourceSha256.slice(0,12)}-${token}`;
+      const exportedAnnotations=r.annotations.map(({id,kind,xNormalized,yNormalized})=>({id,kind,xNormalized,yNormalized}));
+      const sidecar={schemaVersion:1,createdAtUtc:createdAt,physicalCardGroup:r.metadata.cardGroup.trim(),sourceSha256:r.sourceSha256,cropSha256:cropHash,privacy:{exifOrientationApplied:true,reencodedWithoutMetadata:true,originalNotCopied:true,originalFilenameExcluded:true},image:{width:crop.width,height:crop.height,rotationQuarterTurns:r.rotation,cropInRotatedSource:r.crop},annotationCoordinateSpace:'normalizedTargetCropTopLeft',target:{profileId:r.metadata.targetProfile,distanceMeters:distance},cartridge:{profile:r.metadata.cartridge,projectileDiameterMm:diameter},actualShotCount:shots,conditions:{oldHoles:!!r.metadata.oldHoles,patches:!!r.metadata.patches,multipleSeries:!!r.metadata.multipleSeries},annotations:exportedAnnotations};
+      const json=new Blob([JSON.stringify(sidecar,null,2)+'\n'],{type:'application/json'});try{await writeOutput(base+'.jpg',blob,'cropped');await writeOutput(base+'.json',json,'annotations');setStatus(`Export gereed: ${r.annotations.length} annotaties, EXIF-vrije crop SHA-256 ${cropHash.slice(0,12)}…`);}catch(_){setStatus('Export is niet volledig geschreven. Controleer de maprechten en exporteer opnieuw.');}
+    }
+    async function writeOutput(name,blob,subdir){if(state.output){const dir=await state.output.getDirectoryHandle(subdir,{create:true});const handle=await dir.getFileHandle(name,{create:true});const writable=await handle.createWritable();await writable.write(blob);await writable.close();return;}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
+    async function sha256Hex(buffer){const digest=await crypto.subtle.digest('SHA-256',buffer);return[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');}
+    function randomId(){if(crypto.randomUUID)return crypto.randomUUID();const bytes=new Uint8Array(16);crypto.getRandomValues(bytes);return[...bytes].map(b=>b.toString(16).padStart(2,'0')).join('');}
+    function current(){return state.records[state.index]||null;}function setStatus(message){$('status').textContent=message;}
+    addEventListener('resize',()=>{if(current()?.image){fitCanvas();render();}});drawEmpty();
+  </script>
+</body>
+</html>

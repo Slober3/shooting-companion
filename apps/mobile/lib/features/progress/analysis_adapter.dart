@@ -69,6 +69,12 @@ domain.ShotImpact impactRecordToDomain(ImpactRecord record) =>
         (value) => value.name == record.scoreDisposition,
         orElse: () => domain.ScoreDisposition.counted,
       ),
+      placementMethod: domain.ImpactPlacementMethod.values.firstWhere(
+        (value) => value.name == record.placementMethod,
+        orElse: () => domain.ImpactPlacementMethod.manual,
+      ),
+      visionAnalysisId: record.visionAnalysisId,
+      positionalUncertaintyMm: record.positionalUncertaintyMm,
     );
 
 List<CoachInsight> buildCoachInsights(Iterable<AnalyzedSeriesView> source) {
@@ -80,6 +86,8 @@ List<CoachInsight> buildCoachInsights(Iterable<AnalyzedSeriesView> source) {
           _CoachCohortKey(
             targetId: series.targetProfileVersionedId,
             distanceMeters: series.distanceMeters,
+            projectileDiameterMm: series.projectileDiameterMm,
+            cartridgeId: series.cartridgeId,
             firearmId: series.firearmId,
           ),
           () => [],
@@ -149,11 +157,14 @@ List<CoachInsight> buildCoachInsights(Iterable<AnalyzedSeriesView> source) {
 CohortSeriesInput cohortInputFromAnalyzed(AnalyzedSeriesView item) =>
     CohortSeriesInput(
       seriesId: item.source.series.id,
-      occurredAtUtc: item.source.series.createdAtUtc,
+      occurredAtUtc: item.source.session.startedAtUtc,
+      sequenceNumber: item.source.series.sequenceNumber,
       updatedAtUtc: item.source.series.updatedAtUtc,
       targetProfileVersionedId: item.source.series.targetProfileVersionedId,
       targetProfile: item.target,
       distanceMeters: item.source.series.distanceMeters,
+      projectileDiameterMm: item.source.series.projectileDiameterMm,
+      cartridgeId: item.source.series.cartridgeId,
       firearmId: item.source.series.firearmId,
       ammoLotId: item.source.series.ammoLotId,
       scorePercentage: item.scorePercentage,
@@ -167,7 +178,7 @@ CoachSeriesObservation _coachObservation(AnalyzedSeriesView item) {
     seriesId: series.id,
     sessionId: series.sessionId,
     sequenceNumber: series.sequenceNumber,
-    occurredAtUtc: series.createdAtUtc,
+    occurredAtUtc: item.source.session.startedAtUtc,
     positionedHitCount: metrics.positionedShotCount,
     centroidXMm: metrics.centroidXMm,
     centroidYMm: metrics.centroidYMm,
@@ -274,21 +285,36 @@ class _CoachCohortKey {
   const _CoachCohortKey({
     required this.targetId,
     required this.distanceMeters,
+    required this.projectileDiameterMm,
+    required this.cartridgeId,
     required this.firearmId,
   });
 
   final String targetId;
   final double distanceMeters;
+  final double projectileDiameterMm;
+  final String? cartridgeId;
   final String? firearmId;
 
   @override
   bool operator ==(Object other) =>
       other is _CoachCohortKey &&
       other.targetId == targetId &&
-      (other.distanceMeters - distanceMeters).abs() < 0.000001 &&
+      _quantizeCohortValue(other.distanceMeters) ==
+          _quantizeCohortValue(distanceMeters) &&
+      _quantizeCohortValue(other.projectileDiameterMm) ==
+          _quantizeCohortValue(projectileDiameterMm) &&
+      other.cartridgeId == cartridgeId &&
       other.firearmId == firearmId;
 
   @override
-  int get hashCode =>
-      Object.hash(targetId, (distanceMeters * 1000000).round(), firearmId);
+  int get hashCode => Object.hash(
+    targetId,
+    _quantizeCohortValue(distanceMeters),
+    _quantizeCohortValue(projectileDiameterMm),
+    cartridgeId,
+    firearmId,
+  );
 }
+
+int _quantizeCohortValue(double value) => (value * 1000000).round();

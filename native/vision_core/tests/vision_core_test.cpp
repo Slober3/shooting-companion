@@ -94,6 +94,45 @@ void test_c_api(const std::string& fixture) {
           "Metadata capability missing");
   require((sc_vision_capabilities() & SC_VISION_CAP_CANDIDATES) == 0,
           "Geometry-only build advertised candidate detection");
+
+  const sc_vision_ring_v2 rings[] = {{59.5, 10}, {91.5, 9}};
+  sc_vision_request_v2 request_v2{};
+  request_v2.struct_size = sizeof(request_v2);
+  request_v2.job_id_utf8 = "native-test-job";
+  request_v2.image_path_utf8 = fixture.c_str();
+  request_v2.card_width_mm = 550;
+  request_v2.card_height_mm = 550;
+  request_v2.projectile_diameter_mm = 5.6;
+  request_v2.line_thickness_mm = 0.2;
+  request_v2.rings = rings;
+  request_v2.ring_count = 2;
+  request_v2.minimum_long_side_px = 8;
+  request_v2.minimum_card_margin_fraction = 0.02;
+  request_v2.maximum_perspective_angle_degrees = 35;
+  request_v2.canonical_pixels_per_mm = 4;
+  request_v2.enable_candidate_detection = 1;
+  sc_vision_job_handle job = nullptr;
+  require(sc_vision_create_job_v2(&request_v2, &job) == SC_VISION_OK &&
+              job != nullptr,
+          "C ABI v2 failed to create a job");
+  sc_vision_owned_string v2_json{};
+  require(sc_vision_run_job_v2(job, &v2_json) == SC_VISION_OK,
+          "C ABI v2 analysis failed");
+  require(std::string(v2_json.data, v2_json.length)
+              .find("\"schemaVersion\":2") != std::string::npos,
+          "C ABI v2 did not return contract schema 2");
+  sc_vision_free_string(&v2_json);
+  sc_vision_destroy_job_v2(job);
+
+  sc_vision_job_handle cancelled_job = nullptr;
+  require(sc_vision_create_job_v2(&request_v2, &cancelled_job) ==
+              SC_VISION_OK,
+          "C ABI v2 failed to create cancellable job");
+  sc_vision_cancel_job_v2(cancelled_job);
+  require(sc_vision_run_job_v2(cancelled_job, &v2_json) ==
+              SC_VISION_CANCELLED,
+          "C ABI v2 ignored cancellation");
+  sc_vision_destroy_job_v2(cancelled_job);
 }
 
 void test_missing_image() {

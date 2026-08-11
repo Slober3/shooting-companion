@@ -113,8 +113,60 @@ void main() {
       final expected = original.normalizedToPhysical(point);
       final actual = restored.normalizedToPhysical(point);
       _expectPhysical(actual, expected.x, expected.y, tolerance);
-      expect(restored.algorithmVersion, manualHomographyAlgorithmVersion);
+      expect(restored.algorithmVersion, manualHomographyV2AlgorithmVersion);
+      expect(restored.alignmentMode, PhotoAlignmentMode.fourCorners);
+      expect(restored.quality, AlignmentQualityGrade.excellent);
+      expect(restored.anchors, hasLength(4));
       expect(restored.homographyMatrix, hasLength(9));
+    });
+
+    test('legacy manual-homography-v1 remains importable', () {
+      final legacy = ManualPhotoAlignment.fromJson({
+        'algorithmVersion': manualHomographyAlgorithmVersion,
+        'cardWidthMm': 550,
+        'cardHeightMm': 550,
+        'corners': _identityQuad.toJson(),
+        'homographyMatrix': const [550, 0, -275, 0, 550, -275, 0, 0, 1],
+      });
+
+      expect(legacy.algorithmVersion, manualHomographyAlgorithmVersion);
+      expect(legacy.rotationQuarterTurns, 0);
+      expect(legacy.alignmentMode, PhotoAlignmentMode.fourCorners);
+      expect(legacy.quality, AlignmentQualityGrade.legacyUnverified);
+      _expectPhysical(
+        legacy.normalizedToPhysical(const NormalizedPoint(0.5, 0.5)),
+        0,
+        0,
+        tolerance,
+      );
+    });
+
+    test('rejects a stored matrix that disagrees with its corners', () {
+      final json = _alignment(_identityQuad, width: 550, height: 550).toJson();
+      json['homographyMatrix'] = const [550, 0, -274, 0, 550, -275, 0, 0, 1];
+
+      expect(
+        () => ManualPhotoAlignment.fromJson(json),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('rotation is serialized and coordinate rotation is reversible', () {
+      final result = ManualPhotoAlignment.build(
+        corners: _identityQuad,
+        cardWidthMm: 550,
+        cardHeightMm: 550,
+        rotationQuarterTurns: 3,
+      );
+      final restored = ManualPhotoAlignment.fromJson(
+        result.alignment!.toJson(),
+      );
+      const original = NormalizedPoint(0.2, 0.7);
+      final rotated = rotateNormalizedPoint(original, 3);
+
+      expect(restored.rotationQuarterTurns, 3);
+      expect(unrotateNormalizedPoint(rotated, 3).x, closeTo(original.x, 1e-12));
+      expect(unrotateNormalizedPoint(rotated, 3).y, closeTo(original.y, 1e-12));
     });
   });
 
@@ -180,6 +232,33 @@ void main() {
 
       final result = QuadValidator.validate(reverseOrder);
       expect(result.issues, contains(QuadValidationIssue.wrongPointOrder));
+    });
+
+    test('rejects a nearly collapsed edge before homography fitting', () {
+      const collapsed = NormalizedQuad(
+        topLeft: NormalizedPoint(0.1, 0.1),
+        topRight: NormalizedPoint(0.105, 0.1),
+        bottomRight: NormalizedPoint(0.9, 0.9),
+        bottomLeft: NormalizedPoint(0.1, 0.9),
+      );
+
+      final result = QuadValidator.validate(collapsed);
+      expect(result.issues, contains(QuadValidationIssue.edgeTooShort));
+    });
+
+    test('rejects a nearly collinear vertex', () {
+      const unstable = NormalizedQuad(
+        topLeft: NormalizedPoint(0.1, 0.1),
+        topRight: NormalizedPoint(0.5, 0.1001),
+        bottomRight: NormalizedPoint(0.9, 0.101),
+        bottomLeft: NormalizedPoint(0.1, 0.9),
+      );
+
+      final result = QuadValidator.validate(unstable, minimumAreaFraction: 0);
+      expect(
+        result.issues,
+        contains(QuadValidationIssue.nearlyCollinearVertex),
+      );
     });
   });
 }

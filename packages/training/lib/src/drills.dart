@@ -14,6 +14,16 @@ enum DrillMetric {
 
 enum DrillMetricDirection { complete, maximize, minimize }
 
+enum DrillCategory {
+  baseline,
+  grouping,
+  consistency,
+  technique,
+  equipment,
+  matchPreparation,
+  reflection,
+}
+
 class DrillShotStructure {
   factory DrillShotStructure({int? shotsPerSeries, String? description}) {
     if (shotsPerSeries != null && shotsPerSeries <= 0) {
@@ -111,6 +121,8 @@ class DrillDefinition {
     required DrillSuccessMetric successMetric,
     required Iterable<String> instructions,
     required String safetyNote,
+    DrillCategory category = DrillCategory.technique,
+    int estimatedMinutes = 20,
     DrillValidationStatus validationStatus = DrillValidationStatus.experimental,
   }) {
     final normalizedId = _requiredText(id, 'id');
@@ -132,6 +144,9 @@ class DrillDefinition {
         'Het aanbevolen aantal reeksen moet positief zijn.',
       );
     }
+    if (estimatedMinutes <= 0 || estimatedMinutes > 240) {
+      throw ArgumentError.value(estimatedMinutes, 'estimatedMinutes');
+    }
     final steps = instructions
         .map((instruction) => instruction.trim())
         .where((instruction) => instruction.isNotEmpty)
@@ -150,6 +165,8 @@ class DrillDefinition {
       successMetric: successMetric,
       instructions: steps,
       safetyNote: _requiredText(safetyNote, 'safetyNote'),
+      category: category,
+      estimatedMinutes: estimatedMinutes,
       validationStatus: validationStatus,
     );
   }
@@ -165,6 +182,8 @@ class DrillDefinition {
     required this.successMetric,
     required List<String> instructions,
     required this.safetyNote,
+    required this.category,
+    required this.estimatedMinutes,
     required this.validationStatus,
   }) : compatibleTargetKinds = List.unmodifiable(compatibleTargetKinds),
        instructions = List.unmodifiable(instructions);
@@ -179,6 +198,8 @@ class DrillDefinition {
   final DrillSuccessMetric successMetric;
   final List<String> instructions;
   final String safetyNote;
+  final DrillCategory category;
+  final int estimatedMinutes;
   final DrillValidationStatus validationStatus;
 
   String get versionedId => '$id@$version';
@@ -198,6 +219,8 @@ class DrillDefinition {
     'successMetric': successMetric.toJson(),
     'instructions': instructions,
     'safetyNote': safetyNote,
+    'category': category.name,
+    'estimatedMinutes': estimatedMinutes,
     'validationStatus': validationStatus.name,
   };
 
@@ -220,6 +243,10 @@ class DrillDefinition {
         ),
         instructions: (json['instructions']! as List<Object?>).cast<String>(),
         safetyNote: json['safetyNote']! as String,
+        category: DrillCategory.values.byName(
+          (json['category'] as String?) ?? DrillCategory.technique.name,
+        ),
+        estimatedMinutes: (json['estimatedMinutes'] as int?) ?? 20,
         validationStatus: DrillValidationStatus.values.byName(
           json['validationStatus']! as String,
         ),
@@ -250,6 +277,8 @@ abstract final class BuiltInDrills {
       'Bewaar de reeks en voeg alleen achteraf context toe.',
     ],
     safetyNote: _safety,
+    category: DrillCategory.baseline,
+    estimatedMinutes: 15,
   );
 
   static final groupSize = DrillDefinition(
@@ -270,6 +299,8 @@ abstract final class BuiltInDrills {
       'Vergelijk mean radius en extreme spreiding tussen de reeksen.',
     ],
     safetyNote: _safety,
+    category: DrillCategory.grouping,
+    estimatedMinutes: 25,
   );
 
   static final fiveSeriesConsistency = DrillDefinition(
@@ -289,6 +320,8 @@ abstract final class BuiltInDrills {
       'Vergelijk spreiding tussen en binnen de reeksen.',
     ],
     safetyNote: _safety,
+    category: DrillCategory.consistency,
+    estimatedMinutes: 40,
   );
 
   static final positionComparison = DrillDefinition(
@@ -308,6 +341,8 @@ abstract final class BuiltInDrills {
       'Vergelijk pas nadat beide varianten evenveel reeksen hebben.',
     ],
     safetyNote: _safety,
+    category: DrillCategory.technique,
+    estimatedMinutes: 35,
   );
 
   static final ammunitionComparison = DrillDefinition(
@@ -327,6 +362,8 @@ abstract final class BuiltInDrills {
       'Trek pas een conclusie na voldoende reeksen en treffers.',
     ],
     safetyNote: _safety,
+    category: DrillCategory.equipment,
+    estimatedMinutes: 40,
   );
 
   static final centeringVersusSpread = DrillDefinition(
@@ -346,6 +383,8 @@ abstract final class BuiltInDrills {
       'Wijzig pas nadien één variabele voor een controlegroep.',
     ],
     safetyNote: _safety,
+    category: DrillCategory.grouping,
+    estimatedMinutes: 25,
   );
 
   static final br50Discipline = DrillDefinition(
@@ -369,6 +408,8 @@ abstract final class BuiltInDrills {
       'Gebruik proefroosjes alleen volgens de geldende baan- en wedstrijdregels.',
     ],
     safetyNote: _safety,
+    category: DrillCategory.matchPreparation,
+    estimatedMinutes: 45,
   );
 
   static final selfEvaluation = DrillDefinition(
@@ -388,6 +429,8 @@ abstract final class BuiltInDrills {
       'Vergelijk evaluatie en trefbeeld pas na alle reeksen.',
     ],
     safetyNote: _safety,
+    category: DrillCategory.reflection,
+    estimatedMinutes: 25,
   );
 
   static final sightVerification = DrillDefinition(
@@ -408,6 +451,152 @@ abstract final class BuiltInDrills {
       'Schiet na een eventuele aanpassing een tweede controlegroep.',
     ],
     safetyNote: _safety,
+    category: DrillCategory.equipment,
+    estimatedMinutes: 25,
+  );
+
+  static final naturalAlignmentCheck = DrillDefinition(
+    id: 'natural-alignment-check',
+    version: 1,
+    name: 'Natuurlijke uitlijning controleren',
+    objective:
+        'Vergelijk een normale opbouw met een bewust gecontroleerde natuurlijke uitlijning.',
+    compatibleTargetKinds: TargetKind.values,
+    recommendedSeries: 2,
+    shotStructure: DrillShotStructure(shotsPerSeries: 5),
+    successMetric: DrillSuccessMetric(
+      metric: DrillMetric.absoluteBiasMm,
+      direction: DrillMetricDirection.minimize,
+    ),
+    instructions: const [
+      'Bouw de eerste reeks op volgens je gewone routine.',
+      'Controleer vóór de tweede reeks waar houding en steun natuurlijk terugkomen.',
+      'Verplaats de volledige houding of steun; forceer de richting niet met extra spierspanning.',
+      'Vergelijk groepscentrum én groepsgrootte, zonder één treffer als oorzaak te gebruiken.',
+    ],
+    safetyNote: _safety,
+    category: DrillCategory.technique,
+    estimatedMinutes: 20,
+  );
+
+  static final holdRestCycle = DrillDefinition(
+    id: 'hold-rest-cycle',
+    version: 1,
+    name: 'Hold- en rustcyclus',
+    objective:
+        'Vind een herhaalbaar uitvoeringsvenster zonder een te lange houding te forceren.',
+    compatibleTargetKinds: TargetKind.values,
+    recommendedSeries: 3,
+    shotStructure: DrillShotStructure(
+      description:
+          'Gebruik par- of cadanssignalen voor opbouw en bewuste rust.',
+    ),
+    successMetric: DrillSuccessMetric(
+      metric: DrillMetric.consistency,
+      direction: DrillMetricDirection.minimize,
+    ),
+    instructions: const [
+      'Kies vooraf een comfortabele maximale opbouwtijd en rusttijd.',
+      'Breek de opbouw veilig af wanneer het venster voorbij is.',
+      'Gebruik dezelfde timing voor drie korte reeksen.',
+      'Vergelijk consistentie en zelfevaluatie, niet alleen totaalscore.',
+    ],
+    safetyNote: _safety,
+    category: DrillCategory.technique,
+    estimatedMinutes: 25,
+  );
+
+  static final calledShot = DrillDefinition(
+    id: 'called-shot-comparison',
+    version: 1,
+    name: 'Schotbeeld vooraf inschatten',
+    objective:
+        'Vergelijk wat je tijdens de uitvoering waarnam met het latere trefbeeld.',
+    compatibleTargetKinds: TargetKind.values,
+    recommendedSeries: 3,
+    shotStructure: DrillShotStructure(shotsPerSeries: 5),
+    successMetric: DrillSuccessMetric(
+      metric: DrillMetric.selfEvaluation,
+      direction: DrillMetricDirection.complete,
+    ),
+    instructions: const [
+      'Beoordeel na ieder schot alleen richting of kwaliteit die je werkelijk waarnam.',
+      'Bekijk de kaart pas na de volledige korte reeks.',
+      'Noteer overeenkomsten en verschillen zonder achteraf een oorzaak in te vullen.',
+    ],
+    safetyNote: _safety,
+    category: DrillCategory.reflection,
+    estimatedMinutes: 20,
+  );
+
+  static final shotRoutineReset = DrillDefinition(
+    id: 'shot-routine-reset',
+    version: 1,
+    name: 'Routine en veilige reset',
+    objective:
+        'Oefen een korte herhaalbare routine én bewust afbreken wanneer de opbouw niet klopt.',
+    compatibleTargetKinds: TargetKind.values,
+    recommendedSeries: 3,
+    successMetric: DrillSuccessMetric(
+      metric: DrillMetric.consistency,
+      direction: DrillMetricDirection.minimize,
+    ),
+    instructions: const [
+      'Kies drie tot vijf korte controlepunten voor de opbouw.',
+      'Breek minstens één keer bewust en veilig af vóór de eerste reeks.',
+      'Gebruik dezelfde routine voor de volgende reeksen.',
+      'Noteer alleen welke stap veranderde; maak geen diagnose uit de score.',
+    ],
+    safetyNote: _safety,
+    category: DrillCategory.matchPreparation,
+    estimatedMinutes: 30,
+  );
+
+  static final pressureSimulation = DrillDefinition(
+    id: 'controlled-pressure-simulation',
+    version: 1,
+    name: 'Gecontroleerde druksimulatie',
+    objective:
+        'Vergelijk een normale reeks met een vooraf begrensde tijds- of scoreopdracht.',
+    compatibleTargetKinds: TargetKind.values,
+    recommendedSeries: 4,
+    successMetric: DrillSuccessMetric(
+      metric: DrillMetric.consistency,
+      direction: DrillMetricDirection.minimize,
+    ),
+    instructions: const [
+      'Schiet eerst twee normale vergelijkbare reeksen.',
+      'Kies één milde drukfactor, bijvoorbeeld een parsignaal of vooraf bepaald doel.',
+      'Schiet twee reeksen met dezelfde kaart, afstand en uitrusting.',
+      'Vergelijk uitvoering, spreiding en reflectie; de drukreeks hoeft niet hoger te scoren.',
+    ],
+    safetyNote: _safety,
+    category: DrillCategory.matchPreparation,
+    estimatedMinutes: 35,
+  );
+
+  static final benchrestReturn = DrillDefinition(
+    id: 'benchrest-return-consistency',
+    version: 1,
+    name: 'Benchrest terugkeerconsistentie',
+    objective:
+        'Controleer of steun, contactpunten en terugkeer tussen korte reeksen gelijk blijven.',
+    compatibleTargetKinds: TargetKind.values,
+    recommendedSeries: 4,
+    shotStructure: DrillShotStructure(shotsPerSeries: 5),
+    successMetric: DrillSuccessMetric(
+      metric: DrillMetric.consistency,
+      direction: DrillMetricDirection.minimize,
+    ),
+    instructions: const [
+      'Leg voor- en achtersteun en contactpunten vooraf vast.',
+      'Wijzig niets tijdens de eerste twee reeksen.',
+      'Herbouw daarna bewust dezelfde opstelling en schiet twee controlegroepen.',
+      'Vergelijk groepscentrum en mean radius vóór en na de heropbouw.',
+    ],
+    safetyNote: _safety,
+    category: DrillCategory.equipment,
+    estimatedMinutes: 35,
   );
 
   static final List<DrillDefinition> all = List.unmodifiable([
@@ -420,6 +609,12 @@ abstract final class BuiltInDrills {
     br50Discipline,
     selfEvaluation,
     sightVerification,
+    naturalAlignmentCheck,
+    holdRestCycle,
+    calledShot,
+    shotRoutineReset,
+    pressureSimulation,
+    benchrestReturn,
   ]);
 
   static DrillDefinition byVersionedId(String versionedId) => all.firstWhere(

@@ -1,0 +1,2 @@
+graphify-out/graph.json merge=graphify
+packages/training/assets/content/v2/*.json text eol=lf

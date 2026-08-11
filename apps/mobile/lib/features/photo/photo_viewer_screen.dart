@@ -20,11 +20,13 @@ class PhotoViewerOverlayData {
     required this.alignment,
     required this.impacts,
     required this.projectileDiameterMm,
+    this.targetProfile,
   });
 
   final ManualPhotoAlignment alignment;
   final List<PhotoCanvasImpact> impacts;
   final double projectileDiameterMm;
+  final domain.TargetProfile? targetProfile;
 }
 
 /// A live photo viewer shared by session photos, series attachments and score
@@ -58,15 +60,21 @@ class _PhotoViewerScreenState extends ConsumerState<PhotoViewerScreen> {
   late bool _showOverlay;
   bool _showFullCaption = false;
   bool _working = false;
+  double _overlayOpacity = 0.72;
+  int _displayRotationQuarterTurns = 0;
+  Timer? _blinkTimer;
 
   @override
   void initState() {
     super.initState();
     _showOverlay = widget.initialOverlayVisibility;
+    _displayRotationQuarterTurns =
+        widget.overlayData?.alignment.rotationQuarterTurns ?? 0;
   }
 
   @override
   void dispose() {
+    _blinkTimer?.cancel();
     _overlayViewportController.dispose();
     _plainTransformationController.dispose();
     super.dispose();
@@ -107,12 +115,42 @@ class _PhotoViewerScreenState extends ConsumerState<PhotoViewerScreen> {
                 _showOverlay ? Icons.layers : Icons.layers_clear_outlined,
               ),
             ),
-          IconButton(
-            tooltip: 'Foto verwijderen',
-            onPressed: _working
-                ? null
-                : () => unawaited(_handleAction(image, PhotoAction.delete)),
-            icon: const Icon(Icons.delete_outline),
+          PopupMenuButton<int>(
+            tooltip: 'Foto draaien',
+            icon: const Icon(Icons.screen_rotation_outlined),
+            onSelected: (value) {
+              if (value == 0) {
+                _setDisplayRotation(0);
+              } else {
+                _rotateDisplay(value);
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: -1,
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.rotate_left),
+                  title: Text('90 graden linksom'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 1,
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.rotate_right),
+                  title: Text('90 graden rechtsom'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 0,
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.photo_size_select_actual_outlined),
+                  title: Text('Originele stand'),
+                ),
+              ),
+            ],
           ),
           PopupMenuButton<PhotoAction>(
             tooltip: 'Fotoacties',
@@ -157,6 +195,15 @@ class _PhotoViewerScreenState extends ConsumerState<PhotoViewerScreen> {
                     title: Text('Uitlijning aanpassen'),
                   ),
                 ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: PhotoAction.delete,
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.delete_outline),
+                  title: Text('Foto verwijderen'),
+                ),
+              ),
             ],
           ),
         ],
@@ -175,16 +222,28 @@ class _PhotoViewerScreenState extends ConsumerState<PhotoViewerScreen> {
                         minScale: 1,
                         maxScale: 8,
                         child: Center(
-                          child: Image.file(
-                            File(image.path),
-                            errorBuilder: (_, _, _) => const Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.broken_image_outlined, size: 48),
-                                  SizedBox(height: 8),
-                                  Text('Het originele fotobestand ontbreekt.'),
-                                ],
+                          child: AspectRatio(
+                            aspectRatio: _displayAspectRatio(image),
+                            child: RotatedBox(
+                              quarterTurns: _displayRotationQuarterTurns,
+                              child: Image.file(
+                                File(image.path),
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, _, _) => const Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.broken_image_outlined,
+                                        size: 48,
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'Het originele fotobestand ontbreekt.',
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -199,12 +258,23 @@ class _PhotoViewerScreenState extends ConsumerState<PhotoViewerScreen> {
                         alignment: overlay.alignment,
                         impacts: overlay.impacts,
                         projectileDiameterMm: overlay.projectileDiameterMm,
+                        targetProfile: overlay.targetProfile,
+                        overlayOpacity: _overlayOpacity,
+                        displayRotationQuarterTurns:
+                            _displayRotationQuarterTurns,
                         showOverlay: _showOverlay,
                         accessMode: CanvasAccessMode.readOnly,
                         viewportController: _overlayViewportController,
                       ),
               ),
             ),
+            if (overlay != null && _showOverlay)
+              _OverlayOpacityControl(
+                value: _overlayOpacity,
+                onBlink: _blinkOverlay,
+                onFit: _resetView,
+                onChanged: (value) => setState(() => _overlayOpacity = value),
+              ),
             if (caption != null && caption.isNotEmpty)
               _CaptionPanel(
                 caption: caption,
@@ -226,6 +296,31 @@ class _PhotoViewerScreenState extends ConsumerState<PhotoViewerScreen> {
     } else {
       _plainTransformationController.value = Matrix4.identity();
     }
+  }
+
+  void _rotateDisplay(int delta) {
+    final next = (_displayRotationQuarterTurns + delta) % 4;
+    _setDisplayRotation(next < 0 ? next + 4 : next);
+  }
+
+  void _setDisplayRotation(int rotation) {
+    setState(() => _displayRotationQuarterTurns = rotation);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _resetView();
+    });
+  }
+
+  double _displayAspectRatio(ImageAssetRecord image) {
+    final natural = image.width / image.height;
+    return _displayRotationQuarterTurns.isOdd ? 1 / natural : natural;
+  }
+
+  void _blinkOverlay() {
+    _blinkTimer?.cancel();
+    setState(() => _showOverlay = false);
+    _blinkTimer = Timer(const Duration(milliseconds: 650), () {
+      if (mounted) setState(() => _showOverlay = true);
+    });
   }
 
   Future<void> _handleAction(ImageAssetRecord image, PhotoAction action) async {
@@ -341,6 +436,64 @@ class _CaptionPanel extends StatelessWidget {
       ),
     );
   }
+}
+
+class _OverlayOpacityControl extends StatelessWidget {
+  const _OverlayOpacityControl({
+    required this.value,
+    required this.onChanged,
+    required this.onBlink,
+    required this.onFit,
+  });
+
+  final double value;
+  final ValueChanged<double> onChanged;
+  final VoidCallback onBlink;
+  final VoidCallback onFit;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: 'Doorzichtigheid overlay ${(value * 100).round()} procent',
+    child: Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.opacity_outlined, size: 20),
+          const SizedBox(width: 6),
+          const Text('Overlay'),
+          Expanded(
+            child: Slider(
+              value: value,
+              min: 0.15,
+              max: 1,
+              divisions: 17,
+              label: '${(value * 100).round()}%',
+              onChanged: onChanged,
+            ),
+          ),
+          SizedBox(
+            width: 42,
+            child: Text('${(value * 100).round()}%', textAlign: TextAlign.end),
+          ),
+          IconButton(
+            tooltip: 'Foto en overlay vergelijken',
+            onPressed: onBlink,
+            icon: const Icon(Icons.compare_outlined),
+          ),
+          IconButton(
+            tooltip: 'Passend weergeven',
+            onPressed: onFit,
+            icon: const Icon(Icons.fit_screen_outlined),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 Future<void> editPhotoCaption({

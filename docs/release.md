@@ -1,14 +1,43 @@
-# Android release
+# Android release 0.8.0+1
 
-1. Run formatting, analysis, Flutter tests and all pure Dart package tests.
-2. Build a release APK with Android SDK 33 minimum.
-3. Inspect the merged manifest and reject `android.permission.INTERNET`.
-4. Configure signing through GitHub encrypted secrets; never commit keystores.
-5. Generate SHA-256 and an SBOM.
-6. Tag with SemVer and attach APK, checksum, SBOM and limitations.
+The release source is one clean commit on a branch based on the current GitHub
+`main`. Database schema and encrypted backup manifest both remain version 8.
 
-Version 0.3 uses debug signing for local release-mode testing only. Public
-GitHub artifacts require a dedicated release key and protected workflow.
+1. Run documentation, Graphify, privacy and release-contract source checks.
+2. Run formatting, Flutter analysis/tests, every package test, Kotlin timer
+   tests and native C++/C-ABI tests.
+3. Install the pinned OpenCV 4.13.0 Android SDK and verify its published
+   SHA-256 before compiling.
+4. Build one arm64 APK with `--dart-define=GIT_COMMIT=<full commit sha>`.
+5. Validate package ID, version, native ABI/library and merged permissions from
+   that exact APK.
+6. Name the artifact
+   `shooting-companion-0.8.0+1-<short-sha>-arm64-release.apk` and generate its
+   SHA-256 and SBOM.
+7. Configure production signing only through protected GitHub secrets. Never
+   commit keystores, APKs, OpenCV archives or private validation media.
+8. Attach limitations: acoustic timing is not certified and OpenCV photo
+   scoring remains experimental with mandatory human review.
+
+Required permissions are `CAMERA`, `RECORD_AUDIO` and `VIBRATE`. Reject
+`INTERNET`, network-state, location and external-storage permissions. The
+canonical machine-readable gate is
+[`apps/mobile/assets/release_contract.json`](../apps/mobile/assets/release_contract.json).
+
+## Acoustic validation gate
+
+The UI describes acoustic timing as a user-reviewed training measurement. Do
+not make device- or calibre-specific accuracy claims until all conditions pass:
+
+- at least three recent Android devices including the primary Samsung;
+- indoor and outdoor validation reported separately;
+- at least 300 independent strings and 3,000 reference shots;
+- at least 95% exact event count for supported single-shooter strings;
+- median timing error at most 20 ms and P95 at most 50 ms;
+- no start-signal double registrations and all questionable events reviewable.
+
+Until then public release notes must preserve the shared-range limitation and
+must not describe the phone as certified match equipment.
 
 ## Toolchain note
 

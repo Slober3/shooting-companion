@@ -27,7 +27,11 @@ class AppSelectField<T> extends FormField<T> {
   }) : super(
          initialValue: initialValue,
          enabled: isEnabled,
-         validator: validation,
+         validator: (value) {
+           final available = options.any((option) => option.value == value);
+           if (!available) return 'Kies een geldige optie';
+           return validation?.call(value);
+         },
          builder: (state) {
            final selected = options.cast<AppSelectOption<T>?>().firstWhere(
              (option) => option?.value == state.value,
@@ -35,7 +39,7 @@ class AppSelectField<T> extends FormField<T> {
            );
            return InkWell(
              borderRadius: BorderRadius.circular(12),
-             onTap: isEnabled
+             onTap: isEnabled && options.isNotEmpty
                  ? () async {
                      final result =
                          await showSafeModalSheet<AppSelectOption<T>>(
@@ -52,16 +56,21 @@ class AppSelectField<T> extends FormField<T> {
                    }
                  : null,
              child: InputDecorator(
-               isEmpty: selected == null,
+               // A visible fallback is still content. Marking this decorator as
+               // empty would leave the label inline and paint both strings on
+               // top of each other.
+               isEmpty: false,
                decoration: InputDecoration(
                  labelText: label,
                  helperText: helperText,
-                 errorText: state.errorText,
+                 errorText:
+                     state.errorText ??
+                     (selected == null ? 'Kies een geldige optie' : null),
                  enabled: isEnabled,
                  suffixIcon: const Icon(Icons.arrow_drop_down),
                ),
                child: Text(
-                 selected?.label ?? 'Niet geselecteerd',
+                 selected?.label ?? 'Keuze niet beschikbaar',
                  maxLines: 2,
                  overflow: TextOverflow.ellipsis,
                ),
@@ -69,6 +78,22 @@ class AppSelectField<T> extends FormField<T> {
            );
          },
        );
+
+  @override
+  FormFieldState<T> createState() => _AppSelectFieldState<T>();
+}
+
+class _AppSelectFieldState<T> extends FormFieldState<T> {
+  @override
+  void didUpdateWidget(covariant AppSelectField<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialValue != widget.initialValue) {
+      // FormField only applies initialValue when its state is first created.
+      // Keep this reusable field synchronized with its owning form when a
+      // dependent selection changes.
+      setValue(widget.initialValue);
+    }
+  }
 }
 
 class _AppSelectSheet<T> extends StatefulWidget {

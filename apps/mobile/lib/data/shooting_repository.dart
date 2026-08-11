@@ -1,14 +1,19 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:drift/drift.dart';
 import 'package:shooting_companion_domain/domain.dart' as domain;
+import 'package:shooting_companion_photo_geometry/photo_geometry.dart' as geo;
 import 'package:shooting_companion_scoring/scoring.dart';
 import 'package:shooting_companion_target_profiles/target_profiles.dart';
+import 'package:shooting_companion_training/training.dart';
 import 'package:uuid/uuid.dart';
 
 import 'app_database.dart';
+import 'timer_preset_defaults.dart';
+import 'training_activity_snapshot_validator.dart';
 
 class ActiveSessionExistsException implements Exception {
   const ActiveSessionExistsException(this.sessionId);
@@ -77,8 +82,143 @@ enum ReflectionContextTag {
 
 enum StoredCoachFeedbackResponse { useful, notUseful, later, dismiss }
 
+enum StoredTrainingActivityKind {
+  acousticLiveFire,
+  par,
+  cadence,
+  externalManual,
+  drill,
+  guidedDrillV2,
+  learningPathV2,
+  trainingPlan,
+  experiment,
+  sightVerification,
+  coldSeries,
+}
+
+enum StoredTrainingActivityStatus { draft, completed, interrupted }
+
+enum StoredTimerEventSource { acoustic, manual, generatedPar, external }
+
+enum StoredTimerEventDisposition { counted, excluded }
+
+const _timerActivityKinds = {
+  'acousticLiveFire',
+  'par',
+  'cadence',
+  'externalManual',
+};
+
+class NewShotTimerEvent {
+  const NewShotTimerEvent({
+    this.id,
+    required this.elapsedMicroseconds,
+    required this.splitMicroseconds,
+    required this.source,
+    this.disposition = StoredTimerEventDisposition.counted,
+    this.normalizedPeak,
+    this.detectionQuality,
+    this.exclusionReason,
+  });
+
+  final String? id;
+  final int elapsedMicroseconds;
+  final int splitMicroseconds;
+  final StoredTimerEventSource source;
+  final StoredTimerEventDisposition disposition;
+  final double? normalizedPeak;
+  final String? detectionQuality;
+  final String? exclusionReason;
+}
+
+class TrainingActivityDetail {
+  const TrainingActivityDetail({
+    required this.activity,
+    required this.links,
+    required this.events,
+  });
+
+  final TrainingActivityRecord activity;
+  final List<TrainingActivitySeriesLinkRecord> links;
+  final List<ShotTimerEventRecord> events;
+}
+
+/// Read model used by the training UI so it never needs to reinterpret stored
+/// activity JSON or accidentally resume a legacy v1 drill.
+class GuidedTrainingActivityOverview {
+  const GuidedTrainingActivityOverview({
+    required this.activity,
+    required this.configuration,
+    required this.summary,
+    required this.title,
+    required this.versionedContentId,
+    required this.canResume,
+    required this.isLegacyReadOnly,
+    required this.isTrainingPlan,
+  });
+
+  final TrainingActivityRecord activity;
+  final Map<String, Object?> configuration;
+  final Map<String, Object?> summary;
+  final String title;
+  final String? versionedContentId;
+  final bool canResume;
+  final bool isLegacyReadOnly;
+  final bool isTrainingPlan;
+}
+
+/// Version-bound read model for an active or historical learning path.
+///
+/// The UI reconstructs the path from [configuration], never from the mutable
+/// built-in catalog. This keeps a started path reproducible after content
+/// updates and makes completed history strictly read-only.
+class LearningPathActivityOverview {
+  const LearningPathActivityOverview({
+    required this.activity,
+    required this.configuration,
+    required this.summary,
+    required this.title,
+    required this.versionedContentId,
+    required this.completedEntryIds,
+    required this.currentEntryIndex,
+    required this.totalEntryCount,
+    required this.lessonSnapshotsByEntryId,
+    required this.drillSnapshotsByEntryId,
+    required this.canResume,
+  });
+
+  final TrainingActivityRecord activity;
+  final Map<String, Object?> configuration;
+  final Map<String, Object?> summary;
+  final String title;
+  final String? versionedContentId;
+  final Set<String> completedEntryIds;
+  final int currentEntryIndex;
+  final int totalEntryCount;
+  final Map<String, TechniqueLessonV2> lessonSnapshotsByEntryId;
+  final Map<String, DrillDefinitionV2> drillSnapshotsByEntryId;
+  final bool canResume;
+
+  bool get hasCompleteEntrySnapshots =>
+      lessonSnapshotsByEntryId.length + drillSnapshotsByEntryId.length ==
+      totalEntryCount;
+
+  bool get isReadOnly =>
+      activity.status == StoredTrainingActivityStatus.completed.name ||
+      !canResume;
+}
+
+class TrainingActivityFilters {
+  const TrainingActivityFilters({this.kind, this.sessionId, this.status});
+
+  final StoredTrainingActivityKind? kind;
+  final String? sessionId;
+  final StoredTrainingActivityStatus? status;
+}
+
 class AnalysisSeriesData {
   const AnalysisSeriesData({
+    required this.session,
     required this.series,
     required this.impacts,
     required this.firearm,
@@ -87,6 +227,7 @@ class AnalysisSeriesData {
     required this.reflection,
   });
 
+  final SessionRecord session;
   final SeriesRecord series;
   final List<ImpactRecord> impacts;
   final FirearmRecord? firearm;
@@ -541,6 +682,7 @@ class ShootingRepository {
         'SELECT 1',
         readsFrom: {
           database.shootingSeries,
+          database.trainingSessions,
           database.shotImpacts,
           database.firearms,
           database.ammoLots,
@@ -746,9 +888,1633 @@ class ShootingRepository {
         );
   }
 
+  Stream<List<TrainingActivityRecord>> watchTrainingActivities([
+    TrainingActivityFilters filters = const TrainingActivityFilters(),
+  ]) {
+    final query = database.select(database.trainingActivities)
+      ..orderBy([(row) => OrderingTerm.desc(row.startedAtUtc)]);
+    final kind = filters.kind;
+    if (kind != null) query.where((row) => row.kind.equals(kind.name));
+    final sessionId = filters.sessionId;
+    if (sessionId != null) {
+      query.where((row) => row.sessionId.equals(sessionId));
+    }
+    final status = filters.status;
+    if (status != null) query.where((row) => row.status.equals(status.name));
+    return query.watch();
+  }
+
+  /// Watches unfinished drill runs that can be resumed from the drill library.
+  ///
+  /// A drill is deliberately persisted before its first series is opened. Both
+  /// [draft] and [interrupted] records therefore belong in this list.
+  Stream<List<TrainingActivityRecord>> watchResumableDrillActivities() {
+    final query = database.select(database.trainingActivities)
+      ..where(
+        (row) =>
+            row.kind.equals(StoredTrainingActivityKind.guidedDrillV2.name) &
+            row.status.isIn([
+              StoredTrainingActivityStatus.draft.name,
+              StoredTrainingActivityStatus.interrupted.name,
+            ]),
+      )
+      ..orderBy([(row) => OrderingTerm.desc(row.updatedAtUtc)]);
+    return query.watch().map(
+      (activities) => activities
+          .where(_hasResumableTrainingSnapshot)
+          .toList(growable: false),
+    );
+  }
+
+  /// Watches unfinished deterministic training plans.
+  Stream<List<TrainingActivityRecord>> watchResumableTrainingPlans() {
+    final query = database.select(database.trainingActivities)
+      ..where(
+        (row) =>
+            row.kind.equals(StoredTrainingActivityKind.trainingPlan.name) &
+            row.status.isIn([
+              StoredTrainingActivityStatus.draft.name,
+              StoredTrainingActivityStatus.interrupted.name,
+            ]),
+      )
+      ..orderBy([(row) => OrderingTerm.desc(row.updatedAtUtc)]);
+    return query.watch().map(
+      (activities) => activities
+          .where(_hasResumableTrainingSnapshot)
+          .toList(growable: false),
+    );
+  }
+
+  /// Watches the one authoritative active training plan.
+  ///
+  /// Creation prevents multiple active plans. If imported or externally
+  /// corrupted data nevertheless contains more than one resumable plan, this
+  /// stream fails closed instead of choosing an arbitrary plan.
+  Stream<TrainingActivityRecord?>
+  watchActiveTrainingPlan() => watchResumableTrainingPlans().map((plans) {
+    if (plans.isEmpty) return null;
+    if (plans.length == 1) return plans.single;
+    throw StateError(
+      'Meerdere actieve trainingsplannen gevonden; hervatten is geblokkeerd.',
+    );
+  });
+
+  /// Watches every persisted V2 learning path, including immutable history.
+  /// Malformed or future snapshots stay visible but are never resumable.
+  Stream<List<LearningPathActivityOverview>>
+  watchLearningPathActivityOverviews() {
+    final query = database.select(database.trainingActivities)
+      ..where(
+        (row) =>
+            row.kind.equals(StoredTrainingActivityKind.learningPathV2.name),
+      )
+      ..orderBy([(row) => OrderingTerm.desc(row.updatedAtUtc)]);
+    return query.watch().map(
+      (activities) =>
+          activities.map(_learningPathActivityOverview).toList(growable: false),
+    );
+  }
+
+  /// Watches the single unfinished learning path used by the Start resume card.
+  ///
+  /// A corrupt import containing multiple unfinished paths fails closed rather
+  /// than picking one arbitrarily.
+  Stream<LearningPathActivityOverview?> watchActiveLearningPath() =>
+      watchLearningPathActivityOverviews().map((overviews) {
+        final active = overviews
+            .where(
+              (overview) =>
+                  overview.activity.status ==
+                      StoredTrainingActivityStatus.draft.name ||
+                  overview.activity.status ==
+                      StoredTrainingActivityStatus.interrupted.name,
+            )
+            .toList(growable: false);
+        if (active.isEmpty) return null;
+        if (active.length == 1) return active.single;
+        throw StateError(
+          'Meerdere actieve leerpaden gevonden; hervatten is geblokkeerd.',
+        );
+      });
+
+  /// Provides current runs and history with legacy drill records explicitly
+  /// marked read-only. Only `guidedDrillV2` and `trainingPlan` can resume.
+  Stream<List<GuidedTrainingActivityOverview>>
+  watchGuidedTrainingActivityOverviews() {
+    final query = database.select(database.trainingActivities)
+      ..where(
+        (row) => row.kind.isIn([
+          StoredTrainingActivityKind.drill.name,
+          StoredTrainingActivityKind.guidedDrillV2.name,
+          StoredTrainingActivityKind.trainingPlan.name,
+        ]),
+      )
+      ..orderBy([(row) => OrderingTerm.desc(row.updatedAtUtc)]);
+    return query.watch().map(
+      (activities) => activities
+          .map(_guidedTrainingActivityOverview)
+          .toList(growable: false),
+    );
+  }
+
+  Stream<TrainingActivityDetail?> watchTrainingActivity(String activityId) =>
+      database
+          .customSelect(
+            'SELECT 1',
+            readsFrom: {
+              database.trainingActivities,
+              database.trainingActivitySeriesLinks,
+              database.shotTimerEvents,
+            },
+          )
+          .watch()
+          .asyncMap((_) => getTrainingActivity(activityId));
+
+  Stream<List<TrainingActivityRecord>> watchSessionTrainingActivities(
+    String sessionId,
+  ) =>
+      (database.select(database.trainingActivities)
+            ..where((row) => row.sessionId.equals(sessionId))
+            ..orderBy([(row) => OrderingTerm.desc(row.startedAtUtc)]))
+          .watch();
+
+  Stream<List<TrainingActivityRecord>> watchSeriesTrainingActivities(
+    String seriesId,
+  ) {
+    final query = database.select(database.trainingActivities).join([
+      innerJoin(
+        database.trainingActivitySeriesLinks,
+        database.trainingActivitySeriesLinks.activityId.equalsExp(
+          database.trainingActivities.id,
+        ),
+      ),
+    ])..where(database.trainingActivitySeriesLinks.seriesId.equals(seriesId));
+    query.orderBy([
+      OrderingTerm.desc(database.trainingActivities.startedAtUtc),
+    ]);
+    return query.watch().map(
+      (rows) => rows
+          .map((row) => row.readTable(database.trainingActivities))
+          .toList(growable: false),
+    );
+  }
+
+  Stream<List<TimerPresetRecord>> watchTimerPresets({
+    bool includeArchived = false,
+  }) {
+    final query = database.select(database.timerPresets)
+      ..orderBy([
+        (row) => OrderingTerm.asc(row.builtIn),
+        (row) => OrderingTerm.asc(row.name),
+      ]);
+    if (!includeArchived) query.where((row) => row.archived.equals(false));
+    return query.watch();
+  }
+
+  Stream<List<AcousticCalibrationProfileRecord>>
+  watchAcousticCalibrationProfiles() => (database.select(
+    database.acousticCalibrationProfiles,
+  )..orderBy([(row) => OrderingTerm.desc(row.updatedAtUtc)])).watch();
+
+  Future<TrainingActivityDetail?> getTrainingActivity(String activityId) async {
+    final activity = await (database.select(
+      database.trainingActivities,
+    )..where((row) => row.id.equals(activityId))).getSingleOrNull();
+    if (activity == null) return null;
+    final links =
+        await (database.select(database.trainingActivitySeriesLinks)
+              ..where((row) => row.activityId.equals(activityId))
+              ..orderBy([(row) => OrderingTerm.asc(row.sequenceNumber)]))
+            .get();
+    final events =
+        await (database.select(database.shotTimerEvents)
+              ..where((row) => row.activityId.equals(activityId))
+              ..orderBy([(row) => OrderingTerm.asc(row.sequenceNumber)]))
+            .get();
+    return TrainingActivityDetail(
+      activity: activity,
+      links: List.unmodifiable(links),
+      events: List.unmodifiable(events),
+    );
+  }
+
+  Future<String> createTrainingActivity({
+    String? id,
+    required StoredTrainingActivityKind kind,
+    int activitySchemaVersion = 1,
+    StoredTrainingActivityStatus status = StoredTrainingActivityStatus.draft,
+    String? sessionId,
+    Map<String, Object?> configuration = const {},
+    Map<String, Object?> summary = const {},
+    String? detectorVersion,
+    required DateTime startedAtUtc,
+    required int localUtcOffsetMinutes,
+    DateTime? completedAtUtc,
+    String? notes,
+  }) async {
+    if (activitySchemaVersion < 1 || localUtcOffsetMinutes.abs() > 24 * 60) {
+      throw ArgumentError('Ongeldige trainingsactiviteit.');
+    }
+    if (status == StoredTrainingActivityStatus.completed &&
+        completedAtUtc == null) {
+      throw ArgumentError('Een voltooide activiteit vereist een eindtijd.');
+    }
+    final configurationJson = _encodeJsonObject(
+      configuration,
+      'timerconfiguratie',
+    );
+    final summaryJson = _encodeJsonObject(summary, 'timersamenvatting');
+    final activityId = id ?? _uuid.v7();
+    final now = DateTime.now().toUtc();
+    await database.transaction(() async {
+      if (sessionId != null && await _session(sessionId) == null) {
+        throw ArgumentError('De gekozen sessie bestaat niet meer.');
+      }
+      await database
+          .into(database.trainingActivities)
+          .insert(
+            TrainingActivitiesCompanion.insert(
+              id: activityId,
+              kind: kind.name,
+              schemaVersion: Value(activitySchemaVersion),
+              status: status.name,
+              sessionId: Value(sessionId),
+              configurationJson: configurationJson,
+              summaryJson: summaryJson,
+              detectorVersion: Value(_nullIfBlank(detectorVersion)),
+              startedAtUtc: startedAtUtc.toUtc(),
+              localUtcOffsetMinutes: localUtcOffsetMinutes,
+              completedAtUtc: Value(completedAtUtc?.toUtc()),
+              notes: Value(_nullIfBlank(notes)),
+              createdAtUtc: now,
+              updatedAtUtc: now,
+            ),
+          );
+      if (sessionId != null) await _touchSession(sessionId, now);
+    });
+    return activityId;
+  }
+
+  /// Starts exactly one version-bound learning path.
+  ///
+  /// Repeating the same request while that path is unfinished returns the
+  /// existing activity id. A different active path must first be completed,
+  /// interrupted and removed, or explicitly resumed by the user.
+  Future<String> startLearningPathActivity({
+    required String learningPathVersionedId,
+    required Map<String, Object?> learningPathSnapshot,
+    required DateTime startedAtUtc,
+    required int localUtcOffsetMinutes,
+  }) async {
+    if (localUtcOffsetMinutes.abs() > 24 * 60) {
+      throw ArgumentError('Ongeldige lokale tijdzone.');
+    }
+    final pathOnly = _validateLearningPathSnapshot(
+      learningPathVersionedId: learningPathVersionedId,
+      learningPathSnapshot: learningPathSnapshot,
+    );
+    final entrySnapshots = _createLearningPathEntrySnapshots(pathOnly.path);
+    final validated = _validateLearningPathSnapshot(
+      learningPathVersionedId: learningPathVersionedId,
+      learningPathSnapshot: learningPathSnapshot,
+      rawEntrySnapshots: entrySnapshots,
+      requireEntrySnapshots: true,
+    );
+    final configuration = <String, Object?>{
+      'learningPathVersionedId': validated.path.versionedId,
+      'learningPath': validated.path.toJson(),
+      'entrySnapshots': entrySnapshots,
+    };
+    final summary = <String, Object?>{
+      'completedEntryIds': <String>[],
+      'currentEntryIndex': 0,
+    };
+    final configurationJson = _encodeJsonObject(
+      configuration,
+      'leerpadconfiguratie',
+    );
+    final summaryJson = _encodeJsonObject(summary, 'leerpadvoortgang');
+    final id = _uuid.v7();
+    final now = DateTime.now().toUtc();
+    return database.transaction(() async {
+      final existing =
+          await (database.select(database.trainingActivities)..where(
+                (row) =>
+                    row.kind.equals(
+                      StoredTrainingActivityKind.learningPathV2.name,
+                    ) &
+                    row.status.isIn([
+                      StoredTrainingActivityStatus.draft.name,
+                      StoredTrainingActivityStatus.interrupted.name,
+                    ]),
+              ))
+              .get();
+      if (existing.length > 1) {
+        throw StateError(
+          'Meerdere actieve leerpaden gevonden; starten is geblokkeerd.',
+        );
+      }
+      if (existing case [final current]) {
+        final currentSnapshot = _learningPathSnapshot(current);
+        if (currentSnapshot.path.versionedId == validated.path.versionedId) {
+          return current.id;
+        }
+        throw StateError(
+          'Er is al een ander leerpad actief. Rond het af of onderbreek het.',
+        );
+      }
+      await database
+          .into(database.trainingActivities)
+          .insert(
+            TrainingActivitiesCompanion.insert(
+              id: id,
+              kind: StoredTrainingActivityKind.learningPathV2.name,
+              schemaVersion: const Value(2),
+              status: StoredTrainingActivityStatus.draft.name,
+              configurationJson: configurationJson,
+              summaryJson: summaryJson,
+              startedAtUtc: startedAtUtc.toUtc(),
+              localUtcOffsetMinutes: localUtcOffsetMinutes,
+              createdAtUtc: now,
+              updatedAtUtc: now,
+            ),
+          );
+      return id;
+    });
+  }
+
+  /// Replaces learning-path progress after validating it against the immutable
+  /// path snapshot. Repeating the same write is a no-op.
+  Future<void> updateLearningPathProgress({
+    required String activityId,
+    required Iterable<String> completedEntryIds,
+  }) async {
+    await database.transaction(() async {
+      final activity = await _requireLearningPathActivity(activityId);
+      if (activity.status != StoredTrainingActivityStatus.draft.name) {
+        throw StateError(
+          activity.status == StoredTrainingActivityStatus.completed.name
+              ? 'Een afgerond leerpad is alleen-lezen.'
+              : 'Hervat het leerpad voordat je voortgang aanpast.',
+        );
+      }
+      final snapshot = _learningPathSnapshot(activity);
+      final completed = completedEntryIds.toList(growable: false);
+      if (completed.length != completed.toSet().length ||
+          completed.any((id) => !snapshot.entryIds.contains(id))) {
+        throw ArgumentError('De leerpadvoortgang bevat onbekende onderdelen.');
+      }
+      final completedSet = completed.toSet();
+      await _requireCompletedLearningPathDrillEvidence(
+        activity: activity,
+        snapshot: snapshot,
+        completedEntryIds: completedSet,
+      );
+      final orderedCompleted = snapshot.entryIds
+          .where(completedSet.contains)
+          .toList(growable: false);
+      final currentEntryIndex = snapshot.entryIds.indexWhere(
+        (id) => !completedSet.contains(id),
+      );
+      final summary = <String, Object?>{
+        'completedEntryIds': orderedCompleted,
+        'currentEntryIndex': currentEntryIndex < 0
+            ? snapshot.entryIds.length
+            : currentEntryIndex,
+      };
+      final summaryJson = _encodeJsonObject(summary, 'leerpadvoortgang');
+      if (summaryJson == activity.summaryJson) return;
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          summaryJson: Value(summaryJson),
+          updatedAtUtc: Value(DateTime.now().toUtc()),
+        ),
+      );
+    });
+  }
+
+  Future<void> resumeLearningPath(String activityId) =>
+      _resumeStructuredActivity(
+        activityId,
+        requireActivity: _requireLearningPathActivity,
+      );
+
+  Future<void> interruptLearningPath({
+    required String activityId,
+    DateTime? interruptedAtUtc,
+  }) async {
+    await database.transaction(() async {
+      final activity = await _requireLearningPathActivity(activityId);
+      if (activity.status == StoredTrainingActivityStatus.completed.name ||
+          activity.status == StoredTrainingActivityStatus.interrupted.name) {
+        return;
+      }
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          status: Value(StoredTrainingActivityStatus.interrupted.name),
+          completedAtUtc: Value((interruptedAtUtc ?? now).toUtc()),
+          updatedAtUtc: Value(now),
+        ),
+      );
+    });
+  }
+
+  Future<void> completeLearningPath({
+    required String activityId,
+    required DateTime completedAtUtc,
+  }) async {
+    await database.transaction(() async {
+      final activity = await _requireLearningPathActivity(activityId);
+      if (activity.status == StoredTrainingActivityStatus.completed.name) {
+        return;
+      }
+      final snapshot = _learningPathSnapshot(activity);
+      final progress = _learningPathProgress(activity, snapshot);
+      if (progress.completedEntryIds.length != snapshot.entryIds.length) {
+        throw StateError('Rond eerst alle onderdelen van het leerpad af.');
+      }
+      await _requireCompletedLearningPathDrillEvidence(
+        activity: activity,
+        snapshot: snapshot,
+        completedEntryIds: progress.completedEntryIds.toSet(),
+      );
+      final completedAt = completedAtUtc.toUtc();
+      if (completedAt.isBefore(activity.startedAtUtc.toUtc())) {
+        throw ArgumentError('De eindtijd ligt vóór de start van het leerpad.');
+      }
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          status: Value(StoredTrainingActivityStatus.completed.name),
+          completedAtUtc: Value(completedAt),
+          updatedAtUtc: Value(DateTime.now().toUtc()),
+        ),
+      );
+    });
+  }
+
+  /// Creates the sole resumable training plan. A second draft must be resumed
+  /// or explicitly interrupted/deleted instead of being silently duplicated.
+  Future<String> createTrainingPlanActivity({
+    required Map<String, Object?> configuration,
+    required Map<String, Object?> summary,
+    required DateTime startedAtUtc,
+    required int localUtcOffsetMinutes,
+  }) async {
+    if (localUtcOffsetMinutes.abs() > 24 * 60) {
+      throw ArgumentError('Ongeldige lokale tijdzone.');
+    }
+    final configurationJson = _encodeJsonObject(
+      configuration,
+      'trainingsplanconfiguratie',
+    );
+    final summaryJson = _encodeJsonObject(summary, 'trainingsplansamenvatting');
+    final id = _uuid.v7();
+    final now = DateTime.now().toUtc();
+    await database.transaction(() async {
+      final existing =
+          await (database.select(database.trainingActivities)
+                ..where(
+                  (row) =>
+                      row.kind.equals(
+                        StoredTrainingActivityKind.trainingPlan.name,
+                      ) &
+                      row.status.isIn([
+                        StoredTrainingActivityStatus.draft.name,
+                        StoredTrainingActivityStatus.interrupted.name,
+                      ]),
+                )
+                ..limit(1))
+              .getSingleOrNull();
+      if (existing != null) {
+        throw StateError(
+          'Er bestaat al een trainingsplan. Hervat of verwijder dat plan.',
+        );
+      }
+      await database
+          .into(database.trainingActivities)
+          .insert(
+            TrainingActivitiesCompanion.insert(
+              id: id,
+              kind: StoredTrainingActivityKind.trainingPlan.name,
+              schemaVersion: const Value(1),
+              status: StoredTrainingActivityStatus.draft.name,
+              configurationJson: configurationJson,
+              summaryJson: summaryJson,
+              startedAtUtc: startedAtUtc.toUtc(),
+              localUtcOffsetMinutes: localUtcOffsetMinutes,
+              createdAtUtc: now,
+              updatedAtUtc: now,
+            ),
+          );
+      final stored = await _requireTrainingPlanActivity(id);
+      _planSnapshot(stored);
+    });
+    return id;
+  }
+
+  /// Finds or creates exactly one V2 guided activity for a persisted plan slot.
+  /// The slot mapping and activity insert share one transaction, preventing
+  /// orphaned drafts after process interruption or repeated taps.
+  Future<String> findOrCreateGuidedDrillSlot({
+    required String planActivityId,
+    required int slotIndex,
+    required String drillVersionedId,
+    required Map<String, Object?> drillSnapshot,
+    required Map<String, Object?> trainingPlanContext,
+    required DateTime startedAtUtc,
+    required int localUtcOffsetMinutes,
+  }) async {
+    if (localUtcOffsetMinutes.abs() > 24 * 60) {
+      throw ArgumentError('Ongeldige lokale tijdzone.');
+    }
+    return database.transaction(() async {
+      final plan = await _requireTrainingPlanActivity(planActivityId);
+      if (plan.status == StoredTrainingActivityStatus.completed.name) {
+        throw StateError('Het trainingsplan is al afgerond.');
+      }
+      final planSnapshot = _planSnapshot(plan);
+      final slots = planSnapshot['slots'];
+      if (slots is! List) {
+        throw StateError('Het trainingsplan bevat geen geldige slots.');
+      }
+      final matching = slots.whereType<Map>().where(
+        (slot) => slot['index'] == slotIndex,
+      );
+      if (matching.length != 1) {
+        throw StateError('De gekozen trainingsplanslot bestaat niet.');
+      }
+      final expectedDrill = matching.single['drill'];
+      if (expectedDrill is! Map ||
+          _versionedContentId(expectedDrill.cast<Object?, Object?>()) !=
+              drillVersionedId ||
+          _versionedContentId(drillSnapshot.cast<Object?, Object?>()) !=
+              drillVersionedId ||
+          trainingPlanContext['planActivityId'] != planActivityId ||
+          trainingPlanContext['planId'] != planSnapshot['id'] ||
+          trainingPlanContext['slotIndex'] != slotIndex ||
+          trainingPlanContext['slotCount'] != slots.length) {
+        throw StateError('De drill komt niet overeen met de opgeslagen slot.');
+      }
+      final planSummary = _decodeJsonObject(
+        plan.summaryJson,
+        'trainingsplansamenvatting',
+      );
+      final mapped = _readStringMap(
+        planSummary['guidedDrillActivityIds'],
+      )['$slotIndex'];
+      if (mapped != null) {
+        final existing = await _requireDrillActivity(mapped);
+        _validateTrainingPlanBinding(drill: existing, plan: plan);
+        return existing.id;
+      }
+
+      final candidates =
+          await (database.select(database.trainingActivities)..where(
+                (row) => row.kind.equals(
+                  StoredTrainingActivityKind.guidedDrillV2.name,
+                ),
+              ))
+              .get();
+      final matchingDrafts = <TrainingActivityRecord>[];
+      for (final candidate in candidates) {
+        try {
+          final configuration = _decodeJsonObject(
+            candidate.configurationJson,
+            'drillconfiguratie',
+          );
+          final context = configuration['trainingPlan'];
+          if (context is Map &&
+              context['planActivityId'] == planActivityId &&
+              context['slotIndex'] == slotIndex) {
+            matchingDrafts.add(candidate);
+          }
+        } on Object {
+          continue;
+        }
+      }
+      if (matchingDrafts.length > 1) {
+        throw StateError('Deze planslot bevat meerdere drillconcepten.');
+      }
+      final id = matchingDrafts.singleOrNull?.id ?? _uuid.v7();
+      if (matchingDrafts.isEmpty) {
+        final configuration = {
+          'drillVersionedId': drillVersionedId,
+          'drill': drillSnapshot,
+          'trainingPlan': trainingPlanContext,
+        };
+        final now = DateTime.now().toUtc();
+        await database
+            .into(database.trainingActivities)
+            .insert(
+              TrainingActivitiesCompanion.insert(
+                id: id,
+                kind: StoredTrainingActivityKind.guidedDrillV2.name,
+                schemaVersion: const Value(2),
+                status: StoredTrainingActivityStatus.draft.name,
+                configurationJson: _encodeJsonObject(
+                  configuration,
+                  'drillconfiguratie',
+                ),
+                summaryJson: '{}',
+                startedAtUtc: startedAtUtc.toUtc(),
+                localUtcOffsetMinutes: localUtcOffsetMinutes,
+                createdAtUtc: now,
+                updatedAtUtc: now,
+              ),
+            );
+      }
+      final drill = await _requireDrillActivity(id);
+      _validateTrainingPlanBinding(drill: drill, plan: plan);
+      planSummary['guidedDrillActivityIds'] = {
+        ..._readStringMap(planSummary['guidedDrillActivityIds']),
+        '$slotIndex': id,
+      };
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(plan.id))).write(
+        TrainingActivitiesCompanion(
+          summaryJson: Value(
+            _encodeJsonObject(planSummary, 'trainingsplansamenvatting'),
+          ),
+          updatedAtUtc: Value(DateTime.now().toUtc()),
+        ),
+      );
+      return id;
+    });
+  }
+
+  /// Persists a reviewed timer result and its optional series link atomically.
+  ///
+  /// Supplying a stable [id] makes a retried call idempotent after the first
+  /// transaction committed. No draft record can remain after a failed write.
+  Future<String> saveCompletedTimerActivity({
+    String? id,
+    required StoredTrainingActivityKind kind,
+    int activitySchemaVersion = 1,
+    String? sessionId,
+    String? seriesId,
+    Map<String, Object?> configuration = const {},
+    required Map<String, Object?> summary,
+    required List<NewShotTimerEvent> events,
+    String? detectorVersion,
+    required DateTime startedAtUtc,
+    required int localUtcOffsetMinutes,
+    required DateTime completedAtUtc,
+    String? notes,
+  }) async {
+    if (!_timerActivityKinds.contains(kind.name) ||
+        activitySchemaVersion < 1 ||
+        localUtcOffsetMinutes.abs() > 24 * 60 ||
+        completedAtUtc.toUtc().isBefore(startedAtUtc.toUtc())) {
+      throw ArgumentError('Ongeldige voltooide timerrun.');
+    }
+    final configurationJson = _encodeJsonObject(
+      configuration,
+      'timerconfiguratie',
+    );
+    final summaryJson = _encodeJsonObject(summary, 'timersamenvatting');
+    final activityId = id ?? _uuid.v7();
+    await database.transaction(() async {
+      final alreadyStored = await _trainingActivity(activityId);
+      if (alreadyStored != null) {
+        if (alreadyStored.status ==
+            StoredTrainingActivityStatus.completed.name) {
+          return;
+        }
+        throw StateError('De activiteit-ID is al in gebruik.');
+      }
+      SeriesRecord? linkedSeries;
+      if (seriesId != null) {
+        linkedSeries = await _series(seriesId);
+        if (linkedSeries == null) {
+          throw ArgumentError('De gekozen reeks bestaat niet meer.');
+        }
+        if (sessionId != null && sessionId != linkedSeries.sessionId) {
+          throw StateError('De reeks hoort bij een andere sessie.');
+        }
+      }
+      final effectiveSessionId = linkedSeries?.sessionId ?? sessionId;
+      if (effectiveSessionId != null &&
+          await _session(effectiveSessionId) == null) {
+        throw ArgumentError('De gekozen sessie bestaat niet meer.');
+      }
+      final now = DateTime.now().toUtc();
+      await database
+          .into(database.trainingActivities)
+          .insert(
+            TrainingActivitiesCompanion.insert(
+              id: activityId,
+              kind: kind.name,
+              schemaVersion: Value(activitySchemaVersion),
+              status: StoredTrainingActivityStatus.completed.name,
+              sessionId: Value(effectiveSessionId),
+              configurationJson: configurationJson,
+              summaryJson: summaryJson,
+              detectorVersion: Value(_nullIfBlank(detectorVersion)),
+              startedAtUtc: startedAtUtc.toUtc(),
+              localUtcOffsetMinutes: localUtcOffsetMinutes,
+              completedAtUtc: Value(completedAtUtc.toUtc()),
+              notes: Value(_nullIfBlank(notes)),
+              createdAtUtc: now,
+              updatedAtUtc: now,
+            ),
+          );
+      await _replaceTimerEvents(activityId, events);
+      final recomputedSummaryJson = await _recomputeTimerSummaryJson(
+        activityId,
+        baseSummaryJson: summaryJson,
+        markUserEdited: false,
+      );
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          summaryJson: Value(recomputedSummaryJson),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      if (linkedSeries != null) {
+        await database
+            .into(database.trainingActivitySeriesLinks)
+            .insert(
+              TrainingActivitySeriesLinksCompanion.insert(
+                activityId: activityId,
+                seriesId: linkedSeries.id,
+                sequenceNumber: 1,
+              ),
+            );
+      }
+      if (effectiveSessionId != null) {
+        await _touchSession(effectiveSessionId, now);
+      }
+    });
+    return activityId;
+  }
+
+  Future<void> completeTrainingActivity({
+    required String activityId,
+    required Map<String, Object?> summary,
+    required List<NewShotTimerEvent> events,
+    required DateTime completedAtUtc,
+    String? detectorVersion,
+    String? notes,
+  }) async {
+    final summaryJson = _encodeJsonObject(summary, 'timersamenvatting');
+    await database.transaction(() async {
+      final activity = await _requireTimerActivity(activityId);
+      await _replaceTimerEvents(activityId, events);
+      final recomputedSummaryJson = await _recomputeTimerSummaryJson(
+        activityId,
+        baseSummaryJson: summaryJson,
+        markUserEdited: false,
+      );
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          status: Value(StoredTrainingActivityStatus.completed.name),
+          summaryJson: Value(recomputedSummaryJson),
+          detectorVersion: Value(
+            _nullIfBlank(detectorVersion) ?? activity.detectorVersion,
+          ),
+          completedAtUtc: Value(completedAtUtc.toUtc()),
+          notes: Value(_nullIfBlank(notes)),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      if (activity.sessionId != null) {
+        await _touchSession(activity.sessionId!, now);
+      }
+    });
+  }
+
+  Future<void> interruptTrainingActivity({
+    required String activityId,
+    Map<String, Object?> summary = const {},
+    DateTime? interruptedAtUtc,
+    String? notes,
+  }) async {
+    final summaryJson = _encodeJsonObject(summary, 'timersamenvatting');
+    await database.transaction(() async {
+      final activity = await _trainingActivity(activityId);
+      if (activity == null) return;
+      if (activity.kind == StoredTrainingActivityKind.guidedDrillV2.name ||
+          activity.kind == StoredTrainingActivityKind.trainingPlan.name) {
+        _requireValidStructuredSnapshot(
+          activity,
+          summaryJson: summaryJson,
+          status: StoredTrainingActivityStatus.interrupted.name,
+        );
+        if (activity.kind == StoredTrainingActivityKind.guidedDrillV2.name) {
+          await _validateGuidedDrillRelations(
+            activity,
+            summary,
+            requireCompletion: false,
+          );
+        } else {
+          await _validateTrainingPlanRelations(
+            activity,
+            summary,
+            requireCompletion: false,
+          );
+        }
+      }
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          status: Value(StoredTrainingActivityStatus.interrupted.name),
+          summaryJson: Value(summaryJson),
+          completedAtUtc: Value((interruptedAtUtc ?? now).toUtc()),
+          notes: Value(_nullIfBlank(notes)),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      if (activity.sessionId != null) {
+        await _touchSession(activity.sessionId!, now);
+      }
+    });
+  }
+
+  /// Stores drill-runner state without manufacturing completed series.
+  Future<void> updateDrillActivityProgress({
+    required String activityId,
+    required Map<String, Object?> summary,
+    String? notes,
+  }) async {
+    final summaryJson = _encodeJsonObject(summary, 'drillvoortgang');
+    await database.transaction(() async {
+      final activity = await _requireDrillActivity(activityId);
+      if (activity.status == StoredTrainingActivityStatus.completed.name) {
+        throw StateError('Een afgeronde drill kan niet worden aangepast.');
+      }
+      _requireValidStructuredSnapshot(
+        activity,
+        summaryJson: summaryJson,
+        status: activity.status,
+      );
+      await _validateGuidedDrillRelations(
+        activity,
+        summary,
+        requireCompletion: false,
+      );
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          summaryJson: Value(summaryJson),
+          notes: Value(_nullIfBlank(notes) ?? activity.notes),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      if (activity.sessionId != null) {
+        await _touchSession(activity.sessionId!, now);
+      }
+    });
+  }
+
+  /// Resumes an interrupted drill while keeping its snapshot and links intact.
+  Future<void> resumeDrillActivity(String activityId) async {
+    await database.transaction(() async {
+      final activity = await _requireDrillActivity(activityId);
+      if (activity.status == StoredTrainingActivityStatus.completed.name) {
+        return;
+      }
+      if (activity.status == StoredTrainingActivityStatus.draft.name &&
+          activity.completedAtUtc == null) {
+        return;
+      }
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          status: Value(StoredTrainingActivityStatus.draft.name),
+          completedAtUtc: const Value(null),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      if (activity.sessionId != null) {
+        await _touchSession(activity.sessionId!, now);
+      }
+    });
+  }
+
+  /// Stores deterministic planner progress without changing linked series.
+  Future<void> updateTrainingPlanProgress({
+    required String activityId,
+    required Map<String, Object?> summary,
+    String? notes,
+  }) async {
+    final summaryJson = _encodeJsonObject(summary, 'trainingsplanvoortgang');
+    await database.transaction(() async {
+      final activity = await _requireTrainingPlanActivity(activityId);
+      if (activity.status == StoredTrainingActivityStatus.completed.name) {
+        throw StateError(
+          'Een afgerond trainingsplan kan niet worden aangepast.',
+        );
+      }
+      _requireValidStructuredSnapshot(
+        activity,
+        summaryJson: summaryJson,
+        status: activity.status,
+      );
+      await _validateTrainingPlanRelations(
+        activity,
+        summary,
+        requireCompletion: false,
+      );
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          summaryJson: Value(summaryJson),
+          notes: Value(_nullIfBlank(notes) ?? activity.notes),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      if (activity.sessionId != null) {
+        await _touchSession(activity.sessionId!, now);
+      }
+    });
+  }
+
+  Future<void> resumeTrainingPlan(String activityId) =>
+      _resumeStructuredActivity(
+        activityId,
+        requireActivity: _requireTrainingPlanActivity,
+      );
+
+  Future<void> completeTrainingPlan({
+    required String activityId,
+    required Map<String, Object?> summary,
+    required DateTime completedAtUtc,
+  }) async {
+    final summaryJson = _encodeJsonObject(summary, 'trainingsplansamenvatting');
+    await database.transaction(() async {
+      final activity = await _requireTrainingPlanActivity(activityId);
+      _requireValidStructuredSnapshot(
+        activity,
+        summaryJson: summaryJson,
+        status: StoredTrainingActivityStatus.completed.name,
+      );
+      await _validateTrainingPlanRelations(
+        activity,
+        summary,
+        requireCompletion: true,
+      );
+      if (activity.status == StoredTrainingActivityStatus.completed.name) {
+        return;
+      }
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          status: Value(StoredTrainingActivityStatus.completed.name),
+          summaryJson: Value(summaryJson),
+          completedAtUtc: Value(completedAtUtc.toUtc()),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      if (activity.sessionId != null) {
+        await _touchSession(activity.sessionId!, now);
+      }
+    });
+  }
+
+  /// Records a finished guided-drill slot in its plan. Retried completions are
+  /// idempotent. The plan remains unfinished until every explicit setup,
+  /// technique, drill, review and reflection step has been completed.
+  Future<void> recordCompletedDrillInTrainingPlan({
+    required String activityId,
+    required int slotIndex,
+    required int slotCount,
+    required String guidedDrillActivityId,
+    required DateTime completedAtUtc,
+  }) async {
+    if (slotIndex < 0 || slotCount < 1 || slotIndex >= slotCount) {
+      throw ArgumentError('Ongeldige trainingsplanslot.');
+    }
+    await database.transaction(() async {
+      final plan = await _requireTrainingPlanActivity(activityId);
+      final drill = await _requireDrillActivity(guidedDrillActivityId);
+      final binding = _validateTrainingPlanBinding(drill: drill, plan: plan);
+      if (binding.slotIndex != slotIndex || binding.slotCount != slotCount) {
+        throw StateError(
+          'De drill hoort niet bij deze opgeslagen trainingsplanslot.',
+        );
+      }
+      if (drill.status != StoredTrainingActivityStatus.completed.name) {
+        throw StateError('De gekoppelde drill is nog niet afgerond.');
+      }
+      await _recordCompletedDrillSlot(
+        plan: plan,
+        drill: drill,
+        binding: binding,
+        completedAtUtc: completedAtUtc,
+      );
+    });
+  }
+
+  /// Completes a V2 drill and its containing plan slot in one transaction.
+  ///
+  /// The plan relationship is read from the immutable activity snapshots. A
+  /// caller cannot complete another slot by supplying a different index,
+  /// count, plan or drill id.
+  Future<void> completeGuidedDrillActivity({
+    required String activityId,
+    required Map<String, Object?> summary,
+    required DateTime completedAtUtc,
+    required int minimumLinkedSeries,
+    String? notes,
+  }) async {
+    if (minimumLinkedSeries < 0) {
+      throw ArgumentError(
+        'Het vereiste aantal reeksen kan niet negatief zijn.',
+      );
+    }
+    final summaryJson = _encodeJsonObject(summary, 'drillsamenvatting');
+    await database.transaction(() async {
+      final drill = await _requireDrillActivity(activityId);
+      if (drill.status == StoredTrainingActivityStatus.completed.name) {
+        final planId = _trainingPlanActivityId(drill);
+        if (planId != null) {
+          final plan = await _requireTrainingPlanActivity(planId);
+          final binding = _validateTrainingPlanBinding(
+            drill: drill,
+            plan: plan,
+          );
+          await _recordCompletedDrillSlot(
+            plan: plan,
+            drill: drill,
+            binding: binding,
+            completedAtUtc: completedAtUtc,
+          );
+        }
+        return;
+      }
+      _requireValidStructuredSnapshot(
+        drill,
+        summaryJson: summaryJson,
+        status: StoredTrainingActivityStatus.completed.name,
+      );
+      await _validateGuidedDrillRelations(
+        drill,
+        summary,
+        requireCompletion: true,
+      );
+      await _validateAndCompleteDrill(
+        drill: drill,
+        summaryJson: summaryJson,
+        completedAtUtc: completedAtUtc,
+        minimumLinkedSeries: minimumLinkedSeries,
+        notes: notes,
+      );
+      final planId = _trainingPlanActivityId(drill);
+      if (planId != null) {
+        final plan = await _requireTrainingPlanActivity(planId);
+        final binding = _validateTrainingPlanBinding(drill: drill, plan: plan);
+        await _recordCompletedDrillSlot(
+          plan: plan,
+          drill: drill,
+          binding: binding,
+          completedAtUtc: completedAtUtc,
+        );
+      }
+    });
+  }
+
+  Future<void> _resumeStructuredActivity(
+    String activityId, {
+    required Future<TrainingActivityRecord> Function(String activityId)
+    requireActivity,
+  }) async {
+    await database.transaction(() async {
+      final activity = await requireActivity(activityId);
+      _requireValidStructuredSnapshot(activity);
+      if (activity.status == StoredTrainingActivityStatus.completed.name ||
+          activity.status == StoredTrainingActivityStatus.draft.name &&
+              activity.completedAtUtc == null) {
+        return;
+      }
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(activityId))).write(
+        TrainingActivitiesCompanion(
+          status: Value(StoredTrainingActivityStatus.draft.name),
+          completedAtUtc: const Value(null),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      if (activity.sessionId != null) {
+        await _touchSession(activity.sessionId!, now);
+      }
+    });
+  }
+
+  /// Completes a drill only after enough real, confirmed series are linked.
+  Future<void> completeDrillActivity({
+    required String activityId,
+    required Map<String, Object?> summary,
+    required DateTime completedAtUtc,
+    required int minimumLinkedSeries,
+    String? notes,
+  }) async {
+    if (minimumLinkedSeries < 0) {
+      throw ArgumentError(
+        'Het vereiste aantal reeksen kan niet negatief zijn.',
+      );
+    }
+    final summaryJson = _encodeJsonObject(summary, 'drillsamenvatting');
+    await database.transaction(() async {
+      final activity = await _requireDrillActivity(activityId);
+      if (activity.status == StoredTrainingActivityStatus.completed.name) {
+        return;
+      }
+      if (_trainingPlanActivityId(activity) != null) {
+        throw StateError(
+          'Een geplande drill moet samen met zijn trainingsplan worden '
+          'afgerond.',
+        );
+      }
+      _requireValidStructuredSnapshot(
+        activity,
+        summaryJson: summaryJson,
+        status: StoredTrainingActivityStatus.completed.name,
+      );
+      await _validateGuidedDrillRelations(
+        activity,
+        summary,
+        requireCompletion: true,
+      );
+      await _validateAndCompleteDrill(
+        drill: activity,
+        summaryJson: summaryJson,
+        completedAtUtc: completedAtUtc,
+        minimumLinkedSeries: minimumLinkedSeries,
+        notes: notes,
+      );
+    });
+  }
+
+  Future<void> replaceTimerEvents(
+    String activityId,
+    List<NewShotTimerEvent> events,
+  ) => database.transaction(() async {
+    final activity = await _requireTimerActivity(activityId);
+    await _replaceTimerEvents(activityId, events);
+    final summaryJson = await _recomputeTimerSummaryJson(
+      activityId,
+      baseSummaryJson: activity.summaryJson,
+      markUserEdited: true,
+    );
+    final now = DateTime.now().toUtc();
+    await (database.update(
+      database.trainingActivities,
+    )..where((row) => row.id.equals(activityId))).write(
+      TrainingActivitiesCompanion(
+        summaryJson: Value(summaryJson),
+        updatedAtUtc: Value(now),
+      ),
+    );
+    if (activity.sessionId != null) {
+      await _touchSession(activity.sessionId!, now);
+    }
+  });
+
+  Future<void> excludeTimerEvent(String eventId, String reason) =>
+      _setTimerEventDisposition(
+        eventId,
+        StoredTimerEventDisposition.excluded,
+        reason: reason,
+      );
+
+  Future<void> restoreTimerEvent(String eventId) =>
+      _setTimerEventDisposition(eventId, StoredTimerEventDisposition.counted);
+
+  Future<void> linkTrainingActivityToSeries(
+    String activityId,
+    String seriesId, {
+    String? role,
+    String? variantId,
+  }) async {
+    await database.transaction(() async {
+      final activity = await _trainingActivity(activityId);
+      final series = await _series(seriesId);
+      if (activity == null || series == null) {
+        throw ArgumentError('De trainingsactiviteit of reeks bestaat niet.');
+      }
+      await _linkTrainingActivityRecords(
+        activity,
+        series,
+        role: role,
+        variantId: variantId,
+      );
+    });
+  }
+
+  /// Links a runner result while enforcing that it is an actual confirmed
+  /// shooting series. Duplicate taps remain idempotent.
+  Future<void> linkConfirmedSeriesToDrillActivity(
+    String activityId,
+    String seriesId, {
+    String? role,
+    String? variantId,
+  }) async {
+    await database.transaction(() async {
+      final activity = await _requireDrillActivity(activityId);
+      final series = await _series(seriesId);
+      if (series == null) {
+        throw ArgumentError('De gekozen reeks bestaat niet meer.');
+      }
+      if (activity.status == StoredTrainingActivityStatus.completed.name) {
+        throw StateError('Een afgeronde drill kan niet worden aangepast.');
+      }
+      if (series.status != domain.SeriesStatus.confirmed.name) {
+        throw StateError('Alleen een bevestigde reeks kan worden gekoppeld.');
+      }
+      await _linkTrainingActivityRecords(
+        activity,
+        series,
+        role: role,
+        variantId: variantId,
+      );
+    });
+  }
+
+  /// Links the same confirmed evidence to its containing training plan.
+  Future<void> linkConfirmedSeriesToTrainingPlan(
+    String activityId,
+    String seriesId, {
+    String? role,
+    String? variantId,
+  }) async {
+    await database.transaction(() async {
+      final activity = await _requireTrainingPlanActivity(activityId);
+      final series = await _series(seriesId);
+      if (series == null) {
+        throw ArgumentError('De gekozen reeks bestaat niet meer.');
+      }
+      if (activity.status == StoredTrainingActivityStatus.completed.name) {
+        throw StateError(
+          'Een afgerond trainingsplan kan niet worden aangepast.',
+        );
+      }
+      if (series.status != domain.SeriesStatus.confirmed.name) {
+        throw StateError('Alleen een bevestigde reeks kan worden gekoppeld.');
+      }
+      await _linkTrainingActivityRecords(
+        activity,
+        series,
+        role: role,
+        variantId: variantId,
+      );
+    });
+  }
+
+  /// Atomically attaches one confirmed series to its V2 drill and, when the
+  /// drill runs inside a plan, to that plan as the same evidence. Retrying the
+  /// callback is safe through the activity/series unique key.
+  Future<void> linkConfirmedSeriesToGuidedDrill({
+    required String drillActivityId,
+    required String seriesId,
+    String? drillRole,
+    String? planActivityId,
+    String? planRole,
+    String? variantId,
+  }) async {
+    await database.transaction(() async {
+      final drill = await _requireDrillActivity(drillActivityId);
+      final plan = planActivityId == null
+          ? null
+          : await _requireTrainingPlanActivity(planActivityId);
+      final binding = plan == null
+          ? null
+          : _validateTrainingPlanBinding(drill: drill, plan: plan);
+      final storedPlanId = _trainingPlanActivityId(drill);
+      if (storedPlanId != planActivityId) {
+        throw StateError(
+          'De opgeslagen drill hoort niet bij dit trainingsplan.',
+        );
+      }
+      if (binding != null) {
+        final expectedRole = 'slot:${binding.slotIndex}:$drillRole';
+        if (planRole != expectedRole) {
+          throw StateError('De reeks hoort niet bij deze planslot.');
+        }
+      }
+      final series = await _series(seriesId);
+      if (series == null) {
+        throw ArgumentError('De gekozen reeks bestaat niet meer.');
+      }
+      if (drill.status == StoredTrainingActivityStatus.completed.name) {
+        throw StateError('Een afgeronde drill kan niet worden aangepast.');
+      }
+      if (plan?.status == StoredTrainingActivityStatus.completed.name) {
+        throw StateError(
+          'Een afgerond trainingsplan kan niet worden aangepast.',
+        );
+      }
+      if (series.status != domain.SeriesStatus.confirmed.name) {
+        throw StateError('Alleen een bevestigde reeks kan worden gekoppeld.');
+      }
+      await _linkTrainingActivityRecords(
+        drill,
+        series,
+        role: drillRole,
+        variantId: variantId,
+      );
+      if (plan != null) {
+        await _linkTrainingActivityRecords(
+          plan,
+          series,
+          role: planRole,
+          variantId: variantId,
+        );
+      }
+    });
+  }
+
+  /// Atomically removes one confirmed-series link from a guided drill and its
+  /// containing plan. This prevents stale plan evidence after runner edits.
+  Future<void> unlinkConfirmedSeriesFromGuidedDrill({
+    required String drillActivityId,
+    required String seriesId,
+  }) async {
+    await database.transaction(() async {
+      final drill = await _requireDrillActivity(drillActivityId);
+      if (drill.status == StoredTrainingActivityStatus.completed.name) {
+        throw StateError('Een afgeronde drill kan niet worden aangepast.');
+      }
+      final planId = _trainingPlanActivityId(drill);
+      TrainingActivityRecord? plan;
+      if (planId != null) {
+        plan = await _requireTrainingPlanActivity(planId);
+        _validateTrainingPlanBinding(drill: drill, plan: plan);
+        if (plan.status == StoredTrainingActivityStatus.completed.name) {
+          throw StateError(
+            'Een afgerond trainingsplan kan niet worden aangepast.',
+          );
+        }
+      }
+      await _deleteTrainingActivitySeriesLink(drill.id, seriesId);
+      if (plan != null) {
+        await _deleteTrainingActivitySeriesLink(plan.id, seriesId);
+      }
+      final now = DateTime.now().toUtc();
+      if (drill.sessionId != null) await _touchSession(drill.sessionId!, now);
+    });
+  }
+
+  Future<void> unlinkTrainingActivityFromSeries(
+    String activityId,
+    String seriesId,
+  ) =>
+      (database.delete(database.trainingActivitySeriesLinks)..where(
+            (row) =>
+                row.activityId.equals(activityId) &
+                row.seriesId.equals(seriesId),
+          ))
+          .go();
+
+  Future<void> appendTimerSummaryToSeriesNote(
+    String seriesId,
+    String summaryText,
+  ) async {
+    final summary = summaryText.trim();
+    if (summary.isEmpty) {
+      throw ArgumentError('De timersamenvatting is leeg.');
+    }
+    await database.transaction(() async {
+      final series = await _series(seriesId);
+      if (series == null) {
+        throw ArgumentError('De gekozen reeks bestaat niet meer.');
+      }
+      final existing = series.notes?.trim();
+      final updatedNotes = existing == null || existing.isEmpty
+          ? summary
+          : '$existing\n\n$summary';
+      final now = DateTime.now().toUtc();
+      await (database.update(
+        database.shootingSeries,
+      )..where((row) => row.id.equals(seriesId))).write(
+        ShootingSeriesCompanion(
+          notes: Value(updatedNotes),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      await _touchSession(series.sessionId, now);
+    });
+  }
+
+  Future<int> countSessionTrainingActivities(String sessionId) async {
+    final count = database.trainingActivities.id.count();
+    final query = database.selectOnly(database.trainingActivities)
+      ..addColumns([count])
+      ..where(database.trainingActivities.sessionId.equals(sessionId));
+    return (await query.getSingle()).read(count) ?? 0;
+  }
+
+  Future<void> deleteTrainingActivity(String activityId) =>
+      database.transaction(() async {
+        final target = await _trainingActivity(activityId);
+        if (target == null) return;
+        final structured =
+            await (database.select(database.trainingActivities)..where(
+                  (row) => row.kind.isIn([
+                    StoredTrainingActivityKind.guidedDrillV2.name,
+                    StoredTrainingActivityKind.trainingPlan.name,
+                  ]),
+                ))
+                .get();
+        for (final activity in structured) {
+          if (activity.id == activityId) continue;
+          if (_timerActivityKinds.contains(target.kind) &&
+              activity.kind == StoredTrainingActivityKind.guidedDrillV2.name) {
+            final summary = _decodeJsonObject(
+              activity.summaryJson,
+              'drillvoortgang',
+            );
+            if (_readStringMap(
+              summary['timerActivityIds'],
+            ).containsValue(activityId)) {
+              throw StateError(
+                'Deze timerrun is als bewijs aan een drillfase gekoppeld.',
+              );
+            }
+          }
+          if (target.kind == StoredTrainingActivityKind.guidedDrillV2.name &&
+              activity.kind == StoredTrainingActivityKind.trainingPlan.name) {
+            final summary = _decodeJsonObject(
+              activity.summaryJson,
+              'trainingsplanvoortgang',
+            );
+            if (_readStringMap(
+              summary['guidedDrillActivityIds'],
+            ).containsValue(activityId)) {
+              throw StateError(
+                'Deze drill is nog aan een trainingsplan gekoppeld.',
+              );
+            }
+          }
+          if (target.kind == StoredTrainingActivityKind.trainingPlan.name &&
+              activity.kind == StoredTrainingActivityKind.guidedDrillV2.name) {
+            final configuration = _decodeJsonObject(
+              activity.configurationJson,
+              'drillconfiguratie',
+            );
+            final context = configuration['trainingPlan'];
+            if (context is Map && context['planActivityId'] == activityId) {
+              throw StateError(
+                'Dit trainingsplan bevat nog gekoppelde drillactiviteiten.',
+              );
+            }
+          }
+        }
+        await (database.delete(
+          database.trainingActivities,
+        )..where((row) => row.id.equals(activityId))).go();
+      });
+
+  Future<String> saveTimerPreset({
+    String? id,
+    required String name,
+    required StoredTrainingActivityKind mode,
+    required Map<String, Object?> configuration,
+    bool builtIn = false,
+  }) async {
+    if (!_timerActivityKinds.contains(mode.name) || name.trim().isEmpty) {
+      throw ArgumentError('Ongeldige timerpreset.');
+    }
+    final configurationJson = _encodeJsonObject(
+      configuration,
+      'timerconfiguratie',
+    );
+    final presetId = id ?? _uuid.v7();
+    final existing = await (database.select(
+      database.timerPresets,
+    )..where((row) => row.id.equals(presetId))).getSingleOrNull();
+    if (existing?.builtIn == true && !builtIn) {
+      throw StateError('Ingebouwde timerpresets zijn alleen-lezen.');
+    }
+    final now = DateTime.now().toUtc();
+    await database
+        .into(database.timerPresets)
+        .insertOnConflictUpdate(
+          TimerPresetsCompanion.insert(
+            id: presetId,
+            name: name.trim(),
+            mode: mode.name,
+            configurationJson: configurationJson,
+            builtIn: Value(builtIn || (existing?.builtIn ?? false)),
+            archived: const Value(false),
+            createdAtUtc: existing?.createdAtUtc ?? now,
+            updatedAtUtc: now,
+          ),
+        );
+    return presetId;
+  }
+
+  Future<void> archiveTimerPreset(String id) async {
+    final preset = await (database.select(
+      database.timerPresets,
+    )..where((row) => row.id.equals(id))).getSingleOrNull();
+    if (preset == null) return;
+    if (preset.builtIn) {
+      throw StateError(
+        'Ingebouwde timerpresets kunnen niet gearchiveerd worden.',
+      );
+    }
+    await (database.update(
+      database.timerPresets,
+    )..where((row) => row.id.equals(id))).write(
+      TimerPresetsCompanion(
+        archived: const Value(true),
+        updatedAtUtc: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
+
+  Future<String> saveCalibrationProfile({
+    String? id,
+    required String name,
+    String? firearmId,
+    String? cartridgeId,
+    required String environment,
+    required String audioRoute,
+    required int sampleRate,
+    required double sensitivity,
+    required int echoLockoutMicroseconds,
+    required int beepBlankingMicroseconds,
+    required String detectorVersion,
+  }) async {
+    if (name.trim().isEmpty ||
+        environment.trim().isEmpty ||
+        audioRoute.trim().isEmpty ||
+        detectorVersion.trim().isEmpty ||
+        sampleRate <= 0 ||
+        !sensitivity.isFinite ||
+        sensitivity < 0 ||
+        echoLockoutMicroseconds < 0 ||
+        beepBlankingMicroseconds < 0) {
+      throw ArgumentError('Ongeldig akoestisch kalibratieprofiel.');
+    }
+    final profileId = id ?? _uuid.v7();
+    await database.transaction(() async {
+      if (firearmId != null && await _firearm(firearmId) == null) {
+        throw ArgumentError('Het gekozen wapen bestaat niet meer.');
+      }
+      if (cartridgeId != null && await _cartridge(cartridgeId) == null) {
+        throw ArgumentError('Het gekozen kaliber bestaat niet meer.');
+      }
+      final existing = await (database.select(
+        database.acousticCalibrationProfiles,
+      )..where((row) => row.id.equals(profileId))).getSingleOrNull();
+      final now = DateTime.now().toUtc();
+      await database
+          .into(database.acousticCalibrationProfiles)
+          .insertOnConflictUpdate(
+            AcousticCalibrationProfilesCompanion.insert(
+              id: profileId,
+              name: name.trim(),
+              firearmId: Value(firearmId),
+              cartridgeId: Value(cartridgeId),
+              environment: environment.trim(),
+              audioRoute: audioRoute.trim(),
+              sampleRate: sampleRate,
+              sensitivity: sensitivity,
+              echoLockoutMicroseconds: echoLockoutMicroseconds,
+              beepBlankingMicroseconds: beepBlankingMicroseconds,
+              detectorVersion: detectorVersion.trim(),
+              createdAtUtc: existing?.createdAtUtc ?? now,
+              updatedAtUtc: now,
+            ),
+          );
+    });
+    return profileId;
+  }
+
+  Future<void> deleteCalibrationProfile(String id) => (database.delete(
+    database.acousticCalibrationProfiles,
+  )..where((row) => row.id.equals(id))).go();
+
   Future<List<AnalysisSeriesData>> _loadAnalysisDataset() async {
     final series = await getConfirmedSeries();
     if (series.isEmpty) return const [];
+    final sessions = await database.select(database.trainingSessions).get();
     final impacts = await database.select(database.shotImpacts).get();
     final firearms = await database.select(database.firearms).get();
     final ammoLots = await database.select(database.ammoLots).get();
@@ -758,6 +2524,7 @@ class ShootingRepository {
     for (final impact in impacts) {
       impactsBySeries.putIfAbsent(impact.seriesId, () => []).add(impact);
     }
+    final sessionById = {for (final item in sessions) item.id: item};
     final firearmById = {for (final item in firearms) item.id: item};
     final ammoById = {for (final item in ammoLots) item.id: item};
     final cartridgeById = {for (final item in cartridges) item.id: item};
@@ -765,8 +2532,15 @@ class ShootingRepository {
       for (final item in reflections) item.seriesId: item,
     };
     return series
-        .map(
-          (item) => AnalysisSeriesData(
+        .map((item) {
+          final session = sessionById[item.sessionId];
+          if (session == null) {
+            throw StateError(
+              'Bevestigde reeks ${item.id} verwijst naar een ontbrekende sessie.',
+            );
+          }
+          return AnalysisSeriesData(
+            session: session,
             series: item,
             impacts: List.unmodifiable(impactsBySeries[item.id] ?? const []),
             firearm: item.firearmId == null
@@ -777,8 +2551,8 @@ class ShootingRepository {
                 ? null
                 : cartridgeById[item.cartridgeId],
             reflection: reflectionBySeries[item.id],
-          ),
-        )
+          );
+        })
         .toList(growable: false);
   }
 
@@ -814,6 +2588,10 @@ class ShootingRepository {
               ),
             )
             .toList(),
+      );
+      batch.insertAllOnConflictUpdate(
+        database.timerPresets,
+        builtInTimerPresetCompanions(),
       );
     });
   }
@@ -1770,30 +3548,47 @@ class ShootingRepository {
         await _touchSession(image.sessionId, now);
       });
 
-  Future<void> savePhotoAlignment(
-    domain.StoredPhotoAlignment alignment,
-  ) => database.transaction(() async {
-    final image = await _image(alignment.imageId);
-    if (image == null ||
-        image.seriesId == null ||
-        image.role != domain.ImageRole.primaryScoringPhoto.name) {
-      throw StateError('Alleen een primaire scorefoto kan worden uitgelijnd.');
-    }
-    await database
-        .into(database.photoAlignments)
-        .insertOnConflictUpdate(
-          PhotoAlignmentsCompanion.insert(
-            imageId: alignment.imageId,
-            cornersJson: jsonEncode(
-              alignment.orderedCorners.map((point) => point.toJson()).toList(),
-            ),
-            matrixJson: jsonEncode(alignment.homographyMatrix),
-            algorithmVersion: alignment.algorithmVersion,
-            updatedAtUtc: alignment.updatedAtUtc.toUtc(),
-          ),
+  Future<void> savePhotoAlignment(domain.StoredPhotoAlignment alignment) =>
+      database.transaction(() async {
+        final image = await _image(alignment.imageId);
+        if (image == null ||
+            image.seriesId == null ||
+            image.role != domain.ImageRole.primaryScoringPhoto.name) {
+          throw StateError(
+            'Alleen een primaire scorefoto kan worden uitgelijnd.',
+          );
+        }
+        final series = await _series(image.seriesId!);
+        if (series == null) throw StateError('De reeks bestaat niet meer.');
+        final target = domain.TargetProfile.fromJsonString(
+          series.targetProfileJson,
         );
-    await _touchSession(image.sessionId, alignment.updatedAtUtc.toUtc());
-  });
+        target.validateRuntime().requireValid(argumentName: 'target');
+        final checked = _validateAlignment(alignment, target: target);
+        await database
+            .into(database.photoAlignments)
+            .insertOnConflictUpdate(
+              PhotoAlignmentsCompanion.insert(
+                imageId: alignment.imageId,
+                cornersJson: jsonEncode(
+                  checked.geometry.corners.points
+                      .map((point) => point.toJson())
+                      .toList(),
+                ),
+                matrixJson: jsonEncode(checked.geometry.homographyMatrix),
+                algorithmVersion: checked.geometry.algorithmVersion,
+                rotationQuarterTurns: Value(alignment.rotationQuarterTurns),
+                alignmentMode: Value(checked.persistedMode),
+                anchorsJson: Value(checked.anchorsJson),
+                reprojectionRmsMm: Value(checked.geometry.residuals.rmsMm),
+                reprojectionMaxMm: Value(checked.geometry.residuals.maximumMm),
+                planarityStatus: Value(checked.planarityStatus),
+                confirmedAtUtc: Value(checked.confirmedAtUtc),
+                updatedAtUtc: alignment.updatedAtUtc.toUtc(),
+              ),
+            );
+        await _touchSession(image.sessionId, alignment.updatedAtUtc.toUtc());
+      });
 
   /// Stores a new alignment and the recalculated positions that depend on its
   /// primary image as one indivisible operation.
@@ -1811,7 +3606,7 @@ class ShootingRepository {
   }) => database.transaction(() async {
     final series = await _series(seriesId);
     if (series == null) throw StateError('De reeks bestaat niet.');
-    if (projectileDiameterMm <= 0) {
+    if (!projectileDiameterMm.isFinite || projectileDiameterMm <= 0) {
       throw ArgumentError.value(
         projectileDiameterMm,
         'projectileDiameterMm',
@@ -1836,15 +3631,34 @@ class ShootingRepository {
       throw StateError('Deze foto kan niet als primaire scorefoto dienen.');
     }
 
+    target.validateRuntime().requireValid(argumentName: 'target');
+    final checkedAlignment = _validateAlignment(alignment, target: target);
+
+    // Image coordinates are canonical: they always refer to the immutable,
+    // EXIF-normalized original.  A rotation is a view/alignment concern only.
+    // The old alignment is loaded deliberately so legacy view-relative data
+    // can be detected before it is silently reinterpreted.
+    final previousAlignmentRecord = await (database.select(
+      database.photoAlignments,
+    )..where((row) => row.imageId.equals(alignment.imageId))).getSingleOrNull();
+    final previousAlignment = previousAlignmentRecord == null
+        ? null
+        : _tryDecodePersistedAlignment(previousAlignmentRecord, target: target);
+
     final existingRecords = await (database.select(
       database.shotImpacts,
     )..where((row) => row.seriesId.equals(seriesId))).get();
     final existingById = {
       for (final impact in existingRecords) impact.id: impact,
     };
-    final resultingById = {
-      for (final impact in resultingImpacts) impact.id: impact,
-    };
+    final resultingById = <String, domain.ShotImpact>{};
+    for (var index = 0; index < resultingImpacts.length; index++) {
+      final impact = resultingImpacts[index];
+      impact.validateRuntime().requireValid(
+        argumentName: 'resultingImpacts[$index]',
+      );
+      resultingById[impact.id] = impact;
+    }
     if (resultingById.length != resultingImpacts.length ||
         resultingById.length != existingById.length ||
         !resultingById.keys.toSet().containsAll(existingById.keys)) {
@@ -1853,6 +3667,7 @@ class ShootingRepository {
       );
     }
 
+    final authoritativeImpacts = <domain.ShotImpact>[];
     for (final entry in existingById.entries) {
       final existing = entry.value;
       final resulting = resultingById[entry.key]!;
@@ -1870,16 +3685,70 @@ class ShootingRepository {
             'foto-afhankelijke treffers wijzigen.',
           );
         }
+
+        final storedSourcePoint = geo.NormalizedPoint(
+          existing.imageXNormalized!,
+          existing.imageYNormalized!,
+        );
+        if (!storedSourcePoint.isInsideImage) {
+          throw StateError(
+            'Een foto-afhankelijke treffer heeft ongeldige broncoordinaten.',
+          );
+        }
+        final originalPoint = _canonicalOriginalSourcePoint(
+          existing: existing,
+          storedSourcePoint: storedSourcePoint,
+          previousAlignment: previousAlignment,
+        );
+        final rotatedPoint = geo.rotateNormalizedPoint(
+          originalPoint,
+          alignment.rotationQuarterTurns,
+        );
+        final physical = checkedAlignment.geometry.normalizedToPhysical(
+          rotatedPoint,
+        );
+        final authoritative = _domainImpact(existing).copyWith(
+          xMm: physical.x,
+          yMm: physical.y,
+          imageXNormalized: originalPoint.x,
+          imageYNormalized: originalPoint.y,
+          targetBullId:
+              target.targetKind == domain.TargetKind.multiBullConcentric
+              ? target.bullAt(physical.x, physical.y, recordOnly: true)?.id
+              : existing.targetBullId,
+          clearTargetBull:
+              target.targetKind == domain.TargetKind.multiBullConcentric &&
+              target.bullAt(physical.x, physical.y, recordOnly: true) == null,
+        );
+        if ((resulting.xMm - authoritative.xMm).abs() >
+                _alignmentPreviewToleranceMm ||
+            (resulting.yMm - authoritative.yMm).abs() >
+                _alignmentPreviewToleranceMm) {
+          throw StateError(
+            'De getoonde uitlijningspreview wijkt af van de autoritatieve '
+            'herberekening.',
+          );
+        }
+        authoritative.validateRuntime().requireValid(
+          argumentName: 'authoritativeImpacts[${entry.key}]',
+        );
+        authoritativeImpacts.add(authoritative);
       } else if (!_sameStoredImpact(existing, resulting)) {
         throw StateError(
           'Heruitlijning mag handmatige of andere fototreffers niet wijzigen.',
         );
+      } else {
+        final authoritative = _domainImpact(existing);
+        authoritative.validateRuntime().requireValid(
+          argumentName: 'authoritativeImpacts[${entry.key}]',
+        );
+        authoritativeImpacts.add(authoritative);
       }
     }
 
     final score = ScoreEngine.score(
       target: target,
-      impacts: resultingImpacts,
+      impacts: authoritativeImpacts,
       projectileDiameterMm: projectileDiameterMm,
     );
     final updatedAtUtc = alignment.updatedAtUtc.toUtc();
@@ -1925,10 +3794,21 @@ class ShootingRepository {
           PhotoAlignmentsCompanion.insert(
             imageId: alignment.imageId,
             cornersJson: jsonEncode(
-              alignment.orderedCorners.map((point) => point.toJson()).toList(),
+              checkedAlignment.geometry.corners.points
+                  .map((point) => point.toJson())
+                  .toList(),
             ),
-            matrixJson: jsonEncode(alignment.homographyMatrix),
-            algorithmVersion: alignment.algorithmVersion,
+            matrixJson: jsonEncode(checkedAlignment.geometry.homographyMatrix),
+            algorithmVersion: checkedAlignment.geometry.algorithmVersion,
+            rotationQuarterTurns: Value(alignment.rotationQuarterTurns),
+            alignmentMode: Value(checkedAlignment.persistedMode),
+            anchorsJson: Value(checkedAlignment.anchorsJson),
+            reprojectionRmsMm: Value(checkedAlignment.geometry.residuals.rmsMm),
+            reprojectionMaxMm: Value(
+              checkedAlignment.geometry.residuals.maximumMm,
+            ),
+            planarityStatus: Value(checkedAlignment.planarityStatus),
+            confirmedAtUtc: Value(checkedAlignment.confirmedAtUtc),
             updatedAtUtc: updatedAtUtc,
           ),
         );
@@ -1939,6 +3819,11 @@ class ShootingRepository {
           existing.sourceImageId == alignment.imageId &&
           existing.imageXNormalized != null &&
           existing.imageYNormalized != null;
+      if (!dependsOnPhoto) {
+        // The score aggregate is recalculated from all impacts, but a photo
+        // realignment must leave every stored non-photo impact byte-identical.
+        continue;
+      }
       final changed =
           await (database.update(database.shotImpacts)..where(
                 (row) =>
@@ -1947,12 +3832,10 @@ class ShootingRepository {
               ))
               .write(
                 ShotImpactsCompanion(
-                  xMm: dependsOnPhoto
-                      ? Value(shot.impact.xMm)
-                      : const Value.absent(),
-                  yMm: dependsOnPhoto
-                      ? Value(shot.impact.yMm)
-                      : const Value.absent(),
+                  xMm: Value(shot.impact.xMm),
+                  yMm: Value(shot.impact.yMm),
+                  imageXNormalized: Value(shot.impact.imageXNormalized),
+                  imageYNormalized: Value(shot.impact.imageYNormalized),
                   scoreValue: Value(shot.value),
                   rawScoreValue: Value(shot.value),
                   targetBullId: Value(shot.targetBullId),
@@ -2251,6 +4134,11 @@ class ShootingRepository {
               scoreDisposition: Value(shot.disposition.name),
               isInnerTen: Value(shot.isInnerTen),
               isBoundaryUncertain: Value(shot.isBoundaryUncertain),
+              placementMethod: Value(shot.impact.placementMethod.name),
+              visionAnalysisId: Value(shot.impact.visionAnalysisId),
+              positionalUncertaintyMm: Value(
+                shot.impact.positionalUncertaintyMm,
+              ),
             ),
           );
     }
@@ -2332,6 +4220,1138 @@ class ShootingRepository {
         );
     await _touchSession(asset.sessionId, now);
     return id;
+  }
+
+  Future<TrainingActivityRecord?> _trainingActivity(String id) =>
+      (database.select(database.trainingActivities)
+            ..where((row) => row.id.equals(id))
+            ..limit(1))
+          .getSingleOrNull();
+
+  Future<void> _linkTrainingActivityRecords(
+    TrainingActivityRecord activity,
+    SeriesRecord series, {
+    String? role,
+    String? variantId,
+  }) async {
+    if (activity.sessionId != null && activity.sessionId != series.sessionId) {
+      throw StateError('Activiteit en reeks behoren tot een andere sessie.');
+    }
+    final existingLinks = await (database.select(
+      database.trainingActivitySeriesLinks,
+    )..where((row) => row.activityId.equals(activity.id))).get();
+    final isTimer = _timerActivityKinds.contains(activity.kind);
+    if (isTimer && existingLinks.any((link) => link.seriesId != series.id)) {
+      throw StateError('Een timerrun kan aan maximaal één reeks hangen.');
+    }
+    final existingForSeries = existingLinks
+        .where((link) => link.seriesId == series.id)
+        .firstOrNull;
+    final sequenceNumber =
+        existingForSeries?.sequenceNumber ??
+        (existingLinks.isEmpty
+            ? 1
+            : existingLinks
+                      .map((link) => link.sequenceNumber)
+                      .reduce((left, right) => left > right ? left : right) +
+                  1);
+    await database
+        .into(database.trainingActivitySeriesLinks)
+        .insertOnConflictUpdate(
+          TrainingActivitySeriesLinksCompanion.insert(
+            activityId: activity.id,
+            seriesId: series.id,
+            sequenceNumber: sequenceNumber,
+            role: Value(_nullIfBlank(role)),
+            variantId: Value(_nullIfBlank(variantId)),
+          ),
+        );
+    final now = DateTime.now().toUtc();
+    await (database.update(
+      database.trainingActivities,
+    )..where((row) => row.id.equals(activity.id))).write(
+      TrainingActivitiesCompanion(
+        sessionId: Value(series.sessionId),
+        updatedAtUtc: Value(now),
+      ),
+    );
+    await _touchSession(series.sessionId, now);
+  }
+
+  Future<void> _deleteTrainingActivitySeriesLink(
+    String activityId,
+    String seriesId,
+  ) =>
+      (database.delete(database.trainingActivitySeriesLinks)..where(
+            (row) =>
+                row.activityId.equals(activityId) &
+                row.seriesId.equals(seriesId),
+          ))
+          .go();
+
+  String? _trainingPlanActivityId(TrainingActivityRecord drill) {
+    final configuration = _decodeJsonObject(
+      drill.configurationJson,
+      'drillconfiguratie',
+    );
+    final raw = configuration['trainingPlan'];
+    if (raw == null) return null;
+    if (raw is! Map || raw['planActivityId'] is! String) {
+      throw StateError('De opgeslagen trainingsplancontext is ongeldig.');
+    }
+    return raw['planActivityId']! as String;
+  }
+
+  _ValidatedTrainingPlanBinding _validateTrainingPlanBinding({
+    required TrainingActivityRecord drill,
+    required TrainingActivityRecord plan,
+  }) {
+    final drillConfiguration = _decodeJsonObject(
+      drill.configurationJson,
+      'drillconfiguratie',
+    );
+    final rawContext = drillConfiguration['trainingPlan'];
+    final rawPlan = _planSnapshot(plan);
+    if (rawContext is! Map) {
+      throw StateError('De opgeslagen trainingsplankoppeling is onvolledig.');
+    }
+    final context = rawContext.cast<Object?, Object?>();
+    final planSnapshot = rawPlan.cast<Object?, Object?>();
+    final planId = planSnapshot['id'];
+    final slotIndex = context['slotIndex'];
+    final slotCount = context['slotCount'];
+    final slots = planSnapshot['slots'];
+    final drillVersionedId = drillConfiguration['drillVersionedId'];
+    if (context['planActivityId'] != plan.id ||
+        planId is! String ||
+        context['planId'] != planId ||
+        slotIndex is! int ||
+        slotCount is! int ||
+        slots is! List ||
+        drillVersionedId is! String ||
+        slotCount != slots.length) {
+      throw StateError('De opgeslagen trainingsplankoppeling is ongeldig.');
+    }
+    final slotMaps = slots
+        .whereType<Map>()
+        .map((value) => value.cast<Object?, Object?>())
+        .toList(growable: false);
+    if (slotMaps.length != slots.length ||
+        slotMaps.map((slot) => slot['index']).toSet().length != slots.length) {
+      throw StateError('Het opgeslagen trainingsplan bevat ongeldige slots.');
+    }
+    final matching = slotMaps
+        .where((slot) => slot['index'] == slotIndex)
+        .toList(growable: false);
+    if (matching.length != 1) {
+      throw StateError('De opgeslagen planslot bestaat niet.');
+    }
+    final slotDrill = matching.single['drill'];
+    if (slotDrill is! Map ||
+        _versionedContentId(slotDrill.cast<Object?, Object?>()) !=
+            drillVersionedId) {
+      throw StateError('De drillversie komt niet overeen met de planslot.');
+    }
+    return _ValidatedTrainingPlanBinding(
+      planId: planId,
+      slotIndex: slotIndex,
+      slotCount: slotCount,
+      drillVersionedId: drillVersionedId,
+      validSlotIndexes: slotMaps
+          .map((slot) => slot['index'])
+          .whereType<int>()
+          .toSet(),
+    );
+  }
+
+  String? _versionedContentId(Map<Object?, Object?> snapshot) {
+    final id = snapshot['id'];
+    final version = snapshot['version'];
+    return id is String && version is int ? '$id@$version' : null;
+  }
+
+  Map<String, Object?> _planSnapshot(TrainingActivityRecord plan) {
+    final configuration = _decodeJsonObject(
+      plan.configurationJson,
+      'trainingsplanconfiguratie',
+    );
+    final raw = configuration['plan'];
+    if (raw is! Map) {
+      throw StateError('De opgeslagen trainingsplansnapshot ontbreekt.');
+    }
+    final snapshot = raw.cast<String, Object?>();
+    if (configuration['planId'] != snapshot['id']) {
+      throw StateError('De opgeslagen trainingsplanidentiteit is ongeldig.');
+    }
+    return snapshot;
+  }
+
+  void _requireValidStructuredSnapshot(
+    TrainingActivityRecord activity, {
+    String? summaryJson,
+    String? status,
+  }) {
+    final validation = TrainingActivitySnapshotValidator.validateEncoded(
+      kind: activity.kind,
+      activitySchemaVersion: activity.schemaVersion,
+      configurationJson: activity.configurationJson,
+      summaryJson: summaryJson ?? activity.summaryJson,
+      status: status ?? activity.status,
+    );
+    if (!validation.canResume) {
+      throw StateError(
+        validation.message ??
+            'Deze trainingssnapshot kan niet veilig worden hervat.',
+      );
+    }
+  }
+
+  Future<void> _validateGuidedDrillRelations(
+    TrainingActivityRecord drill,
+    Map<String, Object?> summary, {
+    required bool requireCompletion,
+  }) async {
+    final configuration = _decodeJsonObject(
+      drill.configurationJson,
+      'drillconfiguratie',
+    );
+    final rawDrill = configuration['drill'];
+    if (rawDrill is! Map) {
+      throw StateError('De opgeslagen drillsnapshot ontbreekt.');
+    }
+    final definition = DrillDefinitionV2.fromJson(
+      rawDrill.cast<String, Object?>(),
+    );
+    final timerIds = _readStringMap(summary['timerActivityIds']);
+    for (final entry in timerIds.entries) {
+      final timer = await _trainingActivity(entry.value);
+      if (timer == null ||
+          !_timerActivityKinds.contains(timer.kind) ||
+          timer.status != StoredTrainingActivityStatus.completed.name ||
+          timer.completedAtUtc == null ||
+          drill.sessionId != null &&
+              timer.sessionId != null &&
+              drill.sessionId != timer.sessionId) {
+        throw StateError(
+          'Timerfase ${entry.key} verwijst niet naar een geldige '
+          'voltooide timerrun.',
+        );
+      }
+    }
+    if (!requireCompletion) return;
+
+    final links = await (database.select(
+      database.trainingActivitySeriesLinks,
+    )..where((row) => row.activityId.equals(drill.id))).get();
+    if (summary['linkedSeriesCount'] != links.length) {
+      throw StateError(
+        'Het opgeslagen reeksaantal komt niet overeen met de echte koppelingen.',
+      );
+    }
+    for (final link in links) {
+      final series = await _series(link.seriesId);
+      if (series == null ||
+          series.status != domain.SeriesStatus.confirmed.name) {
+        throw StateError('Een gekoppelde drillreeks is niet bevestigd.');
+      }
+    }
+    final seriesPhases = definition.phases
+        .where(
+          (phase) =>
+              phase.completionKind == DrillPhaseCompletionKind.confirmedSeries,
+        )
+        .toList(growable: false);
+    for (final phase in seriesPhases) {
+      final explicit = links.where((link) => link.role == phase.id).length;
+      final effective = explicit > 0
+          ? explicit
+          : seriesPhases.length == 1 && links.every((link) => link.role == null)
+          ? links.length
+          : 0;
+      if (effective < (phase.seriesCount ?? 1)) {
+        throw StateError(
+          'Reeksfase ${phase.id} mist bevestigde, correct gekoppelde reeksen.',
+        );
+      }
+    }
+  }
+
+  Future<void> _validateTrainingPlanRelations(
+    TrainingActivityRecord plan,
+    Map<String, Object?> summary, {
+    required bool requireCompletion,
+  }) async {
+    final snapshot = _planSnapshot(plan);
+    final rawSlots = snapshot['slots'];
+    if (rawSlots is! List) {
+      throw StateError('Het trainingsplan bevat geen geldige slots.');
+    }
+    final validSlotIndexes = rawSlots
+        .whereType<Map>()
+        .map((slot) => slot['index'])
+        .whereType<int>()
+        .toSet();
+    final completedSlots = _readIntList(
+      summary['completedSlotIndexes'],
+    ).toSet();
+    final mappedActivities = _readStringMap(summary['guidedDrillActivityIds']);
+    final planLinks = await (database.select(
+      database.trainingActivitySeriesLinks,
+    )..where((row) => row.activityId.equals(plan.id))).get();
+    final planSeriesIds = planLinks.map((link) => link.seriesId).toSet();
+
+    for (final entry in mappedActivities.entries) {
+      final slotIndex = int.tryParse(entry.key);
+      if (slotIndex == null || !validSlotIndexes.contains(slotIndex)) {
+        throw StateError('Het trainingsplan verwijst naar een ongeldige slot.');
+      }
+      final drill = await _trainingActivity(entry.value);
+      if (drill == null ||
+          drill.kind != StoredTrainingActivityKind.guidedDrillV2.name) {
+        throw StateError(
+          'Planslot $slotIndex verwijst niet naar een bestaande V2-drill.',
+        );
+      }
+      final binding = _validateTrainingPlanBinding(drill: drill, plan: plan);
+      if (binding.slotIndex != slotIndex) {
+        throw StateError('De gekoppelde drill hoort bij een andere planslot.');
+      }
+      final slotCompleted = completedSlots.contains(slotIndex);
+      if ((slotCompleted || requireCompletion) &&
+          drill.status != StoredTrainingActivityStatus.completed.name) {
+        throw StateError('Planslot $slotIndex bevat geen afgeronde drill.');
+      }
+      if (slotCompleted || requireCompletion) {
+        _requireValidStructuredSnapshot(drill);
+        final drillSummary = _decodeJsonObject(
+          drill.summaryJson,
+          'drillsamenvatting',
+        );
+        await _validateGuidedDrillRelations(
+          drill,
+          drillSummary,
+          requireCompletion: true,
+        );
+        final drillLinks = await (database.select(
+          database.trainingActivitySeriesLinks,
+        )..where((row) => row.activityId.equals(drill.id))).get();
+        if (!planSeriesIds.containsAll(
+          drillLinks.map((link) => link.seriesId),
+        )) {
+          throw StateError(
+            'Het trainingsplan mist gekoppelde reeksdata van planslot '
+            '$slotIndex.',
+          );
+        }
+      }
+    }
+    if (requireCompletion &&
+        (completedSlots.length != validSlotIndexes.length ||
+            !completedSlots.containsAll(validSlotIndexes) ||
+            mappedActivities.length != validSlotIndexes.length)) {
+      throw StateError(
+        'Rond eerst iedere planslot met een bevestigde drill af.',
+      );
+    }
+  }
+
+  Future<void> _validateAndCompleteDrill({
+    required TrainingActivityRecord drill,
+    required String summaryJson,
+    required DateTime completedAtUtc,
+    required int minimumLinkedSeries,
+    String? notes,
+  }) async {
+    final links = await (database.select(
+      database.trainingActivitySeriesLinks,
+    )..where((row) => row.activityId.equals(drill.id))).get();
+    if (links.length < minimumLinkedSeries) {
+      throw StateError(
+        'Koppel eerst $minimumLinkedSeries bevestigde '
+        '${minimumLinkedSeries == 1 ? 'reeks' : 'reeksen'}.',
+      );
+    }
+    for (final link in links) {
+      final series = await _series(link.seriesId);
+      if (series == null ||
+          series.status != domain.SeriesStatus.confirmed.name) {
+        throw StateError('Een gekoppelde reeks is niet bevestigd.');
+      }
+    }
+    final now = DateTime.now().toUtc();
+    await (database.update(
+      database.trainingActivities,
+    )..where((row) => row.id.equals(drill.id))).write(
+      TrainingActivitiesCompanion(
+        status: Value(StoredTrainingActivityStatus.completed.name),
+        summaryJson: Value(summaryJson),
+        completedAtUtc: Value(completedAtUtc.toUtc()),
+        notes: Value(_nullIfBlank(notes) ?? drill.notes),
+        updatedAtUtc: Value(now),
+      ),
+    );
+    if (drill.sessionId != null) await _touchSession(drill.sessionId!, now);
+  }
+
+  Future<void> _recordCompletedDrillSlot({
+    required TrainingActivityRecord plan,
+    required TrainingActivityRecord drill,
+    required _ValidatedTrainingPlanBinding binding,
+    required DateTime completedAtUtc,
+  }) async {
+    final summary = _decodeJsonObject(
+      plan.summaryJson,
+      'trainingsplansamenvatting',
+    );
+    final completedSlots = _readIntList(
+      summary['completedSlotIndexes'],
+    ).toSet();
+    if (!binding.validSlotIndexes.containsAll(completedSlots)) {
+      throw StateError('Het trainingsplan bevat ongeldige voortgang.');
+    }
+    final drillActivities = <String, String>{
+      ..._readStringMap(summary['guidedDrillActivityIds']),
+    };
+    final existing = drillActivities['${binding.slotIndex}'];
+    if (existing != null && existing != drill.id) {
+      throw StateError('Deze planslot is al door een andere drill ingevuld.');
+    }
+    completedSlots.add(binding.slotIndex);
+    drillActivities['${binding.slotIndex}'] = drill.id;
+    summary
+      ..['completedSlotIndexes'] = (completedSlots.toList()..sort())
+      ..['guidedDrillActivityIds'] = drillActivities
+      ..['slotCount'] = binding.slotCount;
+    final allDrillsCompleted =
+        completedSlots.containsAll(binding.validSlotIndexes) &&
+        completedSlots.length == binding.validSlotIndexes.length;
+    if (plan.status == StoredTrainingActivityStatus.completed.name) {
+      final completedStepIds = _readStringList(
+        summary['completedStepIds'],
+      ).toSet();
+      final snapshot = _planSnapshot(plan);
+      final rawSteps = snapshot['steps'];
+      final expectedStepIds = rawSteps is List
+          ? rawSteps
+                .whereType<Map>()
+                .map((step) => step['id'])
+                .whereType<String>()
+                .toSet()
+          : const <String>{};
+      if (!allDrillsCompleted ||
+          expectedStepIds.isEmpty ||
+          !completedStepIds.containsAll(expectedStepIds)) {
+        throw StateError('Het afgeronde trainingsplan is inconsistent.');
+      }
+      return;
+    }
+    final now = DateTime.now().toUtc();
+    await (database.update(
+      database.trainingActivities,
+    )..where((row) => row.id.equals(plan.id))).write(
+      TrainingActivitiesCompanion(
+        status: Value(StoredTrainingActivityStatus.draft.name),
+        summaryJson: Value(
+          _encodeJsonObject(summary, 'trainingsplansamenvatting'),
+        ),
+        completedAtUtc: const Value(null),
+        updatedAtUtc: Value(now),
+      ),
+    );
+    if (plan.sessionId != null) await _touchSession(plan.sessionId!, now);
+  }
+
+  Future<void> _replaceTimerEvents(
+    String activityId,
+    List<NewShotTimerEvent> events,
+  ) async {
+    await _requireTimerActivity(activityId);
+    var previousElapsed = 0;
+    var previousCountedElapsed = 0;
+    final eventIds = <String>{};
+    final companions = <ShotTimerEventsCompanion>[];
+    for (var index = 0; index < events.length; index++) {
+      final event = events[index];
+      final peak = event.normalizedPeak;
+      if (event.elapsedMicroseconds < 0 ||
+          (index > 0 && event.elapsedMicroseconds <= previousElapsed) ||
+          event.splitMicroseconds < 0 ||
+          event.splitMicroseconds > event.elapsedMicroseconds ||
+          peak != null && (!peak.isFinite || peak < 0 || peak > 1)) {
+        throw ArgumentError('Schottijden moeten geldig en oplopend zijn.');
+      }
+      if (event.disposition == StoredTimerEventDisposition.counted) {
+        final expectedSplit =
+            event.elapsedMicroseconds - previousCountedElapsed;
+        if (event.splitMicroseconds != expectedSplit) {
+          throw ArgumentError(
+            'Splits moeten ten opzichte van het vorige getelde event zijn.',
+          );
+        }
+        previousCountedElapsed = event.elapsedMicroseconds;
+      }
+      final eventId = event.id ?? _uuid.v7();
+      if (!eventIds.add(eventId)) {
+        throw ArgumentError('Een timerevent-ID komt meer dan één keer voor.');
+      }
+      final exclusionReason = _nullIfBlank(event.exclusionReason);
+      if (event.disposition == StoredTimerEventDisposition.excluded &&
+          exclusionReason == null) {
+        throw ArgumentError('Een uitgesloten detectie vereist een reden.');
+      }
+      companions.add(
+        ShotTimerEventsCompanion.insert(
+          id: eventId,
+          activityId: activityId,
+          sequenceNumber: index + 1,
+          elapsedMicroseconds: event.elapsedMicroseconds,
+          splitMicroseconds: event.splitMicroseconds,
+          source: event.source.name,
+          disposition: event.disposition.name,
+          normalizedPeak: Value(peak),
+          detectionQuality: Value(_nullIfBlank(event.detectionQuality)),
+          exclusionReason: Value(
+            event.disposition == StoredTimerEventDisposition.excluded
+                ? exclusionReason
+                : null,
+          ),
+        ),
+      );
+      previousElapsed = event.elapsedMicroseconds;
+    }
+    await (database.delete(
+      database.shotTimerEvents,
+    )..where((row) => row.activityId.equals(activityId))).go();
+    if (companions.isNotEmpty) {
+      await database.batch(
+        (batch) => batch.insertAll(database.shotTimerEvents, companions),
+      );
+    }
+  }
+
+  Future<void> _setTimerEventDisposition(
+    String eventId,
+    StoredTimerEventDisposition disposition, {
+    String? reason,
+  }) async {
+    final normalizedReason = _nullIfBlank(reason);
+    if (disposition == StoredTimerEventDisposition.excluded &&
+        normalizedReason == null) {
+      throw ArgumentError('Een uitgesloten detectie vereist een reden.');
+    }
+    await database.transaction(() async {
+      final event = await (database.select(
+        database.shotTimerEvents,
+      )..where((row) => row.id.equals(eventId))).getSingleOrNull();
+      if (event == null) return;
+      final activity = await _requireTimerActivity(event.activityId);
+      await (database.update(
+        database.shotTimerEvents,
+      )..where((row) => row.id.equals(eventId))).write(
+        ShotTimerEventsCompanion(
+          disposition: Value(disposition.name),
+          exclusionReason: Value(
+            disposition == StoredTimerEventDisposition.excluded
+                ? normalizedReason
+                : null,
+          ),
+        ),
+      );
+      await _normalizeStoredCountedSplits(event.activityId);
+      final now = DateTime.now().toUtc();
+      final summaryJson = await _recomputeTimerSummaryJson(
+        event.activityId,
+        baseSummaryJson: activity.summaryJson,
+        markUserEdited: true,
+      );
+      await (database.update(
+        database.trainingActivities,
+      )..where((row) => row.id.equals(event.activityId))).write(
+        TrainingActivitiesCompanion(
+          summaryJson: Value(summaryJson),
+          updatedAtUtc: Value(now),
+        ),
+      );
+      if (activity.sessionId != null) {
+        await _touchSession(activity.sessionId!, now);
+      }
+    });
+  }
+
+  Future<void> _normalizeStoredCountedSplits(String activityId) async {
+    final events =
+        await (database.select(database.shotTimerEvents)
+              ..where((row) => row.activityId.equals(activityId))
+              ..orderBy([(row) => OrderingTerm.asc(row.sequenceNumber)]))
+            .get();
+    var previousElapsed = 0;
+    var previousCountedElapsed = 0;
+    for (var index = 0; index < events.length; index++) {
+      final event = events[index];
+      if (event.sequenceNumber != index + 1 ||
+          event.elapsedMicroseconds < 0 ||
+          index > 0 && event.elapsedMicroseconds <= previousElapsed) {
+        throw StateError(
+          'Timerevents zijn niet geldig chronologisch opgeslagen.',
+        );
+      }
+      final disposition = StoredTimerEventDisposition.values
+          .where((value) => value.name == event.disposition)
+          .firstOrNull;
+      if (disposition == null ||
+          event.splitMicroseconds < 0 ||
+          event.splitMicroseconds > event.elapsedMicroseconds ||
+          disposition == StoredTimerEventDisposition.excluded &&
+              _nullIfBlank(event.exclusionReason) == null) {
+        throw StateError('Timerevent bevat ongeldige opgeslagen gegevens.');
+      }
+      if (disposition == StoredTimerEventDisposition.counted) {
+        final normalizedSplit =
+            event.elapsedMicroseconds - previousCountedElapsed;
+        if (event.splitMicroseconds != normalizedSplit) {
+          await (database.update(
+            database.shotTimerEvents,
+          )..where((row) => row.id.equals(event.id))).write(
+            ShotTimerEventsCompanion(splitMicroseconds: Value(normalizedSplit)),
+          );
+        }
+        previousCountedElapsed = event.elapsedMicroseconds;
+      }
+      previousElapsed = event.elapsedMicroseconds;
+    }
+  }
+
+  Future<TrainingActivityRecord> _requireTimerActivity(
+    String activityId,
+  ) async {
+    final activity = await _trainingActivity(activityId);
+    if (activity == null) {
+      throw ArgumentError('De trainingsactiviteit bestaat niet meer.');
+    }
+    if (!_timerActivityKinds.contains(activity.kind)) {
+      throw StateError('Alleen timeractiviteiten mogen timerevents bevatten.');
+    }
+    return activity;
+  }
+
+  Future<TrainingActivityRecord> _requireDrillActivity(
+    String activityId,
+  ) async {
+    final activity = await _trainingActivity(activityId);
+    if (activity == null) {
+      throw ArgumentError('De drillactiviteit bestaat niet meer.');
+    }
+    if (activity.kind != StoredTrainingActivityKind.guidedDrillV2.name) {
+      throw StateError('Deze activiteit is geen drill.');
+    }
+    return activity;
+  }
+
+  Future<TrainingActivityRecord> _requireTrainingPlanActivity(
+    String activityId,
+  ) async {
+    final activity = await _trainingActivity(activityId);
+    if (activity == null) {
+      throw ArgumentError('Het trainingsplan bestaat niet meer.');
+    }
+    if (activity.kind != StoredTrainingActivityKind.trainingPlan.name) {
+      throw StateError('Deze activiteit is geen trainingsplan.');
+    }
+    return activity;
+  }
+
+  Future<TrainingActivityRecord> _requireLearningPathActivity(
+    String activityId,
+  ) async {
+    final activity = await _trainingActivity(activityId);
+    if (activity == null) {
+      throw ArgumentError('Het leerpad bestaat niet meer.');
+    }
+    if (activity.kind != StoredTrainingActivityKind.learningPathV2.name) {
+      throw StateError('Deze activiteit is geen V2-leerpad.');
+    }
+    if (activity.schemaVersion != 2) {
+      throw StateError('Deze leerpadversie is alleen-lezen in deze appversie.');
+    }
+    final snapshot = _learningPathSnapshot(activity);
+    _learningPathProgress(activity, snapshot);
+    return activity;
+  }
+
+  Future<String> _recomputeTimerSummaryJson(
+    String activityId, {
+    required String baseSummaryJson,
+    required bool markUserEdited,
+  }) async {
+    final activity = await _requireTimerActivity(activityId);
+    final decoded = jsonDecode(baseSummaryJson);
+    if (decoded is! Map) {
+      throw StateError('De timersamenvatting is ongeldig.');
+    }
+    final summary = decoded.cast<String, Object?>();
+    final allEvents =
+        await (database.select(database.shotTimerEvents)
+              ..where((row) => row.activityId.equals(activityId))
+              ..orderBy([
+                (row) => OrderingTerm.asc(row.elapsedMicroseconds),
+                (row) => OrderingTerm.asc(row.sequenceNumber),
+              ]))
+            .get();
+    final counted = allEvents
+        .where(
+          (event) =>
+              event.disposition == StoredTimerEventDisposition.counted.name,
+        )
+        .toList(growable: false);
+
+    final splits = <int>[];
+    for (var index = 1; index < counted.length; index++) {
+      splits.add(
+        counted[index].elapsedMicroseconds -
+            counted[index - 1].elapsedMicroseconds,
+      );
+    }
+    final averageSplit = splits.isEmpty
+        ? null
+        : splits.fold<int>(0, (sum, value) => sum + value) ~/ splits.length;
+    int? splitStandardDeviation;
+    if (splits.length >= 2) {
+      final mean =
+          splits.fold<double>(0, (sum, value) => sum + value) / splits.length;
+      final variance =
+          splits.fold<double>(0, (sum, value) {
+            final delta = value - mean;
+            return sum + delta * delta;
+          }) /
+          (splits.length - 1);
+      splitStandardDeviation = math.sqrt(variance).round();
+    }
+
+    final preservesSignalDuration =
+        allEvents.isEmpty &&
+        (activity.kind == StoredTrainingActivityKind.par.name ||
+            activity.kind == StoredTrainingActivityKind.cadence.name);
+    final preservesExternalManualSummary =
+        allEvents.isEmpty &&
+        activity.kind == StoredTrainingActivityKind.externalManual.name &&
+        summary['externalTimingCompleteness'] == 'summaryOnly';
+    final previousTotalTime = summary['totalTimeMicros'];
+
+    if (!preservesExternalManualSummary) {
+      summary
+        ..['countedShotCount'] = counted.length
+        ..['firstShotTimeMicros'] = counted.isEmpty
+            ? null
+            : counted.first.elapsedMicroseconds
+        ..['lastShotTimeMicros'] = counted.isEmpty
+            ? null
+            : counted.last.elapsedMicroseconds
+        ..['totalTimeMicros'] = preservesSignalDuration
+            ? previousTotalTime
+            : counted.isEmpty
+            ? 0
+            : counted.last.elapsedMicroseconds
+        ..['fastestSplitMicros'] = splits.isEmpty
+            ? null
+            : splits.reduce(math.min)
+        ..['slowestSplitMicros'] = splits.isEmpty
+            ? null
+            : splits.reduce(math.max)
+        ..['averageSplitMicros'] = averageSplit
+        ..['splitStandardDeviationMicros'] = splitStandardDeviation;
+    }
+    if (markUserEdited) summary['userEdited'] = true;
+    return _encodeJsonObject(summary, 'timersamenvatting');
+  }
+
+  String _encodeJsonObject(Map<String, Object?> value, String label) {
+    try {
+      final encoded = jsonEncode(value);
+      if (jsonDecode(encoded) is! Map) throw const FormatException();
+      return encoded;
+    } on Object {
+      throw ArgumentError('$label bevat niet-serialiseerbare gegevens.');
+    }
+  }
+
+  Map<String, Object?> _decodeJsonObject(String value, String label) {
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is! Map) throw const FormatException();
+      return decoded.cast<String, Object?>();
+    } on Object {
+      throw StateError('$label bevat geen geldig JSON-object.');
+    }
+  }
+
+  GuidedTrainingActivityOverview _guidedTrainingActivityOverview(
+    TrainingActivityRecord activity,
+  ) {
+    Map<String, Object?> configuration;
+    Map<String, Object?> summary;
+    try {
+      configuration = _decodeJsonObject(
+        activity.configurationJson,
+        'trainingsconfiguratie',
+      );
+    } on Object {
+      configuration = const {};
+    }
+    try {
+      summary = _decodeJsonObject(
+        activity.summaryJson,
+        'trainingssamenvatting',
+      );
+    } on Object {
+      summary = const {};
+    }
+    final isLegacy = activity.kind == StoredTrainingActivityKind.drill.name;
+    final isPlan =
+        activity.kind == StoredTrainingActivityKind.trainingPlan.name;
+    final drill = configuration['drill'];
+    final plan = configuration['plan'];
+    final title = switch ((drill, plan)) {
+      (final Map<Object?, Object?> value, _) =>
+        value['title'] as String? ?? 'Historische drill',
+      (_, final Map<Object?, Object?> value) =>
+        value['title'] as String? ?? 'Trainingsplan',
+      _ => isPlan ? 'Trainingsplan' : 'Historische drill',
+    };
+    final versionedId = isPlan
+        ? configuration['planId'] as String?
+        : configuration['drillVersionedId'] as String?;
+    final unfinished =
+        activity.status == StoredTrainingActivityStatus.draft.name ||
+        activity.status == StoredTrainingActivityStatus.interrupted.name;
+    final hasResumableSnapshot = _hasResumableTrainingSnapshot(activity);
+    return GuidedTrainingActivityOverview(
+      activity: activity,
+      configuration: Map.unmodifiable(configuration),
+      summary: Map.unmodifiable(summary),
+      title: title,
+      versionedContentId: versionedId,
+      canResume: !isLegacy && unfinished && hasResumableSnapshot,
+      isLegacyReadOnly: isLegacy,
+      isTrainingPlan: isPlan,
+    );
+  }
+
+  LearningPathActivityOverview _learningPathActivityOverview(
+    TrainingActivityRecord activity,
+  ) {
+    Map<String, Object?> configuration = const {};
+    Map<String, Object?> summary = const {};
+    try {
+      configuration = _decodeJsonObject(
+        activity.configurationJson,
+        'leerpadconfiguratie',
+      );
+    } on Object {
+      // Malformed history remains visible and read-only.
+    }
+    try {
+      summary = _decodeJsonObject(activity.summaryJson, 'leerpadvoortgang');
+    } on Object {
+      // Malformed history remains visible and read-only.
+    }
+
+    var title = 'Historisch leerpad';
+    String? versionedId = configuration['learningPathVersionedId'] as String?;
+    var completedEntryIds = const <String>{};
+    var currentEntryIndex = 0;
+    var totalEntryCount = 0;
+    var lessonSnapshotsByEntryId = const <String, TechniqueLessonV2>{};
+    var drillSnapshotsByEntryId = const <String, DrillDefinitionV2>{};
+    var valid = false;
+    try {
+      if (activity.schemaVersion != 2) throw const FormatException();
+      final snapshot = _learningPathSnapshot(activity);
+      final progress = _learningPathProgress(activity, snapshot);
+      title = snapshot.path.title;
+      versionedId = snapshot.path.versionedId;
+      completedEntryIds = Set.unmodifiable(progress.completedEntryIds);
+      currentEntryIndex = progress.currentEntryIndex;
+      totalEntryCount = snapshot.entryIds.length;
+      lessonSnapshotsByEntryId = snapshot.lessonSnapshotsByEntryId;
+      drillSnapshotsByEntryId = snapshot.drillSnapshotsByEntryId;
+      valid = true;
+    } on Object {
+      final rawPath = configuration['learningPath'];
+      if (rawPath is Map) {
+        final rawTitle = rawPath['title'];
+        if (rawTitle is String && rawTitle.trim().isNotEmpty) {
+          title = rawTitle.trim();
+        }
+      }
+    }
+    final unfinished =
+        activity.status == StoredTrainingActivityStatus.draft.name ||
+        activity.status == StoredTrainingActivityStatus.interrupted.name;
+    return LearningPathActivityOverview(
+      activity: activity,
+      configuration: Map.unmodifiable(configuration),
+      summary: Map.unmodifiable(summary),
+      title: title,
+      versionedContentId: versionedId,
+      completedEntryIds: completedEntryIds,
+      currentEntryIndex: currentEntryIndex,
+      totalEntryCount: totalEntryCount,
+      lessonSnapshotsByEntryId: lessonSnapshotsByEntryId,
+      drillSnapshotsByEntryId: drillSnapshotsByEntryId,
+      canResume: valid && unfinished,
+    );
+  }
+
+  _ValidatedLearningPathSnapshot _learningPathSnapshot(
+    TrainingActivityRecord activity,
+  ) {
+    if (activity.kind != StoredTrainingActivityKind.learningPathV2.name) {
+      throw StateError('Deze activiteit is geen V2-leerpad.');
+    }
+    final configuration = _decodeJsonObject(
+      activity.configurationJson,
+      'leerpadconfiguratie',
+    );
+    final versionedId = configuration['learningPathVersionedId'];
+    final rawPath = configuration['learningPath'];
+    if (versionedId is! String || rawPath is! Map) {
+      throw StateError('Het leerpad bevat geen volledige inhoudssnapshot.');
+    }
+    try {
+      final pathOnly = _validateLearningPathSnapshot(
+        learningPathVersionedId: versionedId,
+        learningPathSnapshot: rawPath.cast<String, Object?>(),
+      );
+      final hasPersistedEntrySnapshots = configuration.containsKey(
+        'entrySnapshots',
+      );
+      final rawEntrySnapshots = hasPersistedEntrySnapshots
+          ? configuration['entrySnapshots']
+          : _createLearningPathEntrySnapshots(pathOnly.path);
+      return _validateLearningPathSnapshot(
+        learningPathVersionedId: versionedId,
+        learningPathSnapshot: rawPath.cast<String, Object?>(),
+        rawEntrySnapshots: rawEntrySnapshots,
+        requireEntrySnapshots: true,
+      );
+    } on ArgumentError catch (error) {
+      throw StateError('De opgeslagen leerpadsnapshot is ongeldig: $error');
+    } on Object {
+      throw StateError('De opgeslagen leerpadsnapshot is ongeldig.');
+    }
+  }
+
+  _ValidatedLearningPathSnapshot _validateLearningPathSnapshot({
+    required String learningPathVersionedId,
+    required Map<String, Object?> learningPathSnapshot,
+    Object? rawEntrySnapshots,
+    bool requireEntrySnapshots = false,
+  }) {
+    final path = LearningPathV2.fromJson(learningPathSnapshot);
+    if (learningPathVersionedId != path.versionedId) {
+      throw ArgumentError(
+        'De leerpad-ID komt niet overeen met de inhoudssnapshot.',
+      );
+    }
+    final entryIds = path.entries.map((entry) => entry.id).toList();
+    if (entryIds.length != entryIds.toSet().length) {
+      throw ArgumentError('Een leerpad bevat dubbele onderdeel-ID’s.');
+    }
+    final known = <String>{};
+    for (final entry in path.entries) {
+      if (entry.prerequisiteEntryIds.any((id) => !known.contains(id))) {
+        throw ArgumentError(
+          'Een leerpadvoorwaarde verwijst niet naar een eerder onderdeel.',
+        );
+      }
+      known.add(entry.id);
+    }
+    final lessonSnapshots = <String, TechniqueLessonV2>{};
+    final drillSnapshots = <String, DrillDefinitionV2>{};
+    if (rawEntrySnapshots == null) {
+      if (requireEntrySnapshots) {
+        throw ArgumentError('Het leerpad mist volledige onderdeelsnapshots.');
+      }
+    } else {
+      if (rawEntrySnapshots is! List ||
+          rawEntrySnapshots.length != path.entries.length) {
+        throw ArgumentError(
+          'Het leerpad bevat geen volledige lijst onderdeelsnapshots.',
+        );
+      }
+      for (var index = 0; index < path.entries.length; index++) {
+        final entry = path.entries[index];
+        final rawSnapshot = rawEntrySnapshots[index];
+        if (rawSnapshot is! Map) {
+          throw ArgumentError('Een leerpadonderdeelsnapshot is ongeldig.');
+        }
+        final snapshot = rawSnapshot.cast<String, Object?>();
+        if (snapshot['entryId'] != entry.id ||
+            snapshot['kind'] != entry.kind.name ||
+            snapshot['versionedContentId'] != entry.versionedContentId ||
+            snapshot['content'] is! Map) {
+          throw ArgumentError(
+            'Een leerpadonderdeelsnapshot hoort niet bij de opgeslagen stap.',
+          );
+        }
+        final content = (snapshot['content']! as Map).cast<String, Object?>();
+        switch (entry.kind) {
+          case LearningPathEntryKind.lesson:
+            final lesson = TechniqueLessonV2.fromJson(content);
+            if (lesson.versionedId != entry.versionedContentId) {
+              throw ArgumentError(
+                'De lessnapshot heeft een andere inhoudsversie.',
+              );
+            }
+            lessonSnapshots[entry.id] = lesson;
+          case LearningPathEntryKind.drill:
+            final drill = DrillDefinitionV2.fromJson(content);
+            if (drill.versionedId != entry.versionedContentId) {
+              throw ArgumentError(
+                'De drillsnapshot heeft een andere inhoudsversie.',
+              );
+            }
+            drillSnapshots[entry.id] = drill;
+        }
+      }
+    }
+    return _ValidatedLearningPathSnapshot(
+      path: path,
+      entryIds: List.unmodifiable(entryIds),
+      lessonSnapshotsByEntryId: Map.unmodifiable(lessonSnapshots),
+      drillSnapshotsByEntryId: Map.unmodifiable(drillSnapshots),
+    );
+  }
+
+  List<Map<String, Object?>> _createLearningPathEntrySnapshots(
+    LearningPathV2 path,
+  ) {
+    final catalog = BuiltInTrainingContent.catalog;
+    return List.unmodifiable(
+      path.entries.map((entry) {
+        final content = switch (entry.kind) {
+          LearningPathEntryKind.lesson =>
+            catalog.lessonByVersionedId(entry.versionedContentId)?.toJson(),
+          LearningPathEntryKind.drill =>
+            catalog.drillByVersionedId(entry.versionedContentId)?.toJson(),
+        };
+        if (content == null) {
+          throw ArgumentError(
+            'Inhoud ${entry.versionedContentId} kan niet volledig worden opgeslagen.',
+          );
+        }
+        return <String, Object?>{
+          'entryId': entry.id,
+          'kind': entry.kind.name,
+          'versionedContentId': entry.versionedContentId,
+          'content': content,
+        };
+      }),
+    );
+  }
+
+  _LearningPathProgress _learningPathProgress(
+    TrainingActivityRecord activity,
+    _ValidatedLearningPathSnapshot snapshot,
+  ) {
+    final summary = _decodeJsonObject(activity.summaryJson, 'leerpadvoortgang');
+    final rawCompleted = summary['completedEntryIds'];
+    final currentIndex = summary['currentEntryIndex'];
+    if (rawCompleted is! List || currentIndex is! int) {
+      throw StateError('De opgeslagen leerpadvoortgang is onvolledig.');
+    }
+    final completed = rawCompleted.whereType<String>().toList(growable: false);
+    if (completed.length != rawCompleted.length ||
+        completed.length != completed.toSet().length ||
+        completed.any((id) => !snapshot.entryIds.contains(id))) {
+      throw StateError('De opgeslagen leerpadvoortgang is ongeldig.');
+    }
+    final completedSet = completed.toSet();
+    final firstIncomplete = snapshot.entryIds.indexWhere(
+      (id) => !completedSet.contains(id),
+    );
+    final expectedIndex = firstIncomplete < 0
+        ? snapshot.entryIds.length
+        : firstIncomplete;
+    if (currentIndex != expectedIndex) {
+      throw StateError(
+        'De huidige leerpadstap komt niet overeen met de voortgang.',
+      );
+    }
+    return _LearningPathProgress(
+      completedEntryIds: List.unmodifiable(completed),
+      currentEntryIndex: currentIndex,
+    );
+  }
+
+  Future<void> _requireCompletedLearningPathDrillEvidence({
+    required TrainingActivityRecord activity,
+    required _ValidatedLearningPathSnapshot snapshot,
+    required Set<String> completedEntryIds,
+  }) async {
+    final requestedDrills = snapshot.path.entries
+        .where(
+          (entry) =>
+              entry.kind == LearningPathEntryKind.drill &&
+              completedEntryIds.contains(entry.id),
+        )
+        .toList(growable: false);
+    if (requestedDrills.isEmpty) return;
+    final completedActivities =
+        await (database.select(database.trainingActivities)..where(
+              (row) =>
+                  row.kind.equals(
+                    StoredTrainingActivityKind.guidedDrillV2.name,
+                  ) &
+                  row.status.equals(
+                    StoredTrainingActivityStatus.completed.name,
+                  ),
+            ))
+            .get();
+    final completedVersionedIds = <String>{};
+    for (final candidate in completedActivities) {
+      if (candidate.completedAtUtc == null ||
+          candidate.completedAtUtc!.toUtc().isBefore(
+            activity.startedAtUtc.toUtc(),
+          )) {
+        continue;
+      }
+      try {
+        final configuration = _decodeJsonObject(
+          candidate.configurationJson,
+          'drillconfiguratie',
+        );
+        final versionedId = configuration['drillVersionedId'];
+        if (versionedId is String) completedVersionedIds.add(versionedId);
+      } on Object {
+        continue;
+      }
+    }
+    final missing = requestedDrills
+        .where(
+          (entry) => !completedVersionedIds.contains(entry.versionedContentId),
+        )
+        .map((entry) => entry.id)
+        .toList(growable: false);
+    if (missing.isNotEmpty) {
+      throw StateError(
+        'Rond de begeleide drill eerst af voordat dit onderdeel telt.',
+      );
+    }
+  }
+
+  bool _hasResumableTrainingSnapshot(TrainingActivityRecord activity) {
+    if (activity.kind != StoredTrainingActivityKind.guidedDrillV2.name &&
+        activity.kind != StoredTrainingActivityKind.trainingPlan.name) {
+      return false;
+    }
+    return TrainingActivitySnapshotValidator.validateEncoded(
+      kind: activity.kind,
+      activitySchemaVersion: activity.schemaVersion,
+      configurationJson: activity.configurationJson,
+      summaryJson: activity.summaryJson,
+      status: activity.status,
+    ).canResume;
   }
 
   Future<SeriesDefaults> _lastUsedDefaults() async {
@@ -2440,6 +5460,179 @@ class ShootingRepository {
     }
   }
 
+  _ValidatedPhotoAlignment _validateAlignment(
+    domain.StoredPhotoAlignment alignment, {
+    required domain.TargetProfile target,
+  }) {
+    final reportedStatus = alignment.planarityStatus.trim().toLowerCase();
+    if (reportedStatus == 'rejected' ||
+        reportedStatus == 'unstable' ||
+        reportedStatus == 'unknown') {
+      throw StateError('Deze uitlijning is afgekeurd of numeriek onstabiel.');
+    }
+    final mode = switch (alignment.alignmentMode.trim()) {
+      'fullCard' || 'fourCorners' => geo.PhotoAlignmentMode.fourCorners,
+      'ringAssisted' => geo.PhotoAlignmentMode.ringAssisted,
+      _ => throw StateError('Onbekende foto-uitlijningsmodus.'),
+    };
+    Object? decodedAnchors;
+    if (alignment.anchorsJson != null) {
+      try {
+        decodedAnchors = jsonDecode(alignment.anchorsJson!);
+      } on Object {
+        throw StateError('De opgeslagen uitlijningsankers zijn ongeldig.');
+      }
+      if (decodedAnchors is! List) {
+        throw StateError('De opgeslagen uitlijningsankers zijn ongeldig.');
+      }
+    } else if (mode == geo.PhotoAlignmentMode.ringAssisted) {
+      throw StateError('Ringuitlijning vereist opgeslagen ankers.');
+    }
+
+    final points = alignment.orderedCorners
+        .map((point) => geo.NormalizedPoint(point.x, point.y))
+        .toList(growable: false);
+    final payload = <String, Object?>{
+      'schemaVersion': geo.photoAlignmentSchemaVersion,
+      'algorithmVersion': alignment.algorithmVersion,
+      'alignmentMode': mode.name,
+      'anchors': ?decodedAnchors,
+      'cardWidthMm': target.physicalCardWidthMm,
+      'cardHeightMm': target.physicalCardHeightMm,
+      'corners': geo.NormalizedQuad.fromOrderedPoints(points).toJson(),
+      'homographyMatrix': alignment.homographyMatrix,
+      'rotationQuarterTurns': alignment.rotationQuarterTurns,
+    };
+    late final geo.ManualPhotoAlignment geometry;
+    try {
+      geometry = geo.ManualPhotoAlignment.fromJson(payload);
+    } on Object catch (error) {
+      throw StateError('De foto-uitlijning is ongeldig: $error');
+    }
+    final residuals = geometry.residuals;
+    if (!residuals.conditionEstimate.isFinite ||
+        residuals.conditionEstimate > 1e10) {
+      throw StateError('De foto-uitlijning is numeriek onstabiel.');
+    }
+    for (final pair in [
+      (alignment.reprojectionRmsMm, residuals.rmsMm),
+      (alignment.reprojectionMaxMm, residuals.maximumMm),
+    ]) {
+      final supplied = pair.$1;
+      if (supplied != null &&
+          (supplied - pair.$2).abs() > _alignmentPreviewToleranceMm) {
+        throw StateError(
+          'De opgegeven uitlijningsresiduen wijken af van de '
+          'autoritatieve herberekening.',
+        );
+      }
+    }
+    final planarityStatus = switch ((residuals.rmsMm, residuals.maximumMm)) {
+      (final rms, final maximum) when rms <= 0.75 && maximum <= 1.5 =>
+        'accepted',
+      (final rms, final maximum) when rms <= 1.5 && maximum <= 3.0 =>
+        'manualReviewOnly',
+      _ => throw StateError(
+        'De foto-uitlijning overschrijdt de toegestane foutmarge.',
+      ),
+    };
+    return _ValidatedPhotoAlignment(
+      geometry: geometry,
+      persistedMode: mode == geo.PhotoAlignmentMode.fourCorners
+          ? 'fullCard'
+          : 'ringAssisted',
+      anchorsJson: jsonEncode(
+        geometry.anchors.map((anchor) => anchor.toJson()).toList(),
+      ),
+      planarityStatus: planarityStatus,
+      confirmedAtUtc:
+          alignment.confirmedAtUtc?.toUtc() ?? alignment.updatedAtUtc.toUtc(),
+    );
+  }
+
+  _PersistedPhotoAlignment? _tryDecodePersistedAlignment(
+    PhotoAlignmentRecord record, {
+    required domain.TargetProfile target,
+  }) {
+    try {
+      final matrix = (jsonDecode(record.matrixJson) as List<Object?>)
+          .map((value) => (value! as num).toDouble())
+          .toList(growable: false);
+      if (record.rotationQuarterTurns < 0 ||
+          record.rotationQuarterTurns > 3 ||
+          target.physicalCardWidthMm <= 0 ||
+          target.physicalCardHeightMm <= 0) {
+        return null;
+      }
+      return _PersistedPhotoAlignment(
+        transform: geo.ProjectiveTransform(matrix),
+        rotationQuarterTurns: record.rotationQuarterTurns,
+      );
+    } on Object {
+      // A malformed legacy alignment must not be allowed to redefine the
+      // canonical source coordinate. The new alignment remains authoritative.
+      return null;
+    }
+  }
+
+  geo.NormalizedPoint _canonicalOriginalSourcePoint({
+    required ImpactRecord existing,
+    required geo.NormalizedPoint storedSourcePoint,
+    required _PersistedPhotoAlignment? previousAlignment,
+  }) {
+    if (previousAlignment == null ||
+        previousAlignment.rotationQuarterTurns == 0) {
+      return storedSourcePoint;
+    }
+
+    // Schema 8 defines stored image coordinates in the immutable original
+    // EXIF-normalized image. A short-lived pre-schema implementation stored
+    // coordinates in the rotated view. Detect that representation against the
+    // previous physical position and migrate it deterministically.
+    final canonicalProjection = previousAlignment.fromOriginal(
+      storedSourcePoint,
+    );
+    final legacyProjection = previousAlignment.fromDisplayed(storedSourcePoint);
+    final canonicalError = math.sqrt(
+      math.pow(canonicalProjection.x - existing.xMm, 2) +
+          math.pow(canonicalProjection.y - existing.yMm, 2),
+    );
+    final legacyError = math.sqrt(
+      math.pow(legacyProjection.x - existing.xMm, 2) +
+          math.pow(legacyProjection.y - existing.yMm, 2),
+    );
+    if (legacyError + _alignmentPreviewToleranceMm < canonicalError &&
+        legacyError <= 3.0) {
+      return geo.unrotateNormalizedPoint(
+        storedSourcePoint,
+        previousAlignment.rotationQuarterTurns,
+      );
+    }
+    return storedSourcePoint;
+  }
+
+  domain.ShotImpact _domainImpact(ImpactRecord record) => domain.ShotImpact(
+    id: record.id,
+    xMm: record.xMm,
+    yMm: record.yMm,
+    sourceImageId: record.sourceImageId,
+    imageXNormalized: record.imageXNormalized,
+    imageYNormalized: record.imageYNormalized,
+    multiplicity: record.multiplicity,
+    isMiss: record.isMiss,
+    isPositionUncertain: record.isPositionUncertain,
+    targetBullId: record.targetBullId,
+    rawScoreValue: record.rawScoreValue,
+    scoreDisposition: domain.ScoreDisposition.values.byName(
+      record.scoreDisposition,
+    ),
+    placementMethod: domain.ImpactPlacementMethod.values.byName(
+      record.placementMethod,
+    ),
+    visionAnalysisId: record.visionAnalysisId,
+    positionalUncertaintyMm: record.positionalUncertaintyMm,
+  );
+
   bool _sameImpactMetadata(
     ImpactRecord existing,
     domain.ShotImpact resulting,
@@ -2450,17 +5643,123 @@ class ShootingRepository {
       existing.imageYNormalized == resulting.imageYNormalized &&
       existing.multiplicity == resulting.multiplicity &&
       existing.isMiss == resulting.isMiss &&
-      existing.isPositionUncertain == resulting.isPositionUncertain;
+      existing.isPositionUncertain == resulting.isPositionUncertain &&
+      existing.placementMethod == resulting.placementMethod.name &&
+      existing.visionAnalysisId == resulting.visionAnalysisId &&
+      existing.positionalUncertaintyMm == resulting.positionalUncertaintyMm;
 
   bool _sameStoredImpact(ImpactRecord existing, domain.ShotImpact resulting) =>
       _sameImpactMetadata(existing, resulting) &&
       existing.targetBullId == resulting.targetBullId &&
+      existing.rawScoreValue == resulting.rawScoreValue &&
+      existing.scoreDisposition == resulting.scoreDisposition.name &&
       existing.xMm == resulting.xMm &&
       existing.yMm == resulting.yMm;
 
   String? _nullIfBlank(String? value) {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
+}
+
+List<int> _readIntList(Object? value) => switch (value) {
+  final List<dynamic> items => items.whereType<int>().toList(growable: false),
+  _ => const [],
+};
+
+List<String> _readStringList(Object? value) => switch (value) {
+  final List<dynamic> items => items.whereType<String>().toList(
+    growable: false,
+  ),
+  _ => const [],
+};
+
+Map<String, String> _readStringMap(Object? value) {
+  if (value is! Map) return const {};
+  return {
+    for (final entry in value.entries)
+      if (entry.key is String && entry.value is String)
+        entry.key as String: entry.value as String,
+  };
+}
+
+class _ValidatedTrainingPlanBinding {
+  const _ValidatedTrainingPlanBinding({
+    required this.planId,
+    required this.slotIndex,
+    required this.slotCount,
+    required this.drillVersionedId,
+    required this.validSlotIndexes,
+  });
+
+  final String planId;
+  final int slotIndex;
+  final int slotCount;
+  final String drillVersionedId;
+  final Set<int> validSlotIndexes;
+}
+
+class _ValidatedLearningPathSnapshot {
+  const _ValidatedLearningPathSnapshot({
+    required this.path,
+    required this.entryIds,
+    required this.lessonSnapshotsByEntryId,
+    required this.drillSnapshotsByEntryId,
+  });
+
+  final LearningPathV2 path;
+  final List<String> entryIds;
+  final Map<String, TechniqueLessonV2> lessonSnapshotsByEntryId;
+  final Map<String, DrillDefinitionV2> drillSnapshotsByEntryId;
+}
+
+class _LearningPathProgress {
+  const _LearningPathProgress({
+    required this.completedEntryIds,
+    required this.currentEntryIndex,
+  });
+
+  final List<String> completedEntryIds;
+  final int currentEntryIndex;
+}
+
+const double _alignmentPreviewToleranceMm = 0.05;
+
+class _ValidatedPhotoAlignment {
+  const _ValidatedPhotoAlignment({
+    required this.geometry,
+    required this.persistedMode,
+    required this.anchorsJson,
+    required this.planarityStatus,
+    required this.confirmedAtUtc,
+  });
+
+  final geo.ManualPhotoAlignment geometry;
+  final String persistedMode;
+  final String anchorsJson;
+  final String planarityStatus;
+  final DateTime confirmedAtUtc;
+}
+
+class _PersistedPhotoAlignment {
+  const _PersistedPhotoAlignment({
+    required this.transform,
+    required this.rotationQuarterTurns,
+  });
+
+  final geo.ProjectiveTransform transform;
+  final int rotationQuarterTurns;
+
+  geo.PhysicalPointMm fromOriginal(geo.NormalizedPoint original) {
+    final displayed = geo.rotateNormalizedPoint(original, rotationQuarterTurns);
+    return fromDisplayed(displayed);
+  }
+
+  geo.PhysicalPointMm fromDisplayed(geo.NormalizedPoint displayed) {
+    final mapped = transform.apply(
+      geo.TransformPoint(displayed.x, displayed.y),
+    );
+    return geo.PhysicalPointMm(mapped.x, mapped.y);
   }
 }
 

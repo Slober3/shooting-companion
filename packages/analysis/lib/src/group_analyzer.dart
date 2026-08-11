@@ -33,14 +33,14 @@ abstract final class GroupAnalyzer {
       prepared.positionedShotCount,
     );
 
+    final extremeSpread = _extremeSpread(prepared.positions);
     double? moa;
     double? milliradians;
     if (distanceMeters != null) {
       if (distanceMeters > 0 && distanceMeters.isFinite) {
-        final spread = _extremeSpread(prepared.positions);
-        final radians = spread / (distanceMeters * 1000);
+        final radians = extremeSpread.distanceMm / (distanceMeters * 1000);
         moa = radians * 180 / math.pi * 60;
-        milliradians = spread / distanceMeters;
+        milliradians = extremeSpread.distanceMm / distanceMeters;
       } else {
         warningCounts[AnalysisWarningCode.invalidDistance] =
             prepared.positionedShotCount;
@@ -50,6 +50,7 @@ abstract final class GroupAnalyzer {
     final metrics = _calculateMetrics(
       prepared.actualShotCount,
       prepared.positions,
+      extremeSpread: extremeSpread,
       extremeSpreadMoa: moa,
       extremeSpreadMilliradians: milliradians,
     );
@@ -125,7 +126,10 @@ abstract final class GroupAnalyzer {
       actualShotCount += impact.multiplicity;
       final isMiss =
           impact.isMiss || impact.scoreDisposition == ScoreDisposition.miss;
-      if (isMiss) continue;
+      if (isMiss) {
+        warn(AnalysisWarningCode.missWithoutPosition, impact.multiplicity);
+        continue;
+      }
 
       if (!impact.xMm.isFinite || !impact.yMm.isFinite) {
         warn(AnalysisWarningCode.nonFinitePosition, impact.multiplicity);
@@ -226,6 +230,7 @@ abstract final class GroupAnalyzer {
   static GroupMetrics _calculateMetrics(
     int actualShotCount,
     List<AnalyzedImpactPosition> positions, {
+    required _ExtremeSpreadResult extremeSpread,
     required double? extremeSpreadMoa,
     required double? extremeSpreadMilliradians,
   }) {
@@ -240,6 +245,7 @@ abstract final class GroupAnalyzer {
         centroidXMm: 0,
         centroidYMm: 0,
         extremeSpreadMm: 0,
+        extremeSpreadSegment: null,
         meanRadiusMm: 0,
         sampleStandardDeviationXMm: 0,
         sampleStandardDeviationYMm: 0,
@@ -306,7 +312,8 @@ abstract final class GroupAnalyzer {
       positionedShotCount: positionedShotCount,
       centroidXMm: centroidX,
       centroidYMm: centroidY,
-      extremeSpreadMm: _extremeSpread(positions),
+      extremeSpreadMm: extremeSpread.distanceMm,
+      extremeSpreadSegment: extremeSpread.segment,
       meanRadiusMm: radialSum / positionedShotCount,
       sampleStandardDeviationXMm: math.sqrt(math.max(0, covarianceXX)),
       sampleStandardDeviationYMm: math.sqrt(math.max(0, covarianceYY)),
@@ -318,17 +325,73 @@ abstract final class GroupAnalyzer {
     );
   }
 
-  static double _extremeSpread(List<AnalyzedImpactPosition> positions) {
-    var spread = 0.0;
+  static _ExtremeSpreadResult _extremeSpread(
+    List<AnalyzedImpactPosition> positions,
+  ) {
+    ExtremeSpreadSegment? best;
     for (var first = 0; first < positions.length; first++) {
       for (var second = first + 1; second < positions.length; second++) {
-        spread = math.max(
-          spread,
-          _distance(positions[first], positions[second]),
+        final candidate = _canonicalSpreadSegment(
+          positions[first],
+          positions[second],
         );
+        if (best == null || _isPreferredSpread(candidate, best)) {
+          best = candidate;
+        }
       }
     }
-    return spread;
+    return _ExtremeSpreadResult(
+      distanceMm: best?.distanceMm ?? 0,
+      segment: best,
+    );
+  }
+
+  static ExtremeSpreadSegment _canonicalSpreadSegment(
+    AnalyzedImpactPosition first,
+    AnalyzedImpactPosition second,
+  ) {
+    final ordered = _comparePosition(first, second) <= 0
+        ? (first: first, second: second)
+        : (first: second, second: first);
+    return ExtremeSpreadSegment(
+      firstImpactId: ordered.first.impactId,
+      secondImpactId: ordered.second.impactId,
+      firstXMm: ordered.first.xMm,
+      firstYMm: ordered.first.yMm,
+      secondXMm: ordered.second.xMm,
+      secondYMm: ordered.second.yMm,
+      distanceMm: _distance(ordered.first, ordered.second),
+    );
+  }
+
+  static bool _isPreferredSpread(
+    ExtremeSpreadSegment candidate,
+    ExtremeSpreadSegment current,
+  ) {
+    final distanceDifference = candidate.distanceMm - current.distanceMm;
+    if (distanceDifference.abs() > 1e-12) return distanceDifference > 0;
+    final firstX = candidate.firstXMm.compareTo(current.firstXMm);
+    if (firstX != 0) return firstX < 0;
+    final firstY = candidate.firstYMm.compareTo(current.firstYMm);
+    if (firstY != 0) return firstY < 0;
+    final firstId = candidate.firstImpactId.compareTo(current.firstImpactId);
+    if (firstId != 0) return firstId < 0;
+    final secondX = candidate.secondXMm.compareTo(current.secondXMm);
+    if (secondX != 0) return secondX < 0;
+    final secondY = candidate.secondYMm.compareTo(current.secondYMm);
+    if (secondY != 0) return secondY < 0;
+    return candidate.secondImpactId.compareTo(current.secondImpactId) < 0;
+  }
+
+  static int _comparePosition(
+    AnalyzedImpactPosition first,
+    AnalyzedImpactPosition second,
+  ) {
+    final x = first.xMm.compareTo(second.xMm);
+    if (x != 0) return x;
+    final y = first.yMm.compareTo(second.yMm);
+    if (y != 0) return y;
+    return first.impactId.compareTo(second.impactId);
   }
 
   static CovarianceEllipse _covarianceEllipse(
@@ -419,6 +482,13 @@ class _WeightedValue {
 
   final double value;
   final int weight;
+}
+
+class _ExtremeSpreadResult {
+  const _ExtremeSpreadResult({required this.distanceMm, required this.segment});
+
+  final double distanceMm;
+  final ExtremeSpreadSegment? segment;
 }
 
 abstract final class _SubgroupDetector {

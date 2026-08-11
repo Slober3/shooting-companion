@@ -10,6 +10,7 @@ import 'package:shooting_companion/features/history/history_screen.dart';
 import 'package:shooting_companion/features/session/active_session_screen.dart';
 import 'package:shooting_companion/features/today/today_screen.dart';
 import 'package:shooting_companion_domain/domain.dart';
+import 'package:shooting_companion_photo_geometry/photo_geometry.dart' as geo;
 import 'package:shooting_companion_target_profiles/target_profiles.dart';
 
 void main() {
@@ -329,14 +330,20 @@ void main() {
         ],
       );
 
-      final alignment = _alignment('score-photo', version: 'realigned-v2');
+      final alignment = _alignment('score-photo');
+      final beforeRealignment = await repository.getSeriesDetail(
+        quick.draftSeriesId,
+      );
+      final storedManualImpact = beforeRealignment!.impacts
+          .singleWhere((impact) => impact.id == 'manual-impact')
+          .asDomain;
       await repository.realignSeriesPhoto(
         seriesId: quick.draftSeriesId,
         alignment: alignment,
         target: IssfTargetProfiles.precision25m50m,
         projectileDiameterMm: 5.6,
-        resultingImpacts: const [
-          ShotImpact(
+        resultingImpacts: [
+          const ShotImpact(
             id: 'photo-impact',
             xMm: 0,
             yMm: 0,
@@ -344,12 +351,15 @@ void main() {
             imageXNormalized: 0.5,
             imageYNormalized: 0.5,
           ),
-          ShotImpact(id: 'manual-impact', xMm: 30, yMm: 0),
+          storedManualImpact,
         ],
       );
 
       var detail = await repository.getSeriesDetail(quick.draftSeriesId);
-      expect(detail!.photoAlignment!.algorithmVersion, 'realigned-v2');
+      expect(
+        detail!.photoAlignment!.algorithmVersion,
+        geo.manualHomographyV2AlgorithmVersion,
+      );
       expect(
         detail.impacts.singleWhere((impact) => impact.id == 'photo-impact').xMm,
         0,
@@ -367,11 +377,11 @@ void main() {
       await expectLater(
         repository.realignSeriesPhoto(
           seriesId: quick.draftSeriesId,
-          alignment: _alignment('score-photo', version: 'invalid-v3'),
+          alignment: _alignment('score-photo'),
           target: IssfTargetProfiles.precision25m50m,
           projectileDiameterMm: 5.6,
-          resultingImpacts: const [
-            ShotImpact(
+          resultingImpacts: [
+            const ShotImpact(
               id: 'photo-impact',
               xMm: 1,
               yMm: 0,
@@ -379,13 +389,16 @@ void main() {
               imageXNormalized: 0.5,
               imageYNormalized: 0.5,
             ),
-            ShotImpact(id: 'manual-impact', xMm: 1, yMm: 0),
+            storedManualImpact.copyWith(xMm: 1),
           ],
         ),
         throwsStateError,
       );
       detail = await repository.getSeriesDetail(quick.draftSeriesId);
-      expect(detail!.photoAlignment!.algorithmVersion, 'realigned-v2');
+      expect(
+        detail!.photoAlignment!.algorithmVersion,
+        geo.manualHomographyV2AlgorithmVersion,
+      );
       expect(
         detail.impacts.singleWhere((impact) => impact.id == 'photo-impact').xMm,
         0,
@@ -396,6 +409,85 @@ void main() {
             .xMm,
         30,
       );
+    },
+  );
+
+  test(
+    'realignment uses original image coordinates across quarter-turn changes',
+    () async {
+      final quick = await repository.startQuickSession();
+      await repository.attachImage(
+        NewImageAsset(
+          id: 'rotated-photo',
+          sessionId: quick.sessionId,
+          seriesId: quick.draftSeriesId,
+          role: ImageRole.primaryScoringPhoto,
+          path: 'rotated-photo.jpg',
+          sha256: 'rotated-photo-hash',
+          width: 2400,
+          height: 1600,
+          sizeBytes: 10,
+        ),
+      );
+      await repository.savePhotoAlignment(_alignment('rotated-photo'));
+      await repository.saveSeriesDraft(
+        seriesId: quick.draftSeriesId,
+        target: IssfTargetProfiles.precision25m50m,
+        distanceMeters: 25,
+        projectileDiameterMm: 5.6,
+        impacts: const [
+          ShotImpact(
+            id: 'rotated-impact',
+            xMm: -171.875,
+            yMm: 0,
+            sourceImageId: 'rotated-photo',
+            imageXNormalized: 0.25,
+            imageYNormalized: 0.5,
+          ),
+          ShotImpact(id: 'unchanged-manual', xMm: 10, yMm: 20),
+        ],
+      );
+      final storedBefore = await (database.select(
+        database.shotImpacts,
+      )..where((row) => row.id.equals('unchanged-manual'))).getSingle();
+      final detailBefore = await repository.getSeriesDetail(
+        quick.draftSeriesId,
+      );
+      final inputs = [
+        detailBefore!.impacts
+            .singleWhere((impact) => impact.id == 'rotated-impact')
+            .asDomain
+            .copyWith(xMm: 0, yMm: -171.875),
+        detailBefore.impacts
+            .singleWhere((impact) => impact.id == 'unchanged-manual')
+            .asDomain,
+      ];
+
+      await repository.realignSeriesPhoto(
+        seriesId: quick.draftSeriesId,
+        alignment: _alignment('rotated-photo', rotationQuarterTurns: 1),
+        target: IssfTargetProfiles.precision25m50m,
+        projectileDiameterMm: 5.6,
+        resultingImpacts: inputs,
+      );
+
+      final detail = await repository.getSeriesDetail(quick.draftSeriesId);
+      final rotated = detail!.impacts.singleWhere(
+        (impact) => impact.id == 'rotated-impact',
+      );
+      expect(rotated.imageXNormalized, 0.25);
+      expect(rotated.imageYNormalized, 0.5);
+      expect(rotated.xMm, closeTo(0, 1e-9));
+      expect(rotated.yMm, closeTo(-171.875, 1e-9));
+      expect(detail.photoAlignment!.rotationQuarterTurns, 1);
+      expect(detail.photoAlignment!.alignmentMode, 'fullCard');
+      expect(detail.photoAlignment!.planarityStatus, 'accepted');
+      expect(detail.photoAlignment!.confirmedAtUtc, isNotNull);
+
+      final storedAfter = await (database.select(
+        database.shotImpacts,
+      )..where((row) => row.id.equals('unchanged-manual'))).getSingle();
+      expect(storedAfter.toJson(), storedBefore.toJson());
     },
   );
 
@@ -421,13 +513,11 @@ void main() {
           ),
         );
       }
-      await repository.savePhotoAlignment(
-        _alignment('old-primary', version: 'old-v1'),
-      );
+      await repository.savePhotoAlignment(_alignment('old-primary'));
 
       await repository.realignSeriesPhoto(
         seriesId: quick.draftSeriesId,
-        alignment: _alignment('new-primary', version: 'new-v1'),
+        alignment: _alignment('new-primary'),
         target: IssfTargetProfiles.precision25m50m,
         projectileDiameterMm: 5.6,
         resultingImpacts: const [],
@@ -436,7 +526,10 @@ void main() {
       final detail = await repository.getSeriesDetail(quick.draftSeriesId);
       expect(detail!.primaryImage!.id, 'new-primary');
       expect(detail.photoAlignment!.imageId, 'new-primary');
-      expect(detail.photoAlignment!.algorithmVersion, 'new-v1');
+      expect(
+        detail.photoAlignment!.algorithmVersion,
+        geo.manualHomographyV2AlgorithmVersion,
+      );
       expect(
         detail.images.singleWhere((image) => image.id == 'old-primary').role,
         ImageRole.attachment.name,
@@ -449,6 +542,31 @@ void main() {
       expect(staleAlignment, isEmpty);
     },
   );
+
+  test('rejected alignment quality is never persisted', () async {
+    final quick = await repository.startQuickSession();
+    await repository.attachImage(
+      NewImageAsset(
+        id: 'rejected-photo',
+        sessionId: quick.sessionId,
+        seriesId: quick.draftSeriesId,
+        role: ImageRole.primaryScoringPhoto,
+        path: 'rejected-photo.jpg',
+        sha256: 'rejected-photo-hash',
+        width: 2000,
+        height: 2000,
+        sizeBytes: 10,
+      ),
+    );
+
+    await expectLater(
+      repository.savePhotoAlignment(
+        _alignment('rejected-photo', planarityStatus: 'rejected'),
+      ),
+      throwsStateError,
+    );
+    expect(await database.select(database.photoAlignments).get(), isEmpty);
+  });
 
   test('failed attachment promotion rolls every media change back', () async {
     final quick = await repository.startQuickSession();
@@ -470,9 +588,7 @@ void main() {
         ),
       );
     }
-    await repository.savePhotoAlignment(
-      _alignment('rollback-old', version: 'old-v1'),
-    );
+    await repository.savePhotoAlignment(_alignment('rollback-old'));
     await database.customStatement('''
       CREATE TRIGGER reject_new_alignment
       BEFORE INSERT ON photo_alignments
@@ -485,7 +601,7 @@ void main() {
     await expectLater(
       repository.realignSeriesPhoto(
         seriesId: quick.draftSeriesId,
-        alignment: _alignment('rollback-new', version: 'new-v1'),
+        alignment: _alignment('rollback-new'),
         target: IssfTargetProfiles.precision25m50m,
         projectileDiameterMm: 5.6,
         resultingImpacts: const [],
@@ -496,7 +612,10 @@ void main() {
     final detail = await repository.getSeriesDetail(quick.draftSeriesId);
     expect(detail!.primaryImage!.id, 'rollback-old');
     expect(detail.photoAlignment!.imageId, 'rollback-old');
-    expect(detail.photoAlignment!.algorithmVersion, 'old-v1');
+    expect(
+      detail.photoAlignment!.algorithmVersion,
+      geo.manualHomographyV2AlgorithmVersion,
+    );
     expect(
       detail.images.singleWhere((image) => image.id == 'rollback-new').role,
       ImageRole.attachment.name,
@@ -579,19 +698,28 @@ void main() {
   });
 }
 
-StoredPhotoAlignment _alignment(String imageId, {required String version}) =>
-    StoredPhotoAlignment(
-      imageId: imageId,
-      orderedCorners: const [
-        NormalizedPoint(x: 0.1, y: 0.1),
-        NormalizedPoint(x: 0.9, y: 0.1),
-        NormalizedPoint(x: 0.9, y: 0.9),
-        NormalizedPoint(x: 0.1, y: 0.9),
-      ],
-      homographyMatrix: const [1, 0, 0, 0, 1, 0, 0, 0, 1],
-      algorithmVersion: version,
-      updatedAtUtc: DateTime.now().toUtc(),
-    );
+StoredPhotoAlignment _alignment(
+  String imageId, {
+  int rotationQuarterTurns = 0,
+  String planarityStatus = 'accepted',
+}) => StoredPhotoAlignment(
+  imageId: imageId,
+  orderedCorners: const [
+    NormalizedPoint(x: 0.1, y: 0.1),
+    NormalizedPoint(x: 0.9, y: 0.1),
+    NormalizedPoint(x: 0.9, y: 0.9),
+    NormalizedPoint(x: 0.1, y: 0.9),
+  ],
+  homographyMatrix: const [687.5, 0, -343.75, 0, 687.5, -343.75, 0, 0, 1],
+  algorithmVersion: geo.manualHomographyV2AlgorithmVersion,
+  rotationQuarterTurns: rotationQuarterTurns,
+  alignmentMode: 'fullCard',
+  reprojectionRmsMm: 0,
+  reprojectionMaxMm: 0,
+  planarityStatus: planarityStatus,
+  confirmedAtUtc: DateTime.now().toUtc(),
+  updatedAtUtc: DateTime.now().toUtc(),
+);
 
 Future<QuickSessionResult> _createScoredSession(
   ShootingRepository repository,
@@ -623,4 +751,24 @@ Future<void> _disposeTestTree(WidgetTester tester) async {
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pump(const Duration(milliseconds: 1));
   await tester.pump(const Duration(milliseconds: 1));
+}
+
+extension on ImpactRecord {
+  ShotImpact get asDomain => ShotImpact(
+    id: id,
+    xMm: xMm,
+    yMm: yMm,
+    sourceImageId: sourceImageId,
+    imageXNormalized: imageXNormalized,
+    imageYNormalized: imageYNormalized,
+    multiplicity: multiplicity,
+    isMiss: isMiss,
+    isPositionUncertain: isPositionUncertain,
+    targetBullId: targetBullId,
+    rawScoreValue: rawScoreValue,
+    scoreDisposition: ScoreDisposition.values.byName(scoreDisposition),
+    placementMethod: ImpactPlacementMethod.values.byName(placementMethod),
+    visionAnalysisId: visionAnalysisId,
+    positionalUncertaintyMm: positionalUncertaintyMm,
+  );
 }

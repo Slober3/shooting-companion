@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../data/app_database.dart';
 import '../../data/shooting_repository.dart';
 import '../../widgets/app_notice.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
@@ -16,6 +19,145 @@ class SeriesReflectionDraft {
 
   final PerceivedQuality perceivedQuality;
   final Set<ReflectionContextTag> contextTags;
+}
+
+/// Shows the stored self-evaluation on the series itself and keeps it editable.
+class SeriesReflectionCard extends ConsumerWidget {
+  const SeriesReflectionCard({required this.seriesId, super.key});
+
+  final String seriesId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reflection = ref.watch(seriesReflectionProvider(seriesId));
+    return Card(
+      key: const ValueKey('series-reflection-card'),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: reflection.when(
+          data: (value) => _ReflectionCardContent(
+            reflection: value,
+            onEdit: () => _edit(context, ref, value),
+          ),
+          loading: () => const SizedBox(
+            height: 48,
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+          error: (_, _) => Row(
+            children: [
+              const Expanded(
+                child: Text('Zelfevaluatie kon niet worden geladen.'),
+              ),
+              IconButton(
+                tooltip: 'Opnieuw laden',
+                onPressed: () =>
+                    ref.invalidate(seriesReflectionProvider(seriesId)),
+                icon: const Icon(Icons.refresh),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _edit(
+    BuildContext context,
+    WidgetRef ref,
+    SeriesReflectionRecord? reflection,
+  ) async {
+    final draft = await showSeriesReflectionSheet(
+      context: context,
+      initial: reflection == null ? null : seriesReflectionDraft(reflection),
+    );
+    if (draft == null || !context.mounted) return;
+    try {
+      await ref
+          .read(repositoryProvider)
+          .saveSeriesReflection(
+            seriesId: seriesId,
+            perceivedQuality: draft.perceivedQuality,
+            contextTags: draft.contextTags,
+          );
+      if (context.mounted) {
+        AppMessenger.success(context, 'Zelfevaluatie bewaard');
+      }
+    } on Object {
+      if (context.mounted) {
+        AppMessenger.error(context, 'Zelfevaluatie kon niet worden bewaard.');
+      }
+    }
+  }
+}
+
+class _ReflectionCardContent extends StatelessWidget {
+  const _ReflectionCardContent({
+    required this.reflection,
+    required this.onEdit,
+  });
+
+  final SeriesReflectionRecord? reflection;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = reflection;
+    final tags = value == null
+        ? const <ReflectionContextTag>{}
+        : seriesReflectionDraft(value).contextTags;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.self_improvement_outlined),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Zelfevaluatie',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            TextButton.icon(
+              key: const ValueKey('edit-series-reflection'),
+              onPressed: onEdit,
+              icon: Icon(value == null ? Icons.add : Icons.edit_outlined),
+              label: Text(value == null ? 'Toevoegen' : 'Bewerken'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (value == null)
+          const Text('Nog geen gevoel of context voor deze reeks vastgelegd.')
+        else ...[
+          Row(
+            children: [
+              Icon(seriesReflectionQualityIcon(_quality(value))),
+              const SizedBox(width: 8),
+              Text(
+                seriesReflectionQualityLabel(_quality(value)),
+                key: const ValueKey('series-reflection-quality'),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          if (tags.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final tag in tags)
+                  Chip(label: Text(seriesReflectionTagLabel(tag))),
+              ],
+            ),
+          ],
+        ],
+      ],
+    );
+  }
 }
 
 /// Shows the optional five-second reflection and stores it for [seriesId].
@@ -153,7 +295,7 @@ class _SeriesReflectionSheetState extends State<SeriesReflectionSheet> {
               for (final tag in ReflectionContextTag.values)
                 FilterChip(
                   key: ValueKey('reflection-tag-${tag.name}'),
-                  label: Text(_tagLabel(tag)),
+                  label: Text(seriesReflectionTagLabel(tag)),
                   selected: _contextTags.contains(tag),
                   onSelected: (_) => _toggleTag(tag),
                 ),
@@ -229,8 +371,8 @@ class _QualityButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = _qualityLabel(quality);
-    final icon = _qualityIcon(quality);
+    final label = seriesReflectionQualityLabel(quality);
+    final icon = seriesReflectionQualityIcon(quality);
     return Semantics(
       button: true,
       selected: selected,
@@ -250,19 +392,21 @@ class _QualityButton extends StatelessWidget {
   }
 }
 
-String _qualityLabel(PerceivedQuality quality) => switch (quality) {
-  PerceivedQuality.good => 'Goed',
-  PerceivedQuality.neutral => 'Neutraal',
-  PerceivedQuality.difficult => 'Moeilijk',
-};
+String seriesReflectionQualityLabel(PerceivedQuality quality) =>
+    switch (quality) {
+      PerceivedQuality.good => 'Goed',
+      PerceivedQuality.neutral => 'Neutraal',
+      PerceivedQuality.difficult => 'Moeilijk',
+    };
 
-IconData _qualityIcon(PerceivedQuality quality) => switch (quality) {
-  PerceivedQuality.good => Icons.sentiment_satisfied_alt,
-  PerceivedQuality.neutral => Icons.sentiment_neutral,
-  PerceivedQuality.difficult => Icons.sentiment_dissatisfied,
-};
+IconData seriesReflectionQualityIcon(PerceivedQuality quality) =>
+    switch (quality) {
+      PerceivedQuality.good => Icons.sentiment_satisfied_alt,
+      PerceivedQuality.neutral => Icons.sentiment_neutral,
+      PerceivedQuality.difficult => Icons.sentiment_dissatisfied,
+    };
 
-String _tagLabel(ReflectionContextTag tag) => switch (tag) {
+String seriesReflectionTagLabel(ReflectionContextTag tag) => switch (tag) {
   ReflectionContextTag.sightPicture => 'Richtbeeld',
   ReflectionContextTag.trigger => 'Trekker',
   ReflectionContextTag.gripOrPosition => 'Grip/houding',
@@ -273,3 +417,27 @@ String _tagLabel(ReflectionContextTag tag) => switch (tag) {
   ReflectionContextTag.equipment => 'Materiaal',
   ReflectionContextTag.perceivedFatigue => 'Vermoeid gevoel',
 };
+
+SeriesReflectionDraft seriesReflectionDraft(SeriesReflectionRecord record) =>
+    SeriesReflectionDraft(
+      perceivedQuality: _quality(record),
+      contextTags: _decodeReflectionTags(record.contextTagsJson),
+    );
+
+PerceivedQuality _quality(SeriesReflectionRecord record) =>
+    PerceivedQuality.values.firstWhere(
+      (value) => value.name == record.perceivedQuality,
+      orElse: () => PerceivedQuality.neutral,
+    );
+
+Set<ReflectionContextTag> _decodeReflectionTags(String source) {
+  try {
+    final names = (jsonDecode(source) as List).whereType<String>().toSet();
+    return {
+      for (final value in ReflectionContextTag.values)
+        if (names.contains(value.name)) value,
+    };
+  } on Object {
+    return const {};
+  }
+}

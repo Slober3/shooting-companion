@@ -122,6 +122,32 @@ void main() {
     expect(result.maximumPossible, 250);
   });
 
+  test('skips BR50 translations that leave the referenced record bull', () {
+    final target = WrabfTargetProfiles.rimfire50mBr50;
+    final bull = target.recordBulls.first;
+
+    final result = PotentialScoreAnalyzer.analyze(
+      target: target,
+      impacts: [
+        ShotImpact(
+          id: 'edge',
+          xMm: bull.centerXMm + bull.scoringWidthMm / 2 - 0.01,
+          yMm: bull.centerYMm,
+          targetBullId: bull.id,
+        ),
+      ],
+      projectileDiameterMm: 5.6,
+      positionUncertaintyMm: 0,
+      config: const PotentialScoreSearchConfig(
+        coarseStepMm: 5,
+        maximumTranslationMm: 25,
+      ),
+    );
+
+    expect(result.bestScore, greaterThanOrEqualTo(result.currentScore));
+    expect(result.bestScore, lessThanOrEqualTo(result.maximumPossible));
+  });
+
   test('is deterministic and leaves source impact instances unchanged', () {
     final impacts = [
       const ShotImpact(id: 'a', xMm: 40, yMm: 10),

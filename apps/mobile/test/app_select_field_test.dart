@@ -79,4 +79,94 @@ void main() {
     await tester.pumpAndSettle();
     expect(selected, 8);
   });
+
+  testWidgets('missing selection keeps label and fallback separated', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AppSelectField<String>(
+            label: 'Doelkaart',
+            initialValue: 'historisch-doel',
+            options: const [],
+            onChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    final label = find.text('Doelkaart');
+    final fallback = find.text('Keuze niet beschikbaar');
+    expect(label, findsOneWidget);
+    expect(fallback, findsOneWidget);
+    expect(find.text('Kies een geldige optie'), findsOneWidget);
+    expect(tester.getRect(label).overlaps(tester.getRect(fallback)), isFalse);
+
+    final formField = tester.state<FormFieldState<String>>(
+      find.byType(AppSelectField<String>),
+    );
+    expect(formField.validate(), isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('external value changes update the visible selection', (
+    tester,
+  ) async {
+    var selected = '22';
+    late StateSetter rebuild;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            rebuild = setState;
+            return Scaffold(
+              body: AppSelectField<String>(
+                label: 'Kaliber',
+                initialValue: selected,
+                options: const [
+                  AppSelectOption(value: '22', label: '.22 LR'),
+                  AppSelectOption(value: '9', label: '9×19 mm'),
+                ],
+                onChanged: (_) {},
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    expect(find.text('.22 LR'), findsOneWidget);
+    rebuild(() => selected = '9');
+    await tester.pump();
+    expect(find.text('9×19 mm'), findsOneWidget);
+    expect(find.text('.22 LR'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('an explicit optional null option remains valid', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Form(
+            child: AppSelectField<String?>(
+              label: 'Wapen',
+              initialValue: null,
+              options: const [
+                AppSelectOption<String?>(value: null, label: 'Niet opgegeven'),
+              ],
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final state = tester.state<FormFieldState<String?>>(
+      find.byType(AppSelectField<String?>),
+    );
+    expect(state.validate(), isTrue);
+    expect(find.text('Niet opgegeven'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

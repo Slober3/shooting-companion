@@ -12,11 +12,11 @@ void main() {
       }
     });
 
-    test('publishes the complete initial offline drill library', () {
-      expect(BuiltInDrills.all, hasLength(9));
+    test('publishes the expanded offline drill library', () {
+      expect(BuiltInDrills.all, hasLength(15));
       expect(
         BuiltInDrills.all.map((drill) => drill.versionedId).toSet(),
-        hasLength(9),
+        hasLength(15),
       );
       expect(
         BuiltInDrills.all.every(
@@ -28,6 +28,16 @@ void main() {
       expect(
         BuiltInDrills.byVersionedId('cold-series-benchmark@1').name,
         'Cold-series benchmark',
+      );
+      expect(
+        BuiltInDrills.all.map((drill) => drill.category).toSet(),
+        containsAll([
+          DrillCategory.baseline,
+          DrillCategory.grouping,
+          DrillCategory.equipment,
+          DrillCategory.matchPreparation,
+          DrillCategory.reflection,
+        ]),
       );
     });
 

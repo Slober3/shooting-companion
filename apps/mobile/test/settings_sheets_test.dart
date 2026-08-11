@@ -90,6 +90,43 @@ void main() {
     await _disposeTree(tester);
   });
 
+  testWidgets('series settings keeps snapshot target when catalog omits it', (
+    tester,
+  ) async {
+    final database = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(database.close);
+    final repository = ShootingRepository(database);
+    await repository.seedDefaults();
+    final targetRecord =
+        (await database.select(database.targetProfiles).get()).first;
+    final target = TargetProfile.fromJsonString(targetRecord.profileJson);
+    final cartridges = await database.select(database.cartridges).get();
+
+    await _pumpHost(
+      tester,
+      label: 'Historische reeks wijzigen',
+      onOpen: (context) => showSeriesSettingsSheet(
+        context: context,
+        initial: SeriesSettingsValues(
+          target: target,
+          cartridgeId: cartridges.first.id,
+          distanceMeters: 25,
+        ),
+        targets: const [],
+        cartridges: cartridges,
+        firearms: const [],
+        ammoLots: const [],
+      ),
+    );
+    await tester.tap(find.text('Historische reeks wijzigen'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('${target.displayName} (historisch)'), findsOneWidget);
+    expect(find.text('Keuze niet beschikbaar'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await _disposeTree(tester);
+  });
+
   testWidgets(
     'expanded session details have breathing room and focused field stays visible',
     (tester) async {

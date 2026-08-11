@@ -244,6 +244,8 @@ class ScoringViewportController extends ChangeNotifier {
 
 typedef ViewportContentBuilder =
     Widget Function(BuildContext context, Size contentSize, double zoom);
+typedef ViewportForegroundBuilder =
+    Widget Function(BuildContext context, Size contentSize);
 
 class TransformableScoringViewport extends StatefulWidget {
   const TransformableScoringViewport({
@@ -263,6 +265,9 @@ class TransformableScoringViewport extends StatefulWidget {
     this.onInvalidPosition,
     this.precisionMode = false,
     this.showControls = true,
+    this.viewportPanEnabled = true,
+    this.viewportScaleEnabled = true,
+    this.foregroundBuilder,
     super.key,
   }) : assert(aspectRatio > 0);
 
@@ -282,6 +287,9 @@ class TransformableScoringViewport extends StatefulWidget {
   final VoidCallback? onInvalidPosition;
   final bool precisionMode;
   final bool showControls;
+  final bool viewportPanEnabled;
+  final bool viewportScaleEnabled;
+  final ViewportForegroundBuilder? foregroundBuilder;
 
   @override
   State<TransformableScoringViewport> createState() =>
@@ -381,9 +389,11 @@ class _TransformableScoringViewportState
                           minScale: 1,
                           maxScale: 8,
                           panEnabled:
+                              widget.viewportPanEnabled &&
                               !(widget.accessMode ==
                                       CanvasAccessMode.editable &&
                                   widget.tool == ScoringTool.edit),
+                          scaleEnabled: widget.viewportScaleEnabled,
                           boundaryMargin: const EdgeInsets.all(48),
                           constrained: true,
                           child: SizedBox.fromSize(
@@ -408,6 +418,11 @@ class _TransformableScoringViewportState
                       ),
                     ),
                   ),
+                  if (widget.foregroundBuilder case final builder?)
+                    Positioned.fromRect(
+                      rect: contentRect,
+                      child: builder(context, contentRect.size),
+                    ),
                   if (widget.precisionMode)
                     const Positioned.fill(
                       child: IgnorePointer(child: _PrecisionCrosshair()),

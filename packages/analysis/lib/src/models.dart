@@ -13,6 +13,7 @@ enum AnalysisReliability {
 /// Machine-readable reasons why an analysis needs qualification.
 enum AnalysisWarningCode {
   noPositionData,
+  missWithoutPosition,
   positionsOnly,
   provisionalSample,
   smallSample,
@@ -74,6 +75,30 @@ class AnalyzedImpactPosition {
   final String? targetBullId;
 }
 
+/// The deterministic pair of positioned impacts that defines extreme spread.
+///
+/// Coordinates are the normalized analysis coordinates. For multi-bull
+/// targets they are therefore relative to the referenced record bull.
+class ExtremeSpreadSegment {
+  const ExtremeSpreadSegment({
+    required this.firstImpactId,
+    required this.secondImpactId,
+    required this.firstXMm,
+    required this.firstYMm,
+    required this.secondXMm,
+    required this.secondYMm,
+    required this.distanceMm,
+  });
+
+  final String firstImpactId;
+  final String secondImpactId;
+  final double firstXMm;
+  final double firstYMm;
+  final double secondXMm;
+  final double secondYMm;
+  final double distanceMm;
+}
+
 /// Deterministic descriptive measurements for one set of impacts.
 class GroupMetrics {
   const GroupMetrics({
@@ -82,6 +107,7 @@ class GroupMetrics {
     required this.centroidXMm,
     required this.centroidYMm,
     required this.extremeSpreadMm,
+    required this.extremeSpreadSegment,
     required this.meanRadiusMm,
     required this.sampleStandardDeviationXMm,
     required this.sampleStandardDeviationYMm,
@@ -104,6 +130,11 @@ class GroupMetrics {
   double get verticalBiasMm => centroidYMm;
 
   final double extremeSpreadMm;
+
+  /// Endpoints used to calculate [extremeSpreadMm].
+  ///
+  /// This is null when fewer than two stored positions are available.
+  final ExtremeSpreadSegment? extremeSpreadSegment;
   final double meanRadiusMm;
   final double sampleStandardDeviationXMm;
   final double sampleStandardDeviationYMm;

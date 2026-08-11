@@ -1,6 +1,7 @@
 # Target profiles
 
-Built-in v1 profiles follow ISSF 2026 rules 6.3.4.4 and 6.3.4.5:
+Built-in ISSF profile version 2 follows the ISSF Edition 2025 Second Print
+07/2026, effective 1 July 2026, rules 6.3.4.4 and 6.3.4.5:
 
 - 25 m Rapid-Fire Pistol: ring diameters 100, 180, 260, 340, 420 and 500 mm;
   inner ten 50 mm; black through the 5 ring.
