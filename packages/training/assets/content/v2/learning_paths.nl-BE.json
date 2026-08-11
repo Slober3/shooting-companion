@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 2,
+  "locale": "nl-BE",
+  "learningPaths": [
+    {
+      "id": "precision-pistol-foundations",
+      "version": 2,
+      "title": "Precisiepistool — basis",
+      "shortDescription": "Bouw een veilige, observeerbare basis op en verzamel drie echte groepen zonder een technisch probleem uit één treffer af te leiden.",
+      "discipline": "precisionPistol",
+      "estimatedMinutes": 138,
+      "entries": [
+        {"id":"safety","kind":"lesson","versionedContentId":"safe-range-phone-routine@2","prerequisiteEntryIds":[]},
+        {"id":"stance","kind":"lesson","versionedContentId":"pistol-natural-alignment@2","prerequisiteEntryIds":["safety"]},
+        {"id":"body","kind":"lesson","versionedContentId":"pistol-feet-body-arm@2","prerequisiteEntryIds":["stance"]},
+        {"id":"grip","kind":"lesson","versionedContentId":"pistol-grip-trigger-contact@2","prerequisiteEntryIds":["body"]},
+        {"id":"sights","kind":"lesson","versionedContentId":"pistol-sight-alignment-picture@2","prerequisiteEntryIds":["grip"]},
+        {"id":"movement","kind":"lesson","versionedContentId":"pistol-visual-focus-movement@2","prerequisiteEntryIds":["sights"]},
+        {"id":"trigger","kind":"lesson","versionedContentId":"pistol-progressive-trigger@2","prerequisiteEntryIds":["movement"]},
+        {"id":"blank","kind":"drill","versionedContentId":"pistol-blank-sight-picture@2","prerequisiteEntryIds":["trigger"]},
+        {"id":"evidence","kind":"lesson","versionedContentId":"reading-target-evidence@2","prerequisiteEntryIds":["blank"]},
+        {"id":"baseline","kind":"drill","versionedContentId":"pistol-three-baseline-groups@2","prerequisiteEntryIds":["evidence"]}
+      ],
+      "references": [
+        {"id":"cmp-pistol","title":"The CMP Guide to Junior Pistol Shooting","url":"https://thecmp.org/wp-content/uploads/2026/05/JrPistolGuide.pdf","publisher":"Civilian Marksmanship Program","documentEdition":"uitgave 2016","locator":"gedrukte pp. 18-27 (PDF pp. 23-32): houding, voorbereiding, precisieschot en doelgerichte oefeningen"},
+        {"id":"issf-education","title":"ISSF Education Reform Plan","url":"https://backoffice.issf-sports.org/getfile.aspx?file=ISSF+EDUCATION+REFORM+PLAN.pdf&inst=439&mod=docf&pane=1","publisher":"International Shooting Sport Federation","documentEdition":"Education Reform Plan","locator":"p. 5 en pp. 7, 9-12: pistol foundations, profiling, feedback en praktijkplanning"}
+      ],
+      "review":{"evidenceStatus":"practiceBased","coachReviewStatus":"pending","reviewerRole":null,"reviewedAtUtc":null,"sourceEdition":"CMP en ISSF, gecontroleerd 2026-08-10","lastSourceCheckUtc":"2026-08-10T00:00:00.000Z"}
+    },
+    {
+      "id": "precision-pistol-repeatability",
+      "version": 2,
+      "title": "Precisiepistool — herhaalbaarheid",
+      "shortDescription": "Verbind lift, ademvenster, vizierrelatie, trekkerdruk en reset tot een herhaalbare routine die met echte reeksen wordt beoordeeld.",
+      "discipline": "precisionPistol",
+      "estimatedMinutes": 269,
+      "entries": [
+        {"id":"safety","kind":"lesson","versionedContentId":"safe-range-phone-routine@2","prerequisiteEntryIds":[]},
+        {"id":"stance","kind":"lesson","versionedContentId":"pistol-natural-alignment@2","prerequisiteEntryIds":["safety"]},
+        {"id":"body","kind":"lesson","versionedContentId":"pistol-feet-body-arm@2","prerequisiteEntryIds":["stance"]},
+        {"id":"grip","kind":"lesson","versionedContentId":"pistol-grip-trigger-contact@2","prerequisiteEntryIds":["body"]},
+        {"id":"sights","kind":"lesson","versionedContentId":"pistol-sight-alignment-picture@2","prerequisiteEntryIds":["grip"]},
+        {"id":"movement","kind":"lesson","versionedContentId":"pistol-visual-focus-movement@2","prerequisiteEntryIds":["sights"]},
+        {"id":"lift","kind":"lesson","versionedContentId":"pistol-arm-lift-approach@2","prerequisiteEntryIds":["movement"]},
+        {"id":"breath","kind":"lesson","versionedContentId":"pistol-breathing-window@2","prerequisiteEntryIds":["lift"]},
+        {"id":"trigger","kind":"lesson","versionedContentId":"pistol-progressive-trigger@2","prerequisiteEntryIds":["breath"]},
+        {"id":"reset","kind":"lesson","versionedContentId":"pistol-follow-through-reset@2","prerequisiteEntryIds":["trigger"]},
+        {"id":"window","kind":"drill","versionedContentId":"pistol-repeatable-window@2","prerequisiteEntryIds":["reset"]},
+        {"id":"evidence","kind":"lesson","versionedContentId":"reading-target-evidence@2","prerequisiteEntryIds":["window"]},
+        {"id":"compare","kind":"lesson","versionedContentId":"one-variable-comparison@2","prerequisiteEntryIds":["evidence"]},
+        {"id":"baseline","kind":"drill","versionedContentId":"pistol-three-baseline-groups@2","prerequisiteEntryIds":["compare"]},
+        {"id":"centre-spread","kind":"drill","versionedContentId":"pistol-centre-vs-spread@2","prerequisiteEntryIds":["baseline"]},
+        {"id":"cold","kind":"drill","versionedContentId":"pistol-cold-series@2","prerequisiteEntryIds":["centre-spread"]},
+        {"id":"match","kind":"drill","versionedContentId":"pistol-match-block@2","prerequisiteEntryIds":["cold"]}
+      ],
+      "references": [
+        {"id":"cmp-pistol","title":"The CMP Guide to Junior Pistol Shooting","url":"https://thecmp.org/wp-content/uploads/2026/05/JrPistolGuide.pdf","publisher":"Civilian Marksmanship Program","documentEdition":"uitgave 2016","locator":"gedrukte pp. 20-27 (PDF pp. 25-32): lift, ademhaling, vizierfocus, progressieve trekkerdruk, follow-through en oefeningen"},
+        {"id":"issf-education","title":"ISSF Education Reform Plan","url":"https://backoffice.issf-sports.org/getfile.aspx?file=ISSF+EDUCATION+REFORM+PLAN.pdf&inst=439&mod=docf&pane=1","publisher":"International Shooting Sport Federation","documentEdition":"Education Reform Plan","locator":"p. 9 en p. 11: verticale benadering, sighting, trigger, follow-through, dagboek en trainingsplanning"}
+      ],
+      "review":{"evidenceStatus":"practiceBased","coachReviewStatus":"pending","reviewerRole":null,"reviewedAtUtc":null,"sourceEdition":"CMP en ISSF, gecontroleerd 2026-08-10","lastSourceCheckUtc":"2026-08-10T00:00:00.000Z"}
+    },
+    {
+      "id": "br50-foundations",
+      "version": 2,
+      "title": "BR50 — basis",
+      "shortDescription": "Leer de reglementaire grenzen, bouw een herhaalbare steunopstelling en controleer je terugkeer zonder één contactstrategie als universeel voor te stellen.",
+      "discipline": "br50",
+      "estimatedMinutes": 154,
+      "entries": [
+        {"id":"safety","kind":"lesson","versionedContentId":"safe-range-phone-routine@2","prerequisiteEntryIds":[]},
+        {"id":"evidence","kind":"lesson","versionedContentId":"reading-target-evidence@2","prerequisiteEntryIds":["safety"]},
+        {"id":"compare","kind":"lesson","versionedContentId":"one-variable-comparison@2","prerequisiteEntryIds":["evidence"]},
+        {"id":"rules","kind":"lesson","versionedContentId":"br50-rest-rules@2","prerequisiteEntryIds":["safety"]},
+        {"id":"axis","kind":"lesson","versionedContentId":"br50-rest-axis@2","prerequisiteEntryIds":["rules"]},
+        {"id":"contact","kind":"lesson","versionedContentId":"br50-contact-rebuild@2","prerequisiteEntryIds":["axis","compare"]},
+        {"id":"recoil","kind":"lesson","versionedContentId":"br50-recoil-return@2","prerequisiteEntryIds":["contact"]},
+        {"id":"rebuild","kind":"drill","versionedContentId":"br50-rebuild-rest@2","prerequisiteEntryIds":["recoil"]},
+        {"id":"bulls","kind":"drill","versionedContentId":"br50-five-record-bulls@2","prerequisiteEntryIds":["rebuild"]}
+      ],
+      "references": [
+        {"id":"wrabf-rules","title":"WRABF Rules","url":"https://www.wrabf.com/documents/WRABF%20Rules%202023-2027%20V4.4.pdf","publisher":"World Rimfire and Air Rifle Benchrest Federation","documentEdition":"Rules 2023-2027 V4.4, herzien 2026-05-05","locator":"§§ B.1-B.10, pp. 7-16 en Appendix E, p. 54: klassen, steunregels, kaart en recordbulls"},
+        {"id":"issf-education","title":"ISSF Education Reform Plan","url":"https://backoffice.issf-sports.org/getfile.aspx?file=ISSF+EDUCATION+REFORM+PLAN.pdf&inst=439&mod=docf&pane=1","publisher":"International Shooting Sport Federation","documentEdition":"Education Reform Plan","locator":"pp. 7, 9-12: individuele doelen, materiaaltest, feedback en trainingsplanning"}
+      ],
+      "review":{"evidenceStatus":"practiceBased","coachReviewStatus":"pending","reviewerRole":null,"reviewedAtUtc":null,"sourceEdition":"WRABF V4.4 en ISSF, gecontroleerd 2026-08-10","lastSourceCheckUtc":"2026-08-10T00:00:00.000Z"}
+    },
+    {
+      "id": "br50-card-execution",
+      "version": 2,
+      "title": "BR50 — kaartuitvoering",
+      "shortDescription": "Gebruik sighters en vijf zichtbare kaartblokken om een volledige BR50-kaart protocollair, controleerbaar en zonder verzonnen schotvolgorde uit te voeren.",
+      "discipline": "br50",
+      "estimatedMinutes": 345,
+      "entries": [
+        {"id":"safety","kind":"lesson","versionedContentId":"safe-range-phone-routine@2","prerequisiteEntryIds":[]},
+        {"id":"evidence","kind":"lesson","versionedContentId":"reading-target-evidence@2","prerequisiteEntryIds":["safety"]},
+        {"id":"compare","kind":"lesson","versionedContentId":"one-variable-comparison@2","prerequisiteEntryIds":["evidence"]},
+        {"id":"rules","kind":"lesson","versionedContentId":"br50-rest-rules@2","prerequisiteEntryIds":["safety"]},
+        {"id":"axis","kind":"lesson","versionedContentId":"br50-rest-axis@2","prerequisiteEntryIds":["rules"]},
+        {"id":"contact","kind":"lesson","versionedContentId":"br50-contact-rebuild@2","prerequisiteEntryIds":["axis","compare"]},
+        {"id":"recoil","kind":"lesson","versionedContentId":"br50-recoil-return@2","prerequisiteEntryIds":["axis"]},
+        {"id":"protocol","kind":"lesson","versionedContentId":"br50-sighters-record-bulls@2","prerequisiteEntryIds":["rules"]},
+        {"id":"blocks","kind":"lesson","versionedContentId":"br50-card-blocks-conditions@2","prerequisiteEntryIds":["protocol","evidence"]},
+        {"id":"five-bulls","kind":"drill","versionedContentId":"br50-five-record-bulls@2","prerequisiteEntryIds":["recoil"]},
+        {"id":"rebuild","kind":"drill","versionedContentId":"br50-rebuild-rest@2","prerequisiteEntryIds":["contact"]},
+        {"id":"sighter-record","kind":"drill","versionedContentId":"br50-sighter-to-record@2","prerequisiteEntryIds":["blocks","five-bulls"]},
+        {"id":"five-block","kind":"drill","versionedContentId":"br50-five-block-card@2","prerequisiteEntryIds":["sighter-record"]},
+        {"id":"cold","kind":"drill","versionedContentId":"br50-cold-card@2","prerequisiteEntryIds":["five-block"]},
+        {"id":"full","kind":"drill","versionedContentId":"br50-full-card-rehearsal@2","prerequisiteEntryIds":["cold","rebuild"]}
+      ],
+      "references": [
+        {"id":"wrabf-rules","title":"WRABF Rules","url":"https://www.wrabf.com/documents/WRABF%20Rules%202023-2027%20V4.4.pdf","publisher":"World Rimfire and Air Rifle Benchrest Federation","documentEdition":"Rules 2023-2027 V4.4, herzien 2026-05-05","locator":"§ scoring, p. 21 en Appendix E, p. 54: A3-kaart, 25 recordbulls, sighters, inward scoring en kaartprotocol"},
+        {"id":"issf-education","title":"ISSF Education Reform Plan","url":"https://backoffice.issf-sports.org/getfile.aspx?file=ISSF+EDUCATION+REFORM+PLAN.pdf&inst=439&mod=docf&pane=1","publisher":"International Shooting Sport Federation","documentEdition":"Education Reform Plan","locator":"p. 7 en p. 11: doelen, feedback, planning en trainingsdagboek"}
+      ],
+      "review":{"evidenceStatus":"practiceBased","coachReviewStatus":"pending","reviewerRole":null,"reviewedAtUtc":null,"sourceEdition":"WRABF V4.4 en ISSF, gecontroleerd 2026-08-10","lastSourceCheckUtc":"2026-08-10T00:00:00.000Z"}
+    }
+  ]
+}

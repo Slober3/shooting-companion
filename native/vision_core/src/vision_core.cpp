@@ -155,7 +155,11 @@ AnalyzeResult analyze(const AnalyzeRequest& request) {
       request.card_height_mm <= 0.0 || request.projectile_diameter_mm <= 0.0 ||
       request.options.minimum_long_side_px <= 0 ||
       request.options.canonical_pixels_per_mm <= 0.0) {
-    throw std::invalid_argument("AnalyzeRequest contains invalid dimensions or path");
+    throw std::invalid_argument(
+        "AnalyzeRequest contains invalid dimensions or path");
+  }
+  if (request.cancelled()) {
+    throw std::runtime_error("Vision analysis cancelled");
   }
   if (opencv_backend_available()) {
     return analyze_with_opencv(request);
@@ -165,16 +169,20 @@ AnalyzeResult analyze(const AnalyzeRequest& request) {
   result.status = AnalysisStatus::unsupported;
   result.provenance.backend = Backend::geometry_only;
   result.provenance.capabilities = {"imageMetadata", "grayscaleQuality"};
-  result.provenance.algorithm_versions = {
-      {"imageProbe", "image-probe-v1"}, {"quality", "quality-v1"}};
+  result.provenance.algorithm_versions = {{"imageProbe", "image-probe-v1"},
+                                          {"quality", "quality-v1"}};
   result.registration.status = RegistrationStatus::unsupported;
   const auto probe = probe_image(request.image_path);
+  if (request.cancelled()) {
+    throw std::runtime_error("Vision analysis cancelled");
+  }
   if (!probe.readable) {
     result.status = AnalysisStatus::failed;
     result.quality.status = QualityStatus::not_analyzed;
     result.quality.issues.push_back(
         {"imageUnreadable", IssueSeverity::error,
-         "Het beeldbestand kon niet worden geopend.", std::nullopt, std::nullopt});
+         "Het beeldbestand kon niet worden geopend.", std::nullopt,
+         std::nullopt});
     result.registration.status = RegistrationStatus::not_analyzed;
     result.warnings.push_back(
         {"imageUnreadable", "Het beeldbestand kon niet worden geopend."});
@@ -201,18 +209,21 @@ AnalyzeResult analyze(const AnalyzeRequest& request) {
     result.quality.status = QualityStatus::not_analyzed;
     result.quality.width_px = probe.width;
     result.quality.height_px = probe.height;
-    result.quality.issues.push_back(
-        {"pixelStatisticsUnavailable", IssueSeverity::warning,
-         "Afmetingen zijn gelezen, maar deze build kan de beeldpixels niet decoderen.",
-         std::nullopt, std::nullopt});
+    result.quality.issues.push_back({"pixelStatisticsUnavailable",
+                                     IssueSeverity::warning,
+                                     "Afmetingen zijn gelezen, maar deze build "
+                                     "kan de beeldpixels niet decoderen.",
+                                     std::nullopt, std::nullopt});
   }
   result.warnings.push_back(
       {"openCvUnavailable",
-       "Deze build bevat geen OpenCV-backend; registratie en trefferdetectie zijn niet uitgevoerd."});
+       "Deze build bevat geen OpenCV-backend; registratie "
+       "en trefferdetectie zijn niet uitgevoerd."});
   if (request.options.enable_candidate_detection) {
     result.warnings.push_back(
         {"candidateDetectionDisabled",
-         "Trefferkandidaten zijn uitgeschakeld omdat geen gevalideerde beeldbackend beschikbaar is."});
+         "Trefferkandidaten zijn uitgeschakeld omdat geen gevalideerde "
+         "beeldbackend beschikbaar is."});
   }
   return result;
 }
@@ -233,14 +244,13 @@ std::uint32_t capabilities() noexcept {
 std::string AnalyzeResult::to_json() const {
   std::ostringstream output;
   output << std::setprecision(12);
-  output << "{\"schemaVersion\":1,\"status\":\"" << name(status)
+  output << "{\"schemaVersion\":2,\"status\":\"" << name(status)
          << "\",\"engineVersion\":\"" << kEngineVersion
          << "\",\"modelVersion\":null,";
 
   output << "\"provenance\":{\"backend\":\"" << name(provenance.backend)
-         << "\",\"abiVersion\":" << kAbiVersion
-         << ",\"engineVersion\":\"" << kEngineVersion
-         << "\",\"capabilities\":";
+         << "\",\"abiVersion\":" << kAbiVersion << ",\"engineVersion\":\""
+         << kEngineVersion << "\",\"capabilities\":";
   write_string_array(output, provenance.capabilities);
   output << ",\"algorithmVersions\":{";
   std::size_t algorithm_index = 0;
@@ -250,21 +260,22 @@ std::string AnalyzeResult::to_json() const {
   }
   output << "},\"analyzedAtUtc\":null},";
 
-  output << "\"registrationResult\":{\"status\":\""
-         << name(registration.status) << "\",\"orderedNormalizedCorners\":[";
+  output << "\"registrationResult\":{\"status\":\"" << name(registration.status)
+         << "\",\"orderedSourceCornersNormalized\":[";
   for (std::size_t index = 0;
-       index < registration.ordered_normalized_corners.size(); ++index) {
+       index < registration.ordered_source_corners_normalized.size(); ++index) {
     if (index != 0) output << ',';
-    const auto& point = registration.ordered_normalized_corners[index];
+    const auto& point = registration.ordered_source_corners_normalized[index];
     output << "{\"x\":" << point.x << ",\"y\":" << point.y << '}';
   }
-  output << "],\"homographyMatrix\":";
-  if (registration.homography_matrix) {
+  output << "],\"sourceNormalizedToCardMmHomography\":";
+  if (registration.source_normalized_to_card_mm_homography) {
     output << '[';
-    for (std::size_t index = 0; index < registration.homography_matrix->size();
+    for (std::size_t index = 0;
+         index < registration.source_normalized_to_card_mm_homography->size();
          ++index) {
       if (index != 0) output << ',';
-      output << (*registration.homography_matrix)[index];
+      output << (*registration.source_normalized_to_card_mm_homography)[index];
     }
     output << ']';
   } else {
@@ -273,7 +284,8 @@ std::string AnalyzeResult::to_json() const {
   output << ",\"reprojectionErrorPx\":";
   write_optional_number(output, registration.reprojection_error_px);
   output << ",\"estimatedPerspectiveAngleDegrees\":";
-  write_optional_number(output, registration.estimated_perspective_angle_degrees);
+  write_optional_number(output,
+                        registration.estimated_perspective_angle_degrees);
   output << ",\"algorithmVersion\":";
   if (registration.algorithm_version) {
     output << '"' << escape_json(*registration.algorithm_version) << '"';
@@ -299,10 +311,9 @@ std::string AnalyzeResult::to_json() const {
   for (std::size_t index = 0; index < quality.issues.size(); ++index) {
     if (index != 0) output << ',';
     const auto& issue = quality.issues[index];
-    output << "{\"code\":\"" << escape_json(issue.code)
-           << "\",\"severity\":\"" << name(issue.severity)
-           << "\",\"message\":\"" << escape_json(issue.message)
-           << "\",\"measuredValue\":";
+    output << "{\"code\":\"" << escape_json(issue.code) << "\",\"severity\":\""
+           << name(issue.severity) << "\",\"message\":\""
+           << escape_json(issue.message) << "\",\"measuredValue\":";
     write_optional_number(output, issue.measured_value);
     output << ",\"threshold\":";
     write_optional_number(output, issue.threshold);
@@ -315,15 +326,40 @@ std::string AnalyzeResult::to_json() const {
     if (index != 0) output << ',';
     const auto& candidate = candidates[index];
     output << "{\"id\":\"" << escape_json(candidate.id)
-           << "\",\"imageXNormalized\":" << candidate.image_x_normalized
-           << ",\"imageYNormalized\":" << candidate.image_y_normalized
-           << ",\"xMm\":" << candidate.x_mm << ",\"yMm\":"
-           << candidate.y_mm << ",\"estimatedDiameterMm\":"
-           << candidate.estimated_diameter_mm << ",\"confidenceBand\":\""
-           << name(candidate.confidence) << "\",\"reasons\":";
+           << "\",\"sourceImageXNormalized\":"
+           << candidate.source_image_x_normalized
+           << ",\"sourceImageYNormalized\":"
+           << candidate.source_image_y_normalized
+           << ",\"cardXMm\":" << candidate.card_x_mm
+           << ",\"cardYMm\":" << candidate.card_y_mm
+           << ",\"estimatedDiameterMm\":" << candidate.estimated_diameter_mm
+           << ",\"confidenceBand\":\"" << name(candidate.confidence)
+           << "\",\"reasons\":";
     write_string_array(output, candidate.reasons);
-    output << ",\"boundaryUncertaintyMm\":"
-           << candidate.boundary_uncertainty_mm << '}';
+    output << ",\"boundaryUncertaintyMm\":" << candidate.boundary_uncertainty_mm
+           << ",\"nearScoringBoundary\":"
+           << (candidate.near_scoring_boundary ? "true" : "false")
+           << ",\"detectorEvidence\":{"
+           << "\"localContrast\":" << candidate.evidence.local_contrast
+           << ",\"darkCoreContrast\":" << candidate.evidence.dark_core_contrast
+           << ",\"fiberEdgeContrast\":"
+           << candidate.evidence.fiber_edge_contrast
+           << ",\"diameterRatio\":" << candidate.evidence.diameter_ratio
+           << ",\"circularity\":" << candidate.evidence.circularity
+           << ",\"raggedness\":" << candidate.evidence.raggedness
+           << ",\"ringLineOverlapFraction\":"
+           << candidate.evidence.ring_line_overlap_fraction
+           << ",\"uniformPatchEdgeOverlapFraction\":"
+           << candidate.evidence.uniform_patch_edge_overlap_fraction
+           << ",\"blackZoneFraction\":"
+           << candidate.evidence.black_zone_fraction
+           << ",\"detectorResponse\":"
+           << candidate.evidence.detector_response
+           << ",\"distanceTransformPeakCount\":"
+           << candidate.evidence.distance_transform_peak_count
+           << ",\"possibleOverlap\":"
+           << (candidate.evidence.possible_overlap ? "true" : "false")
+           << ",\"zone\":\"" << escape_json(candidate.evidence.zone) << "\"}}";
   }
   output << "],\"warnings\":[";
   for (std::size_t index = 0; index < warnings.size(); ++index) {

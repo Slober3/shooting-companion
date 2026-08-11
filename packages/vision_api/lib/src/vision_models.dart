@@ -49,6 +49,7 @@ enum VisionWarningCode {
   registrationFailed,
   candidateDetectionDisabled,
   candidatesRequireReview,
+  noCandidateImpacts,
   experimentalBackend,
 }
 
@@ -60,6 +61,96 @@ enum VisionCandidateReason {
   lowContrastBlackZone,
   nearScoringLine,
   geometryUnverified,
+}
+
+/// Numeric, detector-produced evidence retained for an auditable review.
+///
+/// It is deliberately descriptive: these values never decide the ring score
+/// and never become a confirmed impact without an explicit user decision.
+class VisionDetectorEvidence {
+  const VisionDetectorEvidence({
+    required this.localContrast,
+    required this.darkCoreContrast,
+    required this.fiberEdgeContrast,
+    required this.diameterRatio,
+    required this.circularity,
+    required this.raggedness,
+    required this.ringLineOverlapFraction,
+    required this.uniformPatchEdgeOverlapFraction,
+    required this.blackZoneFraction,
+    required this.distanceTransformPeakCount,
+    required this.possibleOverlap,
+    required this.zone,
+    this.detectorResponse = 0,
+  });
+
+  final double localContrast;
+  final double darkCoreContrast;
+  final double fiberEdgeContrast;
+  final double diameterRatio;
+  final double circularity;
+  final double raggedness;
+  final double ringLineOverlapFraction;
+  final double uniformPatchEdgeOverlapFraction;
+  final double blackZoneFraction;
+  final double detectorResponse;
+  final int distanceTransformPeakCount;
+  final bool possibleOverlap;
+  final String zone;
+
+  Map<String, Object> toJson() => {
+    'localContrast': localContrast,
+    'darkCoreContrast': darkCoreContrast,
+    'fiberEdgeContrast': fiberEdgeContrast,
+    'diameterRatio': diameterRatio,
+    'circularity': circularity,
+    'raggedness': raggedness,
+    'ringLineOverlapFraction': ringLineOverlapFraction,
+    'uniformPatchEdgeOverlapFraction': uniformPatchEdgeOverlapFraction,
+    'blackZoneFraction': blackZoneFraction,
+    'detectorResponse': detectorResponse,
+    'distanceTransformPeakCount': distanceTransformPeakCount,
+    'possibleOverlap': possibleOverlap,
+    'zone': zone,
+  };
+
+  factory VisionDetectorEvidence.fromJson(Map<String, Object?> json) {
+    double value(String key) => (json[key]! as num).toDouble();
+    final evidence = VisionDetectorEvidence(
+      localContrast: value('localContrast'),
+      darkCoreContrast: value('darkCoreContrast'),
+      fiberEdgeContrast: value('fiberEdgeContrast'),
+      diameterRatio: value('diameterRatio'),
+      circularity: value('circularity'),
+      raggedness: value('raggedness'),
+      ringLineOverlapFraction: value('ringLineOverlapFraction'),
+      uniformPatchEdgeOverlapFraction: value('uniformPatchEdgeOverlapFraction'),
+      blackZoneFraction: value('blackZoneFraction'),
+      detectorResponse: (json['detectorResponse'] as num?)?.toDouble() ?? 0,
+      distanceTransformPeakCount: (json['distanceTransformPeakCount']! as num)
+          .toInt(),
+      possibleOverlap: json['possibleOverlap']! as bool,
+      zone: json['zone']! as String,
+    );
+    final numericValues = [
+      evidence.localContrast,
+      evidence.darkCoreContrast,
+      evidence.fiberEdgeContrast,
+      evidence.diameterRatio,
+      evidence.circularity,
+      evidence.raggedness,
+      evidence.ringLineOverlapFraction,
+      evidence.uniformPatchEdgeOverlapFraction,
+      evidence.blackZoneFraction,
+      evidence.detectorResponse,
+    ];
+    if (numericValues.any((item) => !item.isFinite) ||
+        evidence.distanceTransformPeakCount < 0 ||
+        evidence.zone.trim().isEmpty) {
+      throw const FormatException('Detector evidence is invalid.');
+    }
+    return evidence;
+  }
 }
 
 class VisionProcessingOptions {
@@ -109,29 +200,35 @@ class VisionProcessingOptions {
 
 class AnalyzeTargetRequest {
   const AnalyzeTargetRequest({
+    this.jobId = 'anonymous',
     required this.imagePath,
     required this.targetProfileSnapshot,
     required this.projectileDiameterMm,
+    this.optionalManualAlignment,
     this.captureMode = VisionCaptureMode.singleImage,
     this.processingOptions = const VisionProcessingOptions(),
   }) : assert(imagePath != ''),
        assert(projectileDiameterMm > 0);
 
-  static const schemaVersion = 1;
+  static const schemaVersion = 2;
 
+  final String jobId;
   final String imagePath;
   final TargetProfile targetProfileSnapshot;
   final double projectileDiameterMm;
   final VisionCaptureMode captureMode;
   final VisionProcessingOptions processingOptions;
+  final VisionManualAlignment? optionalManualAlignment;
 
   Map<String, Object?> toJson() => {
     'schemaVersion': schemaVersion,
+    'jobId': jobId,
     'imagePath': imagePath,
     'targetProfileSnapshot': targetProfileSnapshot.toJson(),
     'projectileDiameterMm': projectileDiameterMm,
     'captureMode': captureMode.name,
     'processingOptions': processingOptions.toJson(),
+    'optionalManualAlignment': optionalManualAlignment?.toJson(),
   };
 
   String toJsonString() => jsonEncode(toJson());
@@ -139,6 +236,7 @@ class AnalyzeTargetRequest {
   factory AnalyzeTargetRequest.fromJson(Map<String, Object?> json) {
     _requireSchema(json);
     return AnalyzeTargetRequest(
+      jobId: (json['jobId'] as String?) ?? 'legacy-v1',
       imagePath: json['imagePath']! as String,
       targetProfileSnapshot: TargetProfile.fromJson(
         _map(json['targetProfileSnapshot']),
@@ -150,11 +248,55 @@ class AnalyzeTargetRequest {
       processingOptions: VisionProcessingOptions.fromJson(
         _map(json['processingOptions']),
       ),
+      optionalManualAlignment: json['optionalManualAlignment'] == null
+          ? null
+          : VisionManualAlignment.fromJson(
+              _map(json['optionalManualAlignment']),
+            ),
     );
   }
 
   factory AnalyzeTargetRequest.fromJsonString(String source) =>
       AnalyzeTargetRequest.fromJson(_map(jsonDecode(source)));
+}
+
+class VisionManualAlignment {
+  VisionManualAlignment({
+    required List<VisionPoint> orderedSourceCornersNormalized,
+    required List<double> sourceNormalizedToCardMmHomography,
+  }) : orderedSourceCornersNormalized = List.unmodifiable(
+         orderedSourceCornersNormalized,
+       ),
+       sourceNormalizedToCardMmHomography = List.unmodifiable(
+         sourceNormalizedToCardMmHomography,
+       ) {
+    if (this.orderedSourceCornersNormalized.length != 4 ||
+        this.sourceNormalizedToCardMmHomography.length != 9) {
+      throw ArgumentError(
+        'Handmatige uitlijning vereist vier hoeken en een 3x3-matrix.',
+      );
+    }
+  }
+
+  final List<VisionPoint> orderedSourceCornersNormalized;
+  final List<double> sourceNormalizedToCardMmHomography;
+
+  Map<String, Object> toJson() => {
+    'orderedSourceCornersNormalized': orderedSourceCornersNormalized
+        .map((point) => point.toJson())
+        .toList(),
+    'sourceNormalizedToCardMmHomography': sourceNormalizedToCardMmHomography,
+  };
+
+  factory VisionManualAlignment.fromJson(Map<String, Object?> json) =>
+      VisionManualAlignment(
+        orderedSourceCornersNormalized: _list(
+          json['orderedSourceCornersNormalized'],
+        ).map((item) => VisionPoint.fromJson(_map(item))).toList(),
+        sourceNormalizedToCardMmHomography: _list(
+          json['sourceNormalizedToCardMmHomography'],
+        ).map((item) => (item! as num).toDouble()).toList(),
+      );
 }
 
 class VisionPoint {
@@ -259,45 +401,49 @@ class VisionQualityAssessment {
 class VisionRegistrationResult {
   VisionRegistrationResult({
     required this.status,
-    List<VisionPoint> orderedNormalizedCorners = const [],
-    List<double>? homographyMatrix,
+    List<VisionPoint> orderedSourceCornersNormalized = const [],
+    List<double>? sourceNormalizedToCardMmHomography,
     this.reprojectionErrorPx,
     this.estimatedPerspectiveAngleDegrees,
     this.algorithmVersion,
-  }) : orderedNormalizedCorners = List.unmodifiable(orderedNormalizedCorners),
-       homographyMatrix = homographyMatrix == null
+  }) : orderedSourceCornersNormalized = List.unmodifiable(
+         orderedSourceCornersNormalized,
+       ),
+       sourceNormalizedToCardMmHomography =
+           sourceNormalizedToCardMmHomography == null
            ? null
-           : List.unmodifiable(homographyMatrix) {
-    if (this.homographyMatrix != null && this.homographyMatrix!.length != 9) {
+           : List.unmodifiable(sourceNormalizedToCardMmHomography) {
+    if (this.sourceNormalizedToCardMmHomography != null &&
+        this.sourceNormalizedToCardMmHomography!.length != 9) {
       throw ArgumentError.value(
-        homographyMatrix,
-        'homographyMatrix',
+        sourceNormalizedToCardMmHomography,
+        'sourceNormalizedToCardMmHomography',
         'Een homografie moet negen row-major waarden bevatten.',
       );
     }
-    if (this.orderedNormalizedCorners.isNotEmpty &&
-        this.orderedNormalizedCorners.length != 4) {
+    if (this.orderedSourceCornersNormalized.isNotEmpty &&
+        this.orderedSourceCornersNormalized.length != 4) {
       throw ArgumentError.value(
-        orderedNormalizedCorners,
-        'orderedNormalizedCorners',
+        orderedSourceCornersNormalized,
+        'orderedSourceCornersNormalized',
         'Een registratie moet nul of vier geordende hoeken bevatten.',
       );
     }
   }
 
   final VisionRegistrationStatus status;
-  final List<VisionPoint> orderedNormalizedCorners;
-  final List<double>? homographyMatrix;
+  final List<VisionPoint> orderedSourceCornersNormalized;
+  final List<double>? sourceNormalizedToCardMmHomography;
   final double? reprojectionErrorPx;
   final double? estimatedPerspectiveAngleDegrees;
   final String? algorithmVersion;
 
   Map<String, Object?> toJson() => {
     'status': status.name,
-    'orderedNormalizedCorners': orderedNormalizedCorners
+    'orderedSourceCornersNormalized': orderedSourceCornersNormalized
         .map((point) => point.toJson())
         .toList(),
-    'homographyMatrix': homographyMatrix,
+    'sourceNormalizedToCardMmHomography': sourceNormalizedToCardMmHomography,
     'reprojectionErrorPx': reprojectionErrorPx,
     'estimatedPerspectiveAngleDegrees': estimatedPerspectiveAngleDegrees,
     'algorithmVersion': algorithmVersion,
@@ -308,13 +454,18 @@ class VisionRegistrationResult {
         status: VisionRegistrationStatus.values.byName(
           json['status']! as String,
         ),
-        orderedNormalizedCorners: _list(
-          json['orderedNormalizedCorners'],
+        orderedSourceCornersNormalized: _list(
+          json['orderedSourceCornersNormalized'] ??
+              json['orderedNormalizedCorners'],
         ).map((item) => VisionPoint.fromJson(_map(item))).toList(),
-        homographyMatrix: json['homographyMatrix'] == null
+        sourceNormalizedToCardMmHomography:
+            (json['sourceNormalizedToCardMmHomography'] ??
+                    json['homographyMatrix']) ==
+                null
             ? null
             : _list(
-                json['homographyMatrix'],
+                json['sourceNormalizedToCardMmHomography'] ??
+                    json['homographyMatrix'],
               ).map((item) => (item! as num).toDouble()).toList(),
         reprojectionErrorPx: (json['reprojectionErrorPx'] as num?)?.toDouble(),
         estimatedPerspectiveAngleDegrees:
@@ -326,19 +477,21 @@ class VisionRegistrationResult {
 class VisionCandidateImpact {
   VisionCandidateImpact({
     required this.id,
-    required this.imageXNormalized,
-    required this.imageYNormalized,
-    required this.xMm,
-    required this.yMm,
+    required this.sourceImageXNormalized,
+    required this.sourceImageYNormalized,
+    required this.cardXMm,
+    required this.cardYMm,
     required this.estimatedDiameterMm,
     required this.confidenceBand,
     required List<VisionCandidateReason> reasons,
     required this.boundaryUncertaintyMm,
+    this.nearScoringBoundary = false,
+    this.detectorEvidence,
   }) : reasons = List.unmodifiable(reasons) {
-    if (imageXNormalized < 0 ||
-        imageXNormalized > 1 ||
-        imageYNormalized < 0 ||
-        imageYNormalized > 1) {
+    if (sourceImageXNormalized < 0 ||
+        sourceImageXNormalized > 1 ||
+        sourceImageYNormalized < 0 ||
+        sourceImageYNormalized > 1) {
       throw ArgumentError(
         'Genormaliseerde kandidaatcoördinaten moeten 0–1 zijn.',
       );
@@ -356,44 +509,78 @@ class VisionCandidateImpact {
   }
 
   final String id;
-  final double imageXNormalized;
-  final double imageYNormalized;
-  final double xMm;
-  final double yMm;
+  final double sourceImageXNormalized;
+  final double sourceImageYNormalized;
+  final double cardXMm;
+  final double cardYMm;
   final double estimatedDiameterMm;
   final VisionConfidenceBand confidenceBand;
   final List<VisionCandidateReason> reasons;
   final double boundaryUncertaintyMm;
+  final bool nearScoringBoundary;
+  final VisionDetectorEvidence? detectorEvidence;
+
+  VisionCandidateImpact copyWith({
+    double? cardXMm,
+    double? cardYMm,
+    List<VisionCandidateReason>? reasons,
+    double? boundaryUncertaintyMm,
+    bool? nearScoringBoundary,
+    VisionDetectorEvidence? detectorEvidence,
+  }) => VisionCandidateImpact(
+    id: id,
+    sourceImageXNormalized: sourceImageXNormalized,
+    sourceImageYNormalized: sourceImageYNormalized,
+    cardXMm: cardXMm ?? this.cardXMm,
+    cardYMm: cardYMm ?? this.cardYMm,
+    estimatedDiameterMm: estimatedDiameterMm,
+    confidenceBand: confidenceBand,
+    reasons: reasons ?? this.reasons,
+    boundaryUncertaintyMm: boundaryUncertaintyMm ?? this.boundaryUncertaintyMm,
+    nearScoringBoundary: nearScoringBoundary ?? this.nearScoringBoundary,
+    detectorEvidence: detectorEvidence ?? this.detectorEvidence,
+  );
 
   Map<String, Object> toJson() => {
     'id': id,
-    'imageXNormalized': imageXNormalized,
-    'imageYNormalized': imageYNormalized,
-    'xMm': xMm,
-    'yMm': yMm,
+    'sourceImageXNormalized': sourceImageXNormalized,
+    'sourceImageYNormalized': sourceImageYNormalized,
+    'cardXMm': cardXMm,
+    'cardYMm': cardYMm,
     'estimatedDiameterMm': estimatedDiameterMm,
     'confidenceBand': confidenceBand.name,
     'reasons': reasons.map((reason) => reason.name).toList(),
     'boundaryUncertaintyMm': boundaryUncertaintyMm,
+    'nearScoringBoundary': nearScoringBoundary,
+    if (detectorEvidence != null)
+      'detectorEvidence': detectorEvidence!.toJson(),
   };
 
-  factory VisionCandidateImpact.fromJson(Map<String, Object?> json) =>
-      VisionCandidateImpact(
-        id: json['id']! as String,
-        imageXNormalized: (json['imageXNormalized']! as num).toDouble(),
-        imageYNormalized: (json['imageYNormalized']! as num).toDouble(),
-        xMm: (json['xMm']! as num).toDouble(),
-        yMm: (json['yMm']! as num).toDouble(),
-        estimatedDiameterMm: (json['estimatedDiameterMm']! as num).toDouble(),
-        confidenceBand: VisionConfidenceBand.values.byName(
-          json['confidenceBand']! as String,
-        ),
-        reasons: _list(json['reasons'])
-            .map((item) => VisionCandidateReason.values.byName(item! as String))
-            .toList(),
-        boundaryUncertaintyMm: (json['boundaryUncertaintyMm']! as num)
+  factory VisionCandidateImpact.fromJson(
+    Map<String, Object?> json,
+  ) => VisionCandidateImpact(
+    id: json['id']! as String,
+    sourceImageXNormalized:
+        ((json['sourceImageXNormalized'] ?? json['imageXNormalized'])! as num)
             .toDouble(),
-      );
+    sourceImageYNormalized:
+        ((json['sourceImageYNormalized'] ?? json['imageYNormalized'])! as num)
+            .toDouble(),
+    cardXMm: ((json['cardXMm'] ?? json['xMm'])! as num).toDouble(),
+    cardYMm: ((json['cardYMm'] ?? json['yMm'])! as num).toDouble(),
+    estimatedDiameterMm: (json['estimatedDiameterMm']! as num).toDouble(),
+    confidenceBand: VisionConfidenceBand.values.byName(
+      json['confidenceBand']! as String,
+    ),
+    reasons: _list(json['reasons'])
+        .map((item) => VisionCandidateReason.values.byName(item! as String))
+        .toList(),
+    boundaryUncertaintyMm: (json['boundaryUncertaintyMm']! as num).toDouble(),
+    nearScoringBoundary: (json['nearScoringBoundary'] as bool?) ?? false,
+    detectorEvidence: json['detectorEvidence'] == null
+        ? null
+        : VisionDetectorEvidence.fromJson(_map(json['detectorEvidence'])),
+  );
 }
 
 class VisionWarning {
@@ -476,7 +663,7 @@ class AnalyzeTargetResult {
     }
   }
 
-  static const schemaVersion = 1;
+  static const schemaVersion = 2;
 
   final VisionAnalysisStatus status;
   final String engineVersion;
@@ -541,7 +728,7 @@ class AnalyzeTargetResult {
 
 void _requireSchema(Map<String, Object?> json) {
   final version = json['schemaVersion'];
-  if (version != 1) {
+  if (version != 1 && version != 2) {
     throw FormatException('Unsupported vision contract schema: $version');
   }
 }

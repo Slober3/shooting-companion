@@ -15,6 +15,8 @@ import '../../widgets/app_notice.dart';
 import '../../widgets/responsive_metric_grid.dart';
 import '../../widgets/safe_sheet_scaffold.dart';
 import '../photo/photo.dart';
+import '../progress/series_analysis_screen.dart';
+import '../progress/session_analysis_screen.dart';
 import 'manual_series_screen.dart';
 import 'series_detail_screen.dart';
 import 'session_completion_flow.dart';
@@ -130,15 +132,24 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                     ),
                   ),
                 ),
-                FilledButton.icon(
-                  onPressed: _isCompleting ? null : () => _openDraft(value),
-                  icon: Icon(
-                    value.draftSeries == null ? Icons.add : Icons.play_arrow,
-                  ),
-                  label: Text(
-                    value.draftSeries == null
-                        ? 'Nieuwe reeks'
-                        : 'Verdergaan met reeks',
+                Semantics(
+                  button: true,
+                  label: value.draftSeries == null
+                      ? 'Nieuwe reeks starten'
+                      : 'Verdergaan met huidige reeks',
+                  child: ExcludeSemantics(
+                    child: FilledButton.icon(
+                      onPressed: _isCompleting ? null : () => _openDraft(value),
+                      icon: Icon(
+                        value.draftSeries == null
+                            ? Icons.add
+                            : Icons.play_arrow,
+                      ),
+                      label: Text(
+                        value.draftSeries == null ? 'Nieuwe reeks' : 'Doorgaan',
+                        maxLines: 1,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -263,6 +274,10 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   }
 
   Future<void> _delete(SessionDetail detail) async {
+    final trainingCount = await ref
+        .read(repositoryProvider)
+        .countSessionTrainingActivities(widget.sessionId);
+    if (!mounted) return;
     final date = DateFormat(
       'dd/MM/yyyy HH:mm',
       'nl_BE',
@@ -272,7 +287,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Sessie verwijderen?'),
         content: Text(
-          '$date\n${detail.seriesCount} reeksen · ${detail.photoCount} foto’s\n\n'
+          '$date\n${detail.seriesCount} reeksen · ${detail.photoCount} foto’s'
+          '${trainingCount == 0 ? '' : ' · $trainingCount trainingsactiviteiten'}\n\n'
           'Alle gekoppelde punten, uitlijningen en bestanden verdwijnen.',
         ),
         actions: [
@@ -468,6 +484,22 @@ class _SessionBody extends ConsumerWidget {
             MetricItem(label: 'X', value: '${detail.innerTenCount}'),
           ],
         ),
+        if (detail.confirmedSeriesItems.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      SessionAnalysisScreen(sessionId: detail.session.id),
+                ),
+              ),
+              icon: const Icon(Icons.insights_outlined),
+              label: const Text('Analyse sessie'),
+            ),
+          ),
+        ],
         const SizedBox(height: 20),
         Row(
           children: [
@@ -679,6 +711,12 @@ class _SeriesTile extends ConsumerWidget {
                 builder: (_) => SeriesDetailScreen(seriesId: series.id),
               ),
             );
+          } else if (action == 'analysis') {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => SeriesAnalysisScreen(seriesId: series.id),
+              ),
+            );
           } else if (action == 'edit') {
             await Navigator.of(context).push(
               MaterialPageRoute(
@@ -715,6 +753,7 @@ class _SeriesTile extends ConsumerWidget {
         },
         itemBuilder: (_) => const [
           PopupMenuItem(value: 'view', child: Text('Bekijken')),
+          PopupMenuItem(value: 'analysis', child: Text('Analyseer')),
           PopupMenuItem(value: 'edit', child: Text('Bewerken')),
           PopupMenuItem(value: 'delete', child: Text('Verwijderen')),
         ],

@@ -22,7 +22,15 @@ void main() {
       expect(analysis.actualShotCount, 2);
       expect(analysis.positionedShotCount, 0);
       expect(analysis.metrics.extremeSpreadMm, 0);
+      expect(analysis.metrics.extremeSpreadSegment, isNull);
       expect(analysis.reliability, AnalysisReliability.noPositionData);
+      expect(
+        _warning(
+          analysis,
+          AnalysisWarningCode.missWithoutPosition,
+        ).affectedShotCount,
+        2,
+      );
       expect(
         _warning(
           analysis,
@@ -45,6 +53,12 @@ void main() {
       expect(metrics.horizontalBiasMm, closeTo(0, 1e-12));
       expect(metrics.verticalBiasMm, closeTo(0, 1e-12));
       expect(metrics.extremeSpreadMm, closeTo(10, 1e-12));
+      expect(metrics.extremeSpreadSegment, isNotNull);
+      expect(metrics.extremeSpreadSegment!.firstImpactId, 'left');
+      expect(metrics.extremeSpreadSegment!.secondImpactId, 'right');
+      expect(metrics.extremeSpreadSegment!.firstXMm, -5);
+      expect(metrics.extremeSpreadSegment!.secondXMm, 5);
+      expect(metrics.extremeSpreadSegment!.distanceMm, closeTo(10, 1e-12));
       expect(metrics.meanRadiusMm, closeTo(5, 1e-12));
       expect(metrics.sampleStandardDeviationXMm, closeTo(math.sqrt(50), 1e-12));
       expect(metrics.sampleStandardDeviationYMm, 0);
@@ -69,6 +83,9 @@ void main() {
       expect(analysis.positionedShotCount, 3);
       expect(analysis.metrics.centroidXMm, closeTo(3, 1e-12));
       expect(analysis.metrics.meanRadiusMm, closeTo(4, 1e-12));
+      expect(analysis.metrics.extremeSpreadMm, 9);
+      expect(analysis.metrics.extremeSpreadSegment!.firstImpactId, 'double');
+      expect(analysis.metrics.extremeSpreadSegment!.secondImpactId, 'single');
       expect(
         analysis.metrics.sampleStandardDeviationXMm,
         closeTo(math.sqrt(27), 1e-12),
@@ -80,7 +97,43 @@ void main() {
         ).affectedShotCount,
         2,
       );
+      expect(
+        _warning(
+          analysis,
+          AnalysisWarningCode.missWithoutPosition,
+        ).affectedShotCount,
+        2,
+      );
     });
+
+    test(
+      'includes a distant impact and deterministically selects endpoints',
+      () {
+        const impacts = [
+          ShotImpact(id: 'right', xMm: 10, yMm: 0),
+          ShotImpact(id: 'top', xMm: 0, yMm: -10),
+          ShotImpact(id: 'left', xMm: -10, yMm: 0),
+          ShotImpact(id: 'bottom', xMm: 0, yMm: 10),
+          ShotImpact(id: 'outlier', xMm: 80, yMm: 0),
+        ];
+
+        final forward = _analyze(impacts).metrics;
+        final reversed = _analyze(impacts.reversed).metrics;
+
+        expect(forward.extremeSpreadMm, 90);
+        expect(forward.extremeSpreadSegment!.firstImpactId, 'left');
+        expect(forward.extremeSpreadSegment!.secondImpactId, 'outlier');
+        expect(
+          reversed.extremeSpreadSegment!.firstImpactId,
+          forward.extremeSpreadSegment!.firstImpactId,
+        );
+        expect(
+          reversed.extremeSpreadSegment!.secondImpactId,
+          forward.extremeSpreadSegment!.secondImpactId,
+        );
+        expect(forward.centroidXMm, greaterThan(0));
+      },
+    );
 
     test('uses deterministic interpolated empirical radial percentiles', () {
       final metrics = _analyze(const [

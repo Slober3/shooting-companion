@@ -38,12 +38,19 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: MoreScreen()));
 
     expect(find.text('Over en privacy'), findsOneWidget);
+    await tester.drag(find.byType(ListView), const Offset(0, -240));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Over en privacy'));
     await tester.pumpAndSettle();
 
     expect(find.byType(AboutScreen), findsOneWidget);
     expect(find.text('Volledig offline'), findsOneWidget);
     expect(find.text('Privéfoto’s'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Trainingshulpmiddel'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Trainingshulpmiddel'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

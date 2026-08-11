@@ -2,6 +2,262 @@
 
 All notable changes follow [Semantic Versioning](https://semver.org/).
 
+## 0.8.0 - 2026-08-10
+
+### Release integrity and code navigation
+
+- Consolidated the complete stacked release history onto a branch based on the
+  current GitHub `main`, preventing previously merged feature branches from
+  remaining absent from the default branch.
+- Added a pinned Graphify 0.9.40 project graph, Codex instructions, reproducible
+  setup, deterministic normalization and CI freshness/scope checks.
+- Updated every first-party README and the release, testing, training, vision
+  and privacy documentation for `0.8.0+1`, schema 8 and backup manifest 8.
+
+### Leren, oefenen en doelgericht trainen
+
+- Replaced the shallow technique and drill lists with one offline `Leren &
+  oefenen` hub containing four freely accessible learning paths, 18 versioned
+  lessons and 12 complete drills for precision pistol and WRABF BR50.
+- Added progressive lesson detail with a one-minute summary, step-by-step
+  execution, observable checks, reset criteria, limitations, concrete source
+  locators and an honest `Coachreview open` state.
+- Added original code-native technical diagrams with zoom, accessible
+  transcripts, example/deviation comparison and technically valid mirroring.
+- Replaced checkbox progress with resumable guided activities. Only a genuinely
+  confirmed series can advance a drill; interruption and process restart retain
+  the current phase and the versioned drill snapshot.
+- Added persisted `learningPathV2` activities. Every newly started path stores
+  the complete versioned lesson and drill snapshot for each step, so historical
+  paths remain readable after catalog content is superseded or removed.
+- Added comparable personal baselines and deterministic progress evaluation,
+  without inventing a judgement before enough matching data exists.
+- Added a local 30, 45 or 60 minute training planner that respects discipline,
+  focus and available ammunition, and persists its versioned steps so an
+  interrupted plan can be resumed.
+- Extended encrypted backup-v8 validation and roundtrip coverage for
+  `guidedDrillV2`, `learningPathV2` and `trainingPlan` activities without
+  changing database schema or backup manifest version.
+
+### Boundaries
+
+- Range dry-fire content requires an explicit safety gate and never replaces
+  range commands or local rules.
+- Ungereviewed content remains visibly marked `Coachreview open`; no lesson is
+  represented as coach-reviewed without a signed review record.
+- Experimental OpenCV photo scoring remains available for stand research but
+  is not used by learning paths, drills, baselines or the planner and receives
+  no new accuracy claim in this release.
+
+## 0.7.0 - 2026-08-09
+
+### Overlay, detector observability and training tools
+
+- Added real fine tuning of projected scoring geometry: translate, scale,
+  rotate in quarter-degree steps, direct one- and two-finger manipulation,
+  opacity control and reset, while keeping individual anchor editing.
+- Kept four-corner and ring-assisted alignment as explicit fallbacks and made
+  every adjustment update the actual stored anchors instead of a cosmetic
+  display transform.
+- Hardened the classical OpenCV candidate pipeline with locally adaptive light
+  and dark target-zone evidence, lower isolated-hole area floor, measured
+  morphology response and explicit confidence/rejection diagnostics.
+- Added an in-app diagnostic summary when no candidates are found, including
+  raw structures, filtered structures, confidence counts and warnings, with a
+  direct route to fully manual placement.
+- Bound the detector algorithm marker to the source and APK release contract so
+  a packaged geometry-only or stale native backend can no longer pass release
+  verification unnoticed.
+- Expanded the offline drill library to 15 categorized training forms, added
+  search/filtering and a guided runner that stores completed drill activities.
+- Added a searchable, source-backed technique library with accessible
+  code-native diagrams for safety, natural alignment, balance, sight picture,
+  trigger control, breathing, follow-through, shot routine and benchrest.
+
+### Validation boundary
+
+- Automatic hole proposals remain experimental. Synthetic tests validate the
+  pipeline contract and failure modes, not accuracy on real cards.
+- Stable accuracy claims still require the private, card-grouped validation
+  gates; manual scoring and correction remain authoritative.
+
+## 0.6.0 - 2026-08-06
+
+### Build 2 recovery, scoring and photo geometry
+
+- Recovered and integrated every Build `0.5.1+3` change before extending the
+  vision branch, including the guided acoustic timer, saved coach reflection,
+  reliable asynchronous series settings and responsive analysis metrics.
+- Added a source/APK release contract that ties app version, commit SHA,
+  database, backup manifest, required routes, permissions and native engine
+  versions together in CI and in the in-app build information screen.
+- Hardened ISSF line-breaking at exact tangency for .22 LR, 9×19 mm, .38
+  Special and .357 Magnum, with independent boundary fixtures in every
+  quadrant and mandatory runtime validation beyond debug assertions.
+- Made BR50 bull assignment geometric and explicit, including strict sighter,
+  miss, multiplicity, duplicate and penalty semantics.
+- Upgraded photo alignment with quarter-turn rotation, auditable anchors,
+  residual quality, matrix consistency checks and ring-assisted alignment for
+  useful central crops where the paper corners are not visible.
+- Added a complete projected scoring overlay with opacity/blink comparison and
+  repository-authoritative recalculation of every photo-dependent impact.
+- Replaced the single global threshold with separate light/dark target-zone
+  evidence, ring/print/patch suppression and explicit overlap warnings.
+- Added schema and encrypted backup manifest 8, including migration fixtures
+  from every prior schema and preservation of alignment rotation/evidence.
+- Added a private, offline validation wizard that re-encodes target crops
+  without EXIF/GPS and stores only ignored local annotations and hashes.
+
+### Build 2 safety boundaries
+
+- Automatic proposals remain experimental and restricted to ISSF Precision
+  with .22 LR; other configured calibres support alignment and manual scoring.
+- Rejected geometry never produces photo-based millimetre coordinates.
+- No automatic proposal becomes a score without explicit user review.
+- Existing profile snapshots and confirmed historical scores remain immutable.
+
+### Added
+
+- Added `Meer > Experimentele fotoscore` for one ISSF 25 m Precision / 50 m
+  Pistol target photographed after shooting with .22 LR.
+- Added local image-quality checks, automatic card/ring registration, manual
+  four-corner fallback and classical OpenCV impact candidates.
+- Added a shared review flow with confidence-specific marker shapes, candidate
+  reasons, scoring-boundary warnings, zoom, precision placement, undo,
+  multiplicity and manual misses.
+- Added durable concept scans and atomic commit to a new series, an empty active
+  draft or a new quick session, including photo, alignment and provenance.
+- Added FFI contract/ABI version 2, cancellable native jobs and a pinned
+  OpenCV 4.13.0 Android build.
+- Added schema and encrypted backup manifest 7 for scan drafts, analyses and
+  impact placement provenance.
+
+### Safety and validation boundaries
+
+- Vision candidates never become confirmed impacts without explicit review.
+- Low-confidence suggestions do not count by default and the native engine
+  never calculates a ring score.
+- Only the existing deterministic Dart score engine calculates totals.
+- No ML model, OCR, network call or model download is used.
+- The feature remains labelled experimental until the documented real-photo
+  registration, position, precision/recall and latency gates are measured.
+- Automatic distinction of overlapping shots, misses outside the paper and old
+  versus new holes remains unsupported.
+
+## 0.5.1 - 2026-08-05
+
+### Build 3 guided live-fire timer and series reflection
+
+- Replaced the technical shot-timer entry flow with a short guided live-fire
+  setup, a reusable quick-start profile and an explicit microphone and signal
+  check before the first run.
+- Enabled native Android acoustic capture during visible live-fire runs. The
+  detector processes microphone frames in memory and stores only reviewed
+  event times; it never persists the audio stream.
+- Made sound, vibration and optional screen flash real device outputs and
+  added a test action so the user can verify them before starting.
+- Added the stored coach-mode self-evaluation to series detail, including
+  quality, context tags and an edit action.
+- Shortened the active-session action to `Doorgaan` and made action docks stack
+  earlier when two labels cannot remain comfortably readable.
+- Added `RECORD_AUDIO` and `VIBRATE` to the Android release manifest while
+  retaining the hard ban on internet, location and external-storage access.
+
+### Boundary
+
+- Acoustic timing is a user-reviewed training aid, not certified match timing.
+  A shared range with simultaneous nearby shooters remains outside guaranteed
+  detection conditions until the documented physical validation matrix passes.
+- Closing or backgrounding the active timer releases the microphone. Raw PCM,
+  waveforms and audio recordings are not written to storage, exports, backups
+  or diagnostics.
+
+## 0.5.0 - 2026-08-05
+
+### Build 2 UX hotfix
+
+- Prevented series settings from opening with incomplete asynchronous library
+  data and hardened select fields against missing values.
+- Made advanced analysis metric rows responsive so long direction labels and
+  values remain readable on narrow screens and at large text sizes.
+
+### Added
+
+- Added structured offline shot-timer activities with public par, cadence and
+  external-manual modes, reviewed events, local history and optional links to
+  a series.
+- Added the pure Dart timer state machine, statistics, presets and fake clock.
+  The native Android AudioRecord/AudioTrack engine remains development-only
+  behind a compile-time gate that is disabled in this release.
+- Added timer-run and timer-event CSV exports and compact linked-run summaries
+  to the PDF training report.
+- Added one shared group plot with a deterministic extreme-spread segment,
+  data-basis summary, overlay controls, legend and accessible explanations.
+- Added one sendable potential-score compute service shared by global and
+  single-series analysis routes.
+
+### Changed
+
+- Clarified that the standard blue covariance ellipse is a 1-sigma spread
+  indicator rather than an outline and that valid distant impacts remain part
+  of all group calculations.
+- Replaced the remaining divided group-metric expansion with the shared
+  divider-free expandable component.
+- Upgraded the Drift database and encrypted backup manifest to version 6 while
+  preserving imports from versions 1 through 5.
+- Integrated the planned 0.4.2 analysis hotfix into 0.5.0; version 0.4.2 was
+  not published as a separate build.
+
+### Privacy and validation boundaries
+
+- The stable 0.5.0+2 release does not expose acoustic timing and does not
+  declare microphone permission. Par, cadence and external input remain fully
+  available without microphone access.
+- Acoustic timing can be compiled into internal development/profile builds for
+  validation, but is not a public feature or reliability claim in this release.
+- Public acoustic support requires at least three Android devices including the
+  primary Samsung, indoor and outdoor testing, at least 300 independent strings
+  and 3,000 reference shots, at least 95% exact event counts, median timing
+  error at most 20 ms and P95 error at most 50 ms.
+- The release still declares no internet, location or external-storage
+  permission.
+
+## 0.4.1 - 2026-08-05
+
+### Added
+
+- Added a full single-series analysis screen with target, normalized group and
+  heatmap views, advanced group metrics, data-quality warnings, potential score
+  and previous/next navigation within the same range visit.
+- Added session analysis that compares individual series from one visit and
+  keeps incompatible target, distance, firearm and ammunition contexts apart.
+- Added an explicit historical-series picker and a configurable comparison set
+  of up to five compatible series in the Analyse tab.
+- Added tappable metric explanations with the current value, data basis,
+  calculation, interpretation, minimum-data guidance and limitations.
+- Added accessible chart summaries and structured non-visual data surfaces for
+  future analysis charts.
+
+### Changed
+
+- Renamed the Analyse section `Groepen` to `Vergelijken` and made its selected
+  source series and comparison composition explicit.
+- Series chronology and period filters now use the parent range-visit time,
+  with series sequence as the stable order inside a visit.
+- Series and session detail now provide direct analysis entry points; analysis
+  is no longer reachable only through the global Analyse tab.
+- Archived firearm and ammunition names remain part of historical analysis
+  contexts without introducing query-per-row loading.
+- Strict comparison cohorts now also include cartridge and projectile diameter,
+  preventing calibre mixes when no ammunition lot was selected.
+
+### Safety boundaries
+
+- Combined metrics are calculated only for exactly compatible target version,
+  distance, firearm and ammunition contexts.
+- Every explanation is descriptive: it does not infer technique or modify a
+  historical score, impact or target snapshot.
+
 ## 0.4.0 - 2026-08-04
 
 ### Added
@@ -145,7 +401,7 @@ All notable changes follow [Semantic Versioning](https://semver.org/).
 - Deterministic integer and inner-ten scoring with line-breaking rules.
 - Manual target editor, camera/gallery intake, history and analytics.
 - CSV, PDF and encrypted backup creation and full replacement restore.
-- Versioned ISSF 2026 target geometry.
+- Versioned ISSF Edition 2025, Second Print 07/2026 target geometry.
 - Vision API, safe native fallback and dataset evaluation tooling.
 
 ### Known limitations

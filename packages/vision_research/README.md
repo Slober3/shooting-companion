@@ -1,6 +1,6 @@
 # Vision research export
 
-`shooting_companion_vision_research` creates and validates the offline
+`shooting_companion_vision_research` in Shooting Companion `0.8.0+1` creates and validates the offline
 `.scvision` research container. It deliberately has no database, UI, network or
 session dependency.
 
@@ -32,3 +32,8 @@ by this package.
 The implementation enforces crop, pixel, metadata, impact and container size
 limits before expensive operations where possible. File writes are chunked and
 refuse to replace an existing destination.
+
+This research format is separate from encrypted application backup manifest 8.
+It never grants automatic candidates authority over a score: only reviewed,
+confirmed impacts can enter an export. Real validation photos remain in the
+Git-ignored `.local/vision-validation/` workspace.

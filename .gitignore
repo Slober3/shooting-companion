@@ -1,6 +1,14 @@
 # Local toolchains
 .tooling/
+.dart-sdk-local/
+.flutter-sdk/
+.pub-cache/
+.appdata/
+.localappdata/
 .local-appdata/
+.flutter-appdata/
+.flutter-localappdata/
+.local/vision-validation/
 
 # Flutter / Dart
 .dart_tool/
@@ -35,6 +43,21 @@ datasets/private/
 exports/
 artifacts/*.apk
 artifacts/*.sha256
+artifacts/native-vision-*/
+
+# Graphify: commit only normalized, durable graph state
+graphify-out/cache/
+graphify-out/memory/
+graphify-out/reflections/
+graphify-out/wiki/
+graphify-out/graph.html
+graphify-out/GRAPH_TREE.html
+graphify-out/GRAPH_REPORT.md
+graphify-out/.graphify_labels.json.sig
+graphify-out/????-??-??/
+graphify-out/*.tmp
+graphify-out/*.bak
+.codex/hooks.json
 
 # OS/editor files
 .DS_Store

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,8 +9,84 @@ import 'package:shooting_companion/data/app_database.dart';
 import 'package:shooting_companion/data/shooting_repository.dart';
 import 'package:shooting_companion/features/scoring/target_canvas.dart';
 import 'package:shooting_companion/features/session/manual_series_screen.dart';
+import 'package:shooting_companion/widgets/app_select_field.dart';
+import 'package:shooting_companion_domain/domain.dart' as domain;
 
 void main() {
+  testWidgets(
+    'immediate settings tap awaits catalogs and opens only once',
+    (tester) async {
+      final database = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = ShootingRepository(database);
+      await repository.seedDefaults();
+      final quick = await repository.startQuickSession();
+      final targets = await database.select(database.targetProfiles).get();
+      final cartridges = await database.select(database.cartridges).get();
+      final firearms = await database.select(database.firearms).get();
+      final ammoLots = await database.select(database.ammoLots).get();
+      final targetCatalog = Completer<List<TargetProfileRecord>>();
+      final cartridgeCatalog = Completer<List<CartridgeRecord>>();
+      final firearmCatalog = Completer<List<FirearmRecord>>();
+      final ammoCatalog = Completer<List<AmmoLotRecord>>();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(database),
+            allTargetProfilesProvider.overrideWith(
+              (_) => targetCatalog.future.asStream(),
+            ),
+            allCartridgesProvider.overrideWith(
+              (_) => cartridgeCatalog.future.asStream(),
+            ),
+            allFirearmsProvider.overrideWith(
+              (_) => firearmCatalog.future.asStream(),
+            ),
+            allAmmoLotsProvider.overrideWith(
+              (_) => ammoCatalog.future.asStream(),
+            ),
+          ],
+          child: MaterialApp(
+            home: ManualSeriesScreen(
+              sessionId: quick.sessionId,
+              seriesId: quick.draftSeriesId,
+            ),
+          ),
+        ),
+      );
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      for (var attempt = 0; attempt < 30; attempt++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        if (find.byType(TargetCanvas).evaluate().isNotEmpty) break;
+      }
+
+      expect(find.text('Wijzig'), findsOneWidget);
+      expect(find.text('Volgende'), findsOneWidget);
+      await tester.tap(find.text('Wijzig'));
+      await tester.tap(find.text('Wijzig'));
+      await tester.pump();
+      expect(find.text('Reeksinstellingen'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      targetCatalog.complete(targets);
+      cartridgeCatalog.complete(cartridges);
+      firearmCatalog.complete(firearms);
+      ammoCatalog.complete(ammoLots);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Reeksinstellingen'), findsOneWidget);
+      expect(find.byType(AppSelectField<String>), findsNWidgets(2));
+      expect(find.text('Keuze niet beschikbaar'), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 1));
+    },
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
+
   testWidgets(
     'manual editor keeps canvas and actions usable at 320 dp and 200 percent',
     (tester) async {
@@ -147,6 +225,76 @@ void main() {
       expect(find.byTooltip('Punten en missers'), findsOneWidget);
       expect(find.byTooltip('Foto toevoegen'), findsOneWidget);
 
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 1));
+    },
+  );
+
+  testWidgets(
+    'guided single-series flow reports one confirmed id and hides next',
+    (tester) async {
+      final database = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(database.close);
+      final repository = ShootingRepository(database);
+      await repository.seedDefaults();
+      final quick = await repository.startQuickSession();
+      final confirmedIds = <String>[];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [databaseProvider.overrideWithValue(database)],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => FilledButton(
+                  key: const ValueKey('open-guided-series'),
+                  onPressed: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) => ManualSeriesScreen(
+                        sessionId: quick.sessionId,
+                        seriesId: quick.draftSeriesId,
+                        guidedSingleSeries: true,
+                        onSeriesConfirmed: confirmedIds.add,
+                      ),
+                    ),
+                  ),
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('open-guided-series')));
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      for (var attempt = 0; attempt < 30; attempt++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        if (find.byType(TargetCanvas).evaluate().isNotEmpty) break;
+      }
+
+      expect(find.byType(TargetCanvas), findsOneWidget);
+      expect(find.text('Volgende'), findsNothing);
+      expect(find.text('Bewaren en sessie beëindigen'), findsNothing);
+      final canvas = tester.widget<TargetCanvas>(find.byType(TargetCanvas));
+      canvas.onChanged!(const [
+        domain.ShotImpact(id: 'guided-impact', xMm: 0, yMm: 0),
+      ]);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.widgetWithText(FilledButton, 'Bewaren'));
+      await tester.pumpAndSettle();
+
+      expect(confirmedIds, [quick.draftSeriesId]);
+      expect(
+        (await repository.getSeriesDetail(quick.draftSeriesId))!.series.status,
+        domain.SeriesStatus.confirmed.name,
+      );
+
+      // Dispose Riverpod's Drift streams while the fake clock can still flush
+      // Drift's zero-duration close timer. Leaving disposal to the binding's
+      // final invariant check makes that internal timer look like an app leak.
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 1));
     },

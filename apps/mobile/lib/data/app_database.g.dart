@@ -4850,6 +4850,2175 @@ class ImageAssetsCompanion extends UpdateCompanion<ImageAssetRecord> {
   }
 }
 
+class $VisionScanDraftsTable extends VisionScanDrafts
+    with TableInfo<$VisionScanDraftsTable, VisionScanDraftRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VisionScanDraftsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _originalImagePathMeta = const VerificationMeta(
+    'originalImagePath',
+  );
+  @override
+  late final GeneratedColumn<String> originalImagePath =
+      GeneratedColumn<String>(
+        'original_image_path',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _sha256Meta = const VerificationMeta('sha256');
+  @override
+  late final GeneratedColumn<String> sha256 = GeneratedColumn<String>(
+    'sha256',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _widthMeta = const VerificationMeta('width');
+  @override
+  late final GeneratedColumn<int> width = GeneratedColumn<int>(
+    'width',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _heightMeta = const VerificationMeta('height');
+  @override
+  late final GeneratedColumn<int> height = GeneratedColumn<int>(
+    'height',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sizeBytesMeta = const VerificationMeta(
+    'sizeBytes',
+  );
+  @override
+  late final GeneratedColumn<int> sizeBytes = GeneratedColumn<int>(
+    'size_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetProfileJsonMeta = const VerificationMeta(
+    'targetProfileJson',
+  );
+  @override
+  late final GeneratedColumn<String> targetProfileJson =
+      GeneratedColumn<String>(
+        'target_profile_json',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _projectileDiameterMmMeta =
+      const VerificationMeta('projectileDiameterMm');
+  @override
+  late final GeneratedColumn<double> projectileDiameterMm =
+      GeneratedColumn<double>(
+        'projectile_diameter_mm',
+        aliasedName,
+        false,
+        type: DriftSqlType.double,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _qualityJsonMeta = const VerificationMeta(
+    'qualityJson',
+  );
+  @override
+  late final GeneratedColumn<String> qualityJson = GeneratedColumn<String>(
+    'quality_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _registrationJsonMeta = const VerificationMeta(
+    'registrationJson',
+  );
+  @override
+  late final GeneratedColumn<String> registrationJson = GeneratedColumn<String>(
+    'registration_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _candidatesJsonMeta = const VerificationMeta(
+    'candidatesJson',
+  );
+  @override
+  late final GeneratedColumn<String> candidatesJson = GeneratedColumn<String>(
+    'candidates_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reviewJsonMeta = const VerificationMeta(
+    'reviewJson',
+  );
+  @override
+  late final GeneratedColumn<String> reviewJson = GeneratedColumn<String>(
+    'review_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _engineVersionMeta = const VerificationMeta(
+    'engineVersion',
+  );
+  @override
+  late final GeneratedColumn<String> engineVersion = GeneratedColumn<String>(
+    'engine_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _failureCodeMeta = const VerificationMeta(
+    'failureCode',
+  );
+  @override
+  late final GeneratedColumn<String> failureCode = GeneratedColumn<String>(
+    'failure_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rotationQuarterTurnsMeta =
+      const VerificationMeta('rotationQuarterTurns');
+  @override
+  late final GeneratedColumn<int> rotationQuarterTurns = GeneratedColumn<int>(
+    'rotation_quarter_turns',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _alignmentModeMeta = const VerificationMeta(
+    'alignmentMode',
+  );
+  @override
+  late final GeneratedColumn<String> alignmentMode = GeneratedColumn<String>(
+    'alignment_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('fullCard'),
+  );
+  static const VerificationMeta _anchorsJsonMeta = const VerificationMeta(
+    'anchorsJson',
+  );
+  @override
+  late final GeneratedColumn<String> anchorsJson = GeneratedColumn<String>(
+    'anchors_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reprojectionRmsMmMeta = const VerificationMeta(
+    'reprojectionRmsMm',
+  );
+  @override
+  late final GeneratedColumn<double> reprojectionRmsMm =
+      GeneratedColumn<double>(
+        'reprojection_rms_mm',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _reprojectionMaxMmMeta = const VerificationMeta(
+    'reprojectionMaxMm',
+  );
+  @override
+  late final GeneratedColumn<double> reprojectionMaxMm =
+      GeneratedColumn<double>(
+        'reprojection_max_mm',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _planarityStatusMeta = const VerificationMeta(
+    'planarityStatus',
+  );
+  @override
+  late final GeneratedColumn<String> planarityStatus = GeneratedColumn<String>(
+    'planarity_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('unknown'),
+  );
+  static const VerificationMeta _alignmentAlgorithmVersionMeta =
+      const VerificationMeta('alignmentAlgorithmVersion');
+  @override
+  late final GeneratedColumn<String> alignmentAlgorithmVersion =
+      GeneratedColumn<String>(
+        'alignment_algorithm_version',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _alignmentConfirmedAtUtcMeta =
+      const VerificationMeta('alignmentConfirmedAtUtc');
+  @override
+  late final GeneratedColumn<DateTime> alignmentConfirmedAtUtc =
+      GeneratedColumn<DateTime>(
+        'alignment_confirmed_at_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    status,
+    originalImagePath,
+    sha256,
+    width,
+    height,
+    sizeBytes,
+    targetProfileJson,
+    projectileDiameterMm,
+    qualityJson,
+    registrationJson,
+    candidatesJson,
+    reviewJson,
+    engineVersion,
+    failureCode,
+    rotationQuarterTurns,
+    alignmentMode,
+    anchorsJson,
+    reprojectionRmsMm,
+    reprojectionMaxMm,
+    planarityStatus,
+    alignmentAlgorithmVersion,
+    alignmentConfirmedAtUtc,
+    createdAtUtc,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'vision_scan_drafts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VisionScanDraftRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('original_image_path')) {
+      context.handle(
+        _originalImagePathMeta,
+        originalImagePath.isAcceptableOrUnknown(
+          data['original_image_path']!,
+          _originalImagePathMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_originalImagePathMeta);
+    }
+    if (data.containsKey('sha256')) {
+      context.handle(
+        _sha256Meta,
+        sha256.isAcceptableOrUnknown(data['sha256']!, _sha256Meta),
+      );
+    } else if (isInserting) {
+      context.missing(_sha256Meta);
+    }
+    if (data.containsKey('width')) {
+      context.handle(
+        _widthMeta,
+        width.isAcceptableOrUnknown(data['width']!, _widthMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_widthMeta);
+    }
+    if (data.containsKey('height')) {
+      context.handle(
+        _heightMeta,
+        height.isAcceptableOrUnknown(data['height']!, _heightMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_heightMeta);
+    }
+    if (data.containsKey('size_bytes')) {
+      context.handle(
+        _sizeBytesMeta,
+        sizeBytes.isAcceptableOrUnknown(data['size_bytes']!, _sizeBytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sizeBytesMeta);
+    }
+    if (data.containsKey('target_profile_json')) {
+      context.handle(
+        _targetProfileJsonMeta,
+        targetProfileJson.isAcceptableOrUnknown(
+          data['target_profile_json']!,
+          _targetProfileJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_targetProfileJsonMeta);
+    }
+    if (data.containsKey('projectile_diameter_mm')) {
+      context.handle(
+        _projectileDiameterMmMeta,
+        projectileDiameterMm.isAcceptableOrUnknown(
+          data['projectile_diameter_mm']!,
+          _projectileDiameterMmMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_projectileDiameterMmMeta);
+    }
+    if (data.containsKey('quality_json')) {
+      context.handle(
+        _qualityJsonMeta,
+        qualityJson.isAcceptableOrUnknown(
+          data['quality_json']!,
+          _qualityJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('registration_json')) {
+      context.handle(
+        _registrationJsonMeta,
+        registrationJson.isAcceptableOrUnknown(
+          data['registration_json']!,
+          _registrationJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('candidates_json')) {
+      context.handle(
+        _candidatesJsonMeta,
+        candidatesJson.isAcceptableOrUnknown(
+          data['candidates_json']!,
+          _candidatesJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('review_json')) {
+      context.handle(
+        _reviewJsonMeta,
+        reviewJson.isAcceptableOrUnknown(data['review_json']!, _reviewJsonMeta),
+      );
+    }
+    if (data.containsKey('engine_version')) {
+      context.handle(
+        _engineVersionMeta,
+        engineVersion.isAcceptableOrUnknown(
+          data['engine_version']!,
+          _engineVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('failure_code')) {
+      context.handle(
+        _failureCodeMeta,
+        failureCode.isAcceptableOrUnknown(
+          data['failure_code']!,
+          _failureCodeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('rotation_quarter_turns')) {
+      context.handle(
+        _rotationQuarterTurnsMeta,
+        rotationQuarterTurns.isAcceptableOrUnknown(
+          data['rotation_quarter_turns']!,
+          _rotationQuarterTurnsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('alignment_mode')) {
+      context.handle(
+        _alignmentModeMeta,
+        alignmentMode.isAcceptableOrUnknown(
+          data['alignment_mode']!,
+          _alignmentModeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('anchors_json')) {
+      context.handle(
+        _anchorsJsonMeta,
+        anchorsJson.isAcceptableOrUnknown(
+          data['anchors_json']!,
+          _anchorsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reprojection_rms_mm')) {
+      context.handle(
+        _reprojectionRmsMmMeta,
+        reprojectionRmsMm.isAcceptableOrUnknown(
+          data['reprojection_rms_mm']!,
+          _reprojectionRmsMmMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reprojection_max_mm')) {
+      context.handle(
+        _reprojectionMaxMmMeta,
+        reprojectionMaxMm.isAcceptableOrUnknown(
+          data['reprojection_max_mm']!,
+          _reprojectionMaxMmMeta,
+        ),
+      );
+    }
+    if (data.containsKey('planarity_status')) {
+      context.handle(
+        _planarityStatusMeta,
+        planarityStatus.isAcceptableOrUnknown(
+          data['planarity_status']!,
+          _planarityStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('alignment_algorithm_version')) {
+      context.handle(
+        _alignmentAlgorithmVersionMeta,
+        alignmentAlgorithmVersion.isAcceptableOrUnknown(
+          data['alignment_algorithm_version']!,
+          _alignmentAlgorithmVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('alignment_confirmed_at_utc')) {
+      context.handle(
+        _alignmentConfirmedAtUtcMeta,
+        alignmentConfirmedAtUtc.isAcceptableOrUnknown(
+          data['alignment_confirmed_at_utc']!,
+          _alignmentConfirmedAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtUtcMeta);
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtUtcMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  VisionScanDraftRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VisionScanDraftRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      originalImagePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}original_image_path'],
+      )!,
+      sha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sha256'],
+      )!,
+      width: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}width'],
+      )!,
+      height: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}height'],
+      )!,
+      sizeBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}size_bytes'],
+      )!,
+      targetProfileJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_profile_json'],
+      )!,
+      projectileDiameterMm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}projectile_diameter_mm'],
+      )!,
+      qualityJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quality_json'],
+      ),
+      registrationJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}registration_json'],
+      ),
+      candidatesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}candidates_json'],
+      ),
+      reviewJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}review_json'],
+      ),
+      engineVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}engine_version'],
+      ),
+      failureCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}failure_code'],
+      ),
+      rotationQuarterTurns: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rotation_quarter_turns'],
+      )!,
+      alignmentMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}alignment_mode'],
+      )!,
+      anchorsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}anchors_json'],
+      ),
+      reprojectionRmsMm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}reprojection_rms_mm'],
+      ),
+      reprojectionMaxMm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}reprojection_max_mm'],
+      ),
+      planarityStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}planarity_status'],
+      )!,
+      alignmentAlgorithmVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}alignment_algorithm_version'],
+      ),
+      alignmentConfirmedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}alignment_confirmed_at_utc'],
+      ),
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $VisionScanDraftsTable createAlias(String alias) {
+    return $VisionScanDraftsTable(attachedDatabase, alias);
+  }
+}
+
+class VisionScanDraftRecord extends DataClass
+    implements Insertable<VisionScanDraftRecord> {
+  final String id;
+  final String status;
+  final String originalImagePath;
+  final String sha256;
+  final int width;
+  final int height;
+  final int sizeBytes;
+  final String targetProfileJson;
+  final double projectileDiameterMm;
+  final String? qualityJson;
+  final String? registrationJson;
+  final String? candidatesJson;
+  final String? reviewJson;
+  final String? engineVersion;
+  final String? failureCode;
+  final int rotationQuarterTurns;
+  final String alignmentMode;
+  final String? anchorsJson;
+  final double? reprojectionRmsMm;
+  final double? reprojectionMaxMm;
+  final String planarityStatus;
+  final String? alignmentAlgorithmVersion;
+  final DateTime? alignmentConfirmedAtUtc;
+  final DateTime createdAtUtc;
+  final DateTime updatedAtUtc;
+  const VisionScanDraftRecord({
+    required this.id,
+    required this.status,
+    required this.originalImagePath,
+    required this.sha256,
+    required this.width,
+    required this.height,
+    required this.sizeBytes,
+    required this.targetProfileJson,
+    required this.projectileDiameterMm,
+    this.qualityJson,
+    this.registrationJson,
+    this.candidatesJson,
+    this.reviewJson,
+    this.engineVersion,
+    this.failureCode,
+    required this.rotationQuarterTurns,
+    required this.alignmentMode,
+    this.anchorsJson,
+    this.reprojectionRmsMm,
+    this.reprojectionMaxMm,
+    required this.planarityStatus,
+    this.alignmentAlgorithmVersion,
+    this.alignmentConfirmedAtUtc,
+    required this.createdAtUtc,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['status'] = Variable<String>(status);
+    map['original_image_path'] = Variable<String>(originalImagePath);
+    map['sha256'] = Variable<String>(sha256);
+    map['width'] = Variable<int>(width);
+    map['height'] = Variable<int>(height);
+    map['size_bytes'] = Variable<int>(sizeBytes);
+    map['target_profile_json'] = Variable<String>(targetProfileJson);
+    map['projectile_diameter_mm'] = Variable<double>(projectileDiameterMm);
+    if (!nullToAbsent || qualityJson != null) {
+      map['quality_json'] = Variable<String>(qualityJson);
+    }
+    if (!nullToAbsent || registrationJson != null) {
+      map['registration_json'] = Variable<String>(registrationJson);
+    }
+    if (!nullToAbsent || candidatesJson != null) {
+      map['candidates_json'] = Variable<String>(candidatesJson);
+    }
+    if (!nullToAbsent || reviewJson != null) {
+      map['review_json'] = Variable<String>(reviewJson);
+    }
+    if (!nullToAbsent || engineVersion != null) {
+      map['engine_version'] = Variable<String>(engineVersion);
+    }
+    if (!nullToAbsent || failureCode != null) {
+      map['failure_code'] = Variable<String>(failureCode);
+    }
+    map['rotation_quarter_turns'] = Variable<int>(rotationQuarterTurns);
+    map['alignment_mode'] = Variable<String>(alignmentMode);
+    if (!nullToAbsent || anchorsJson != null) {
+      map['anchors_json'] = Variable<String>(anchorsJson);
+    }
+    if (!nullToAbsent || reprojectionRmsMm != null) {
+      map['reprojection_rms_mm'] = Variable<double>(reprojectionRmsMm);
+    }
+    if (!nullToAbsent || reprojectionMaxMm != null) {
+      map['reprojection_max_mm'] = Variable<double>(reprojectionMaxMm);
+    }
+    map['planarity_status'] = Variable<String>(planarityStatus);
+    if (!nullToAbsent || alignmentAlgorithmVersion != null) {
+      map['alignment_algorithm_version'] = Variable<String>(
+        alignmentAlgorithmVersion,
+      );
+    }
+    if (!nullToAbsent || alignmentConfirmedAtUtc != null) {
+      map['alignment_confirmed_at_utc'] = Variable<DateTime>(
+        alignmentConfirmedAtUtc,
+      );
+    }
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  VisionScanDraftsCompanion toCompanion(bool nullToAbsent) {
+    return VisionScanDraftsCompanion(
+      id: Value(id),
+      status: Value(status),
+      originalImagePath: Value(originalImagePath),
+      sha256: Value(sha256),
+      width: Value(width),
+      height: Value(height),
+      sizeBytes: Value(sizeBytes),
+      targetProfileJson: Value(targetProfileJson),
+      projectileDiameterMm: Value(projectileDiameterMm),
+      qualityJson: qualityJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(qualityJson),
+      registrationJson: registrationJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(registrationJson),
+      candidatesJson: candidatesJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(candidatesJson),
+      reviewJson: reviewJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reviewJson),
+      engineVersion: engineVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(engineVersion),
+      failureCode: failureCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(failureCode),
+      rotationQuarterTurns: Value(rotationQuarterTurns),
+      alignmentMode: Value(alignmentMode),
+      anchorsJson: anchorsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(anchorsJson),
+      reprojectionRmsMm: reprojectionRmsMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reprojectionRmsMm),
+      reprojectionMaxMm: reprojectionMaxMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reprojectionMaxMm),
+      planarityStatus: Value(planarityStatus),
+      alignmentAlgorithmVersion:
+          alignmentAlgorithmVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(alignmentAlgorithmVersion),
+      alignmentConfirmedAtUtc: alignmentConfirmedAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(alignmentConfirmedAtUtc),
+      createdAtUtc: Value(createdAtUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory VisionScanDraftRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VisionScanDraftRecord(
+      id: serializer.fromJson<String>(json['id']),
+      status: serializer.fromJson<String>(json['status']),
+      originalImagePath: serializer.fromJson<String>(json['originalImagePath']),
+      sha256: serializer.fromJson<String>(json['sha256']),
+      width: serializer.fromJson<int>(json['width']),
+      height: serializer.fromJson<int>(json['height']),
+      sizeBytes: serializer.fromJson<int>(json['sizeBytes']),
+      targetProfileJson: serializer.fromJson<String>(json['targetProfileJson']),
+      projectileDiameterMm: serializer.fromJson<double>(
+        json['projectileDiameterMm'],
+      ),
+      qualityJson: serializer.fromJson<String?>(json['qualityJson']),
+      registrationJson: serializer.fromJson<String?>(json['registrationJson']),
+      candidatesJson: serializer.fromJson<String?>(json['candidatesJson']),
+      reviewJson: serializer.fromJson<String?>(json['reviewJson']),
+      engineVersion: serializer.fromJson<String?>(json['engineVersion']),
+      failureCode: serializer.fromJson<String?>(json['failureCode']),
+      rotationQuarterTurns: serializer.fromJson<int>(
+        json['rotationQuarterTurns'],
+      ),
+      alignmentMode: serializer.fromJson<String>(json['alignmentMode']),
+      anchorsJson: serializer.fromJson<String?>(json['anchorsJson']),
+      reprojectionRmsMm: serializer.fromJson<double?>(
+        json['reprojectionRmsMm'],
+      ),
+      reprojectionMaxMm: serializer.fromJson<double?>(
+        json['reprojectionMaxMm'],
+      ),
+      planarityStatus: serializer.fromJson<String>(json['planarityStatus']),
+      alignmentAlgorithmVersion: serializer.fromJson<String?>(
+        json['alignmentAlgorithmVersion'],
+      ),
+      alignmentConfirmedAtUtc: serializer.fromJson<DateTime?>(
+        json['alignmentConfirmedAtUtc'],
+      ),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'status': serializer.toJson<String>(status),
+      'originalImagePath': serializer.toJson<String>(originalImagePath),
+      'sha256': serializer.toJson<String>(sha256),
+      'width': serializer.toJson<int>(width),
+      'height': serializer.toJson<int>(height),
+      'sizeBytes': serializer.toJson<int>(sizeBytes),
+      'targetProfileJson': serializer.toJson<String>(targetProfileJson),
+      'projectileDiameterMm': serializer.toJson<double>(projectileDiameterMm),
+      'qualityJson': serializer.toJson<String?>(qualityJson),
+      'registrationJson': serializer.toJson<String?>(registrationJson),
+      'candidatesJson': serializer.toJson<String?>(candidatesJson),
+      'reviewJson': serializer.toJson<String?>(reviewJson),
+      'engineVersion': serializer.toJson<String?>(engineVersion),
+      'failureCode': serializer.toJson<String?>(failureCode),
+      'rotationQuarterTurns': serializer.toJson<int>(rotationQuarterTurns),
+      'alignmentMode': serializer.toJson<String>(alignmentMode),
+      'anchorsJson': serializer.toJson<String?>(anchorsJson),
+      'reprojectionRmsMm': serializer.toJson<double?>(reprojectionRmsMm),
+      'reprojectionMaxMm': serializer.toJson<double?>(reprojectionMaxMm),
+      'planarityStatus': serializer.toJson<String>(planarityStatus),
+      'alignmentAlgorithmVersion': serializer.toJson<String?>(
+        alignmentAlgorithmVersion,
+      ),
+      'alignmentConfirmedAtUtc': serializer.toJson<DateTime?>(
+        alignmentConfirmedAtUtc,
+      ),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  VisionScanDraftRecord copyWith({
+    String? id,
+    String? status,
+    String? originalImagePath,
+    String? sha256,
+    int? width,
+    int? height,
+    int? sizeBytes,
+    String? targetProfileJson,
+    double? projectileDiameterMm,
+    Value<String?> qualityJson = const Value.absent(),
+    Value<String?> registrationJson = const Value.absent(),
+    Value<String?> candidatesJson = const Value.absent(),
+    Value<String?> reviewJson = const Value.absent(),
+    Value<String?> engineVersion = const Value.absent(),
+    Value<String?> failureCode = const Value.absent(),
+    int? rotationQuarterTurns,
+    String? alignmentMode,
+    Value<String?> anchorsJson = const Value.absent(),
+    Value<double?> reprojectionRmsMm = const Value.absent(),
+    Value<double?> reprojectionMaxMm = const Value.absent(),
+    String? planarityStatus,
+    Value<String?> alignmentAlgorithmVersion = const Value.absent(),
+    Value<DateTime?> alignmentConfirmedAtUtc = const Value.absent(),
+    DateTime? createdAtUtc,
+    DateTime? updatedAtUtc,
+  }) => VisionScanDraftRecord(
+    id: id ?? this.id,
+    status: status ?? this.status,
+    originalImagePath: originalImagePath ?? this.originalImagePath,
+    sha256: sha256 ?? this.sha256,
+    width: width ?? this.width,
+    height: height ?? this.height,
+    sizeBytes: sizeBytes ?? this.sizeBytes,
+    targetProfileJson: targetProfileJson ?? this.targetProfileJson,
+    projectileDiameterMm: projectileDiameterMm ?? this.projectileDiameterMm,
+    qualityJson: qualityJson.present ? qualityJson.value : this.qualityJson,
+    registrationJson: registrationJson.present
+        ? registrationJson.value
+        : this.registrationJson,
+    candidatesJson: candidatesJson.present
+        ? candidatesJson.value
+        : this.candidatesJson,
+    reviewJson: reviewJson.present ? reviewJson.value : this.reviewJson,
+    engineVersion: engineVersion.present
+        ? engineVersion.value
+        : this.engineVersion,
+    failureCode: failureCode.present ? failureCode.value : this.failureCode,
+    rotationQuarterTurns: rotationQuarterTurns ?? this.rotationQuarterTurns,
+    alignmentMode: alignmentMode ?? this.alignmentMode,
+    anchorsJson: anchorsJson.present ? anchorsJson.value : this.anchorsJson,
+    reprojectionRmsMm: reprojectionRmsMm.present
+        ? reprojectionRmsMm.value
+        : this.reprojectionRmsMm,
+    reprojectionMaxMm: reprojectionMaxMm.present
+        ? reprojectionMaxMm.value
+        : this.reprojectionMaxMm,
+    planarityStatus: planarityStatus ?? this.planarityStatus,
+    alignmentAlgorithmVersion: alignmentAlgorithmVersion.present
+        ? alignmentAlgorithmVersion.value
+        : this.alignmentAlgorithmVersion,
+    alignmentConfirmedAtUtc: alignmentConfirmedAtUtc.present
+        ? alignmentConfirmedAtUtc.value
+        : this.alignmentConfirmedAtUtc,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  VisionScanDraftRecord copyWithCompanion(VisionScanDraftsCompanion data) {
+    return VisionScanDraftRecord(
+      id: data.id.present ? data.id.value : this.id,
+      status: data.status.present ? data.status.value : this.status,
+      originalImagePath: data.originalImagePath.present
+          ? data.originalImagePath.value
+          : this.originalImagePath,
+      sha256: data.sha256.present ? data.sha256.value : this.sha256,
+      width: data.width.present ? data.width.value : this.width,
+      height: data.height.present ? data.height.value : this.height,
+      sizeBytes: data.sizeBytes.present ? data.sizeBytes.value : this.sizeBytes,
+      targetProfileJson: data.targetProfileJson.present
+          ? data.targetProfileJson.value
+          : this.targetProfileJson,
+      projectileDiameterMm: data.projectileDiameterMm.present
+          ? data.projectileDiameterMm.value
+          : this.projectileDiameterMm,
+      qualityJson: data.qualityJson.present
+          ? data.qualityJson.value
+          : this.qualityJson,
+      registrationJson: data.registrationJson.present
+          ? data.registrationJson.value
+          : this.registrationJson,
+      candidatesJson: data.candidatesJson.present
+          ? data.candidatesJson.value
+          : this.candidatesJson,
+      reviewJson: data.reviewJson.present
+          ? data.reviewJson.value
+          : this.reviewJson,
+      engineVersion: data.engineVersion.present
+          ? data.engineVersion.value
+          : this.engineVersion,
+      failureCode: data.failureCode.present
+          ? data.failureCode.value
+          : this.failureCode,
+      rotationQuarterTurns: data.rotationQuarterTurns.present
+          ? data.rotationQuarterTurns.value
+          : this.rotationQuarterTurns,
+      alignmentMode: data.alignmentMode.present
+          ? data.alignmentMode.value
+          : this.alignmentMode,
+      anchorsJson: data.anchorsJson.present
+          ? data.anchorsJson.value
+          : this.anchorsJson,
+      reprojectionRmsMm: data.reprojectionRmsMm.present
+          ? data.reprojectionRmsMm.value
+          : this.reprojectionRmsMm,
+      reprojectionMaxMm: data.reprojectionMaxMm.present
+          ? data.reprojectionMaxMm.value
+          : this.reprojectionMaxMm,
+      planarityStatus: data.planarityStatus.present
+          ? data.planarityStatus.value
+          : this.planarityStatus,
+      alignmentAlgorithmVersion: data.alignmentAlgorithmVersion.present
+          ? data.alignmentAlgorithmVersion.value
+          : this.alignmentAlgorithmVersion,
+      alignmentConfirmedAtUtc: data.alignmentConfirmedAtUtc.present
+          ? data.alignmentConfirmedAtUtc.value
+          : this.alignmentConfirmedAtUtc,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VisionScanDraftRecord(')
+          ..write('id: $id, ')
+          ..write('status: $status, ')
+          ..write('originalImagePath: $originalImagePath, ')
+          ..write('sha256: $sha256, ')
+          ..write('width: $width, ')
+          ..write('height: $height, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('targetProfileJson: $targetProfileJson, ')
+          ..write('projectileDiameterMm: $projectileDiameterMm, ')
+          ..write('qualityJson: $qualityJson, ')
+          ..write('registrationJson: $registrationJson, ')
+          ..write('candidatesJson: $candidatesJson, ')
+          ..write('reviewJson: $reviewJson, ')
+          ..write('engineVersion: $engineVersion, ')
+          ..write('failureCode: $failureCode, ')
+          ..write('rotationQuarterTurns: $rotationQuarterTurns, ')
+          ..write('alignmentMode: $alignmentMode, ')
+          ..write('anchorsJson: $anchorsJson, ')
+          ..write('reprojectionRmsMm: $reprojectionRmsMm, ')
+          ..write('reprojectionMaxMm: $reprojectionMaxMm, ')
+          ..write('planarityStatus: $planarityStatus, ')
+          ..write('alignmentAlgorithmVersion: $alignmentAlgorithmVersion, ')
+          ..write('alignmentConfirmedAtUtc: $alignmentConfirmedAtUtc, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    status,
+    originalImagePath,
+    sha256,
+    width,
+    height,
+    sizeBytes,
+    targetProfileJson,
+    projectileDiameterMm,
+    qualityJson,
+    registrationJson,
+    candidatesJson,
+    reviewJson,
+    engineVersion,
+    failureCode,
+    rotationQuarterTurns,
+    alignmentMode,
+    anchorsJson,
+    reprojectionRmsMm,
+    reprojectionMaxMm,
+    planarityStatus,
+    alignmentAlgorithmVersion,
+    alignmentConfirmedAtUtc,
+    createdAtUtc,
+    updatedAtUtc,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VisionScanDraftRecord &&
+          other.id == this.id &&
+          other.status == this.status &&
+          other.originalImagePath == this.originalImagePath &&
+          other.sha256 == this.sha256 &&
+          other.width == this.width &&
+          other.height == this.height &&
+          other.sizeBytes == this.sizeBytes &&
+          other.targetProfileJson == this.targetProfileJson &&
+          other.projectileDiameterMm == this.projectileDiameterMm &&
+          other.qualityJson == this.qualityJson &&
+          other.registrationJson == this.registrationJson &&
+          other.candidatesJson == this.candidatesJson &&
+          other.reviewJson == this.reviewJson &&
+          other.engineVersion == this.engineVersion &&
+          other.failureCode == this.failureCode &&
+          other.rotationQuarterTurns == this.rotationQuarterTurns &&
+          other.alignmentMode == this.alignmentMode &&
+          other.anchorsJson == this.anchorsJson &&
+          other.reprojectionRmsMm == this.reprojectionRmsMm &&
+          other.reprojectionMaxMm == this.reprojectionMaxMm &&
+          other.planarityStatus == this.planarityStatus &&
+          other.alignmentAlgorithmVersion == this.alignmentAlgorithmVersion &&
+          other.alignmentConfirmedAtUtc == this.alignmentConfirmedAtUtc &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class VisionScanDraftsCompanion extends UpdateCompanion<VisionScanDraftRecord> {
+  final Value<String> id;
+  final Value<String> status;
+  final Value<String> originalImagePath;
+  final Value<String> sha256;
+  final Value<int> width;
+  final Value<int> height;
+  final Value<int> sizeBytes;
+  final Value<String> targetProfileJson;
+  final Value<double> projectileDiameterMm;
+  final Value<String?> qualityJson;
+  final Value<String?> registrationJson;
+  final Value<String?> candidatesJson;
+  final Value<String?> reviewJson;
+  final Value<String?> engineVersion;
+  final Value<String?> failureCode;
+  final Value<int> rotationQuarterTurns;
+  final Value<String> alignmentMode;
+  final Value<String?> anchorsJson;
+  final Value<double?> reprojectionRmsMm;
+  final Value<double?> reprojectionMaxMm;
+  final Value<String> planarityStatus;
+  final Value<String?> alignmentAlgorithmVersion;
+  final Value<DateTime?> alignmentConfirmedAtUtc;
+  final Value<DateTime> createdAtUtc;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const VisionScanDraftsCompanion({
+    this.id = const Value.absent(),
+    this.status = const Value.absent(),
+    this.originalImagePath = const Value.absent(),
+    this.sha256 = const Value.absent(),
+    this.width = const Value.absent(),
+    this.height = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
+    this.targetProfileJson = const Value.absent(),
+    this.projectileDiameterMm = const Value.absent(),
+    this.qualityJson = const Value.absent(),
+    this.registrationJson = const Value.absent(),
+    this.candidatesJson = const Value.absent(),
+    this.reviewJson = const Value.absent(),
+    this.engineVersion = const Value.absent(),
+    this.failureCode = const Value.absent(),
+    this.rotationQuarterTurns = const Value.absent(),
+    this.alignmentMode = const Value.absent(),
+    this.anchorsJson = const Value.absent(),
+    this.reprojectionRmsMm = const Value.absent(),
+    this.reprojectionMaxMm = const Value.absent(),
+    this.planarityStatus = const Value.absent(),
+    this.alignmentAlgorithmVersion = const Value.absent(),
+    this.alignmentConfirmedAtUtc = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VisionScanDraftsCompanion.insert({
+    required String id,
+    required String status,
+    required String originalImagePath,
+    required String sha256,
+    required int width,
+    required int height,
+    required int sizeBytes,
+    required String targetProfileJson,
+    required double projectileDiameterMm,
+    this.qualityJson = const Value.absent(),
+    this.registrationJson = const Value.absent(),
+    this.candidatesJson = const Value.absent(),
+    this.reviewJson = const Value.absent(),
+    this.engineVersion = const Value.absent(),
+    this.failureCode = const Value.absent(),
+    this.rotationQuarterTurns = const Value.absent(),
+    this.alignmentMode = const Value.absent(),
+    this.anchorsJson = const Value.absent(),
+    this.reprojectionRmsMm = const Value.absent(),
+    this.reprojectionMaxMm = const Value.absent(),
+    this.planarityStatus = const Value.absent(),
+    this.alignmentAlgorithmVersion = const Value.absent(),
+    this.alignmentConfirmedAtUtc = const Value.absent(),
+    required DateTime createdAtUtc,
+    required DateTime updatedAtUtc,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       status = Value(status),
+       originalImagePath = Value(originalImagePath),
+       sha256 = Value(sha256),
+       width = Value(width),
+       height = Value(height),
+       sizeBytes = Value(sizeBytes),
+       targetProfileJson = Value(targetProfileJson),
+       projectileDiameterMm = Value(projectileDiameterMm),
+       createdAtUtc = Value(createdAtUtc),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<VisionScanDraftRecord> custom({
+    Expression<String>? id,
+    Expression<String>? status,
+    Expression<String>? originalImagePath,
+    Expression<String>? sha256,
+    Expression<int>? width,
+    Expression<int>? height,
+    Expression<int>? sizeBytes,
+    Expression<String>? targetProfileJson,
+    Expression<double>? projectileDiameterMm,
+    Expression<String>? qualityJson,
+    Expression<String>? registrationJson,
+    Expression<String>? candidatesJson,
+    Expression<String>? reviewJson,
+    Expression<String>? engineVersion,
+    Expression<String>? failureCode,
+    Expression<int>? rotationQuarterTurns,
+    Expression<String>? alignmentMode,
+    Expression<String>? anchorsJson,
+    Expression<double>? reprojectionRmsMm,
+    Expression<double>? reprojectionMaxMm,
+    Expression<String>? planarityStatus,
+    Expression<String>? alignmentAlgorithmVersion,
+    Expression<DateTime>? alignmentConfirmedAtUtc,
+    Expression<DateTime>? createdAtUtc,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (status != null) 'status': status,
+      if (originalImagePath != null) 'original_image_path': originalImagePath,
+      if (sha256 != null) 'sha256': sha256,
+      if (width != null) 'width': width,
+      if (height != null) 'height': height,
+      if (sizeBytes != null) 'size_bytes': sizeBytes,
+      if (targetProfileJson != null) 'target_profile_json': targetProfileJson,
+      if (projectileDiameterMm != null)
+        'projectile_diameter_mm': projectileDiameterMm,
+      if (qualityJson != null) 'quality_json': qualityJson,
+      if (registrationJson != null) 'registration_json': registrationJson,
+      if (candidatesJson != null) 'candidates_json': candidatesJson,
+      if (reviewJson != null) 'review_json': reviewJson,
+      if (engineVersion != null) 'engine_version': engineVersion,
+      if (failureCode != null) 'failure_code': failureCode,
+      if (rotationQuarterTurns != null)
+        'rotation_quarter_turns': rotationQuarterTurns,
+      if (alignmentMode != null) 'alignment_mode': alignmentMode,
+      if (anchorsJson != null) 'anchors_json': anchorsJson,
+      if (reprojectionRmsMm != null) 'reprojection_rms_mm': reprojectionRmsMm,
+      if (reprojectionMaxMm != null) 'reprojection_max_mm': reprojectionMaxMm,
+      if (planarityStatus != null) 'planarity_status': planarityStatus,
+      if (alignmentAlgorithmVersion != null)
+        'alignment_algorithm_version': alignmentAlgorithmVersion,
+      if (alignmentConfirmedAtUtc != null)
+        'alignment_confirmed_at_utc': alignmentConfirmedAtUtc,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VisionScanDraftsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? status,
+    Value<String>? originalImagePath,
+    Value<String>? sha256,
+    Value<int>? width,
+    Value<int>? height,
+    Value<int>? sizeBytes,
+    Value<String>? targetProfileJson,
+    Value<double>? projectileDiameterMm,
+    Value<String?>? qualityJson,
+    Value<String?>? registrationJson,
+    Value<String?>? candidatesJson,
+    Value<String?>? reviewJson,
+    Value<String?>? engineVersion,
+    Value<String?>? failureCode,
+    Value<int>? rotationQuarterTurns,
+    Value<String>? alignmentMode,
+    Value<String?>? anchorsJson,
+    Value<double?>? reprojectionRmsMm,
+    Value<double?>? reprojectionMaxMm,
+    Value<String>? planarityStatus,
+    Value<String?>? alignmentAlgorithmVersion,
+    Value<DateTime?>? alignmentConfirmedAtUtc,
+    Value<DateTime>? createdAtUtc,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return VisionScanDraftsCompanion(
+      id: id ?? this.id,
+      status: status ?? this.status,
+      originalImagePath: originalImagePath ?? this.originalImagePath,
+      sha256: sha256 ?? this.sha256,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      sizeBytes: sizeBytes ?? this.sizeBytes,
+      targetProfileJson: targetProfileJson ?? this.targetProfileJson,
+      projectileDiameterMm: projectileDiameterMm ?? this.projectileDiameterMm,
+      qualityJson: qualityJson ?? this.qualityJson,
+      registrationJson: registrationJson ?? this.registrationJson,
+      candidatesJson: candidatesJson ?? this.candidatesJson,
+      reviewJson: reviewJson ?? this.reviewJson,
+      engineVersion: engineVersion ?? this.engineVersion,
+      failureCode: failureCode ?? this.failureCode,
+      rotationQuarterTurns: rotationQuarterTurns ?? this.rotationQuarterTurns,
+      alignmentMode: alignmentMode ?? this.alignmentMode,
+      anchorsJson: anchorsJson ?? this.anchorsJson,
+      reprojectionRmsMm: reprojectionRmsMm ?? this.reprojectionRmsMm,
+      reprojectionMaxMm: reprojectionMaxMm ?? this.reprojectionMaxMm,
+      planarityStatus: planarityStatus ?? this.planarityStatus,
+      alignmentAlgorithmVersion:
+          alignmentAlgorithmVersion ?? this.alignmentAlgorithmVersion,
+      alignmentConfirmedAtUtc:
+          alignmentConfirmedAtUtc ?? this.alignmentConfirmedAtUtc,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (originalImagePath.present) {
+      map['original_image_path'] = Variable<String>(originalImagePath.value);
+    }
+    if (sha256.present) {
+      map['sha256'] = Variable<String>(sha256.value);
+    }
+    if (width.present) {
+      map['width'] = Variable<int>(width.value);
+    }
+    if (height.present) {
+      map['height'] = Variable<int>(height.value);
+    }
+    if (sizeBytes.present) {
+      map['size_bytes'] = Variable<int>(sizeBytes.value);
+    }
+    if (targetProfileJson.present) {
+      map['target_profile_json'] = Variable<String>(targetProfileJson.value);
+    }
+    if (projectileDiameterMm.present) {
+      map['projectile_diameter_mm'] = Variable<double>(
+        projectileDiameterMm.value,
+      );
+    }
+    if (qualityJson.present) {
+      map['quality_json'] = Variable<String>(qualityJson.value);
+    }
+    if (registrationJson.present) {
+      map['registration_json'] = Variable<String>(registrationJson.value);
+    }
+    if (candidatesJson.present) {
+      map['candidates_json'] = Variable<String>(candidatesJson.value);
+    }
+    if (reviewJson.present) {
+      map['review_json'] = Variable<String>(reviewJson.value);
+    }
+    if (engineVersion.present) {
+      map['engine_version'] = Variable<String>(engineVersion.value);
+    }
+    if (failureCode.present) {
+      map['failure_code'] = Variable<String>(failureCode.value);
+    }
+    if (rotationQuarterTurns.present) {
+      map['rotation_quarter_turns'] = Variable<int>(rotationQuarterTurns.value);
+    }
+    if (alignmentMode.present) {
+      map['alignment_mode'] = Variable<String>(alignmentMode.value);
+    }
+    if (anchorsJson.present) {
+      map['anchors_json'] = Variable<String>(anchorsJson.value);
+    }
+    if (reprojectionRmsMm.present) {
+      map['reprojection_rms_mm'] = Variable<double>(reprojectionRmsMm.value);
+    }
+    if (reprojectionMaxMm.present) {
+      map['reprojection_max_mm'] = Variable<double>(reprojectionMaxMm.value);
+    }
+    if (planarityStatus.present) {
+      map['planarity_status'] = Variable<String>(planarityStatus.value);
+    }
+    if (alignmentAlgorithmVersion.present) {
+      map['alignment_algorithm_version'] = Variable<String>(
+        alignmentAlgorithmVersion.value,
+      );
+    }
+    if (alignmentConfirmedAtUtc.present) {
+      map['alignment_confirmed_at_utc'] = Variable<DateTime>(
+        alignmentConfirmedAtUtc.value,
+      );
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VisionScanDraftsCompanion(')
+          ..write('id: $id, ')
+          ..write('status: $status, ')
+          ..write('originalImagePath: $originalImagePath, ')
+          ..write('sha256: $sha256, ')
+          ..write('width: $width, ')
+          ..write('height: $height, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('targetProfileJson: $targetProfileJson, ')
+          ..write('projectileDiameterMm: $projectileDiameterMm, ')
+          ..write('qualityJson: $qualityJson, ')
+          ..write('registrationJson: $registrationJson, ')
+          ..write('candidatesJson: $candidatesJson, ')
+          ..write('reviewJson: $reviewJson, ')
+          ..write('engineVersion: $engineVersion, ')
+          ..write('failureCode: $failureCode, ')
+          ..write('rotationQuarterTurns: $rotationQuarterTurns, ')
+          ..write('alignmentMode: $alignmentMode, ')
+          ..write('anchorsJson: $anchorsJson, ')
+          ..write('reprojectionRmsMm: $reprojectionRmsMm, ')
+          ..write('reprojectionMaxMm: $reprojectionMaxMm, ')
+          ..write('planarityStatus: $planarityStatus, ')
+          ..write('alignmentAlgorithmVersion: $alignmentAlgorithmVersion, ')
+          ..write('alignmentConfirmedAtUtc: $alignmentConfirmedAtUtc, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $VisionAnalysesTable extends VisionAnalyses
+    with TableInfo<$VisionAnalysesTable, VisionAnalysisRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VisionAnalysesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _seriesIdMeta = const VerificationMeta(
+    'seriesId',
+  );
+  @override
+  late final GeneratedColumn<String> seriesId = GeneratedColumn<String>(
+    'series_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES shooting_series (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _imageIdMeta = const VerificationMeta(
+    'imageId',
+  );
+  @override
+  late final GeneratedColumn<String> imageId = GeneratedColumn<String>(
+    'image_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES image_assets (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _engineVersionMeta = const VerificationMeta(
+    'engineVersion',
+  );
+  @override
+  late final GeneratedColumn<String> engineVersion = GeneratedColumn<String>(
+    'engine_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _backendVersionMeta = const VerificationMeta(
+    'backendVersion',
+  );
+  @override
+  late final GeneratedColumn<String> backendVersion = GeneratedColumn<String>(
+    'backend_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modelVersionMeta = const VerificationMeta(
+    'modelVersion',
+  );
+  @override
+  late final GeneratedColumn<String> modelVersion = GeneratedColumn<String>(
+    'model_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _qualityJsonMeta = const VerificationMeta(
+    'qualityJson',
+  );
+  @override
+  late final GeneratedColumn<String> qualityJson = GeneratedColumn<String>(
+    'quality_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _registrationJsonMeta = const VerificationMeta(
+    'registrationJson',
+  );
+  @override
+  late final GeneratedColumn<String> registrationJson = GeneratedColumn<String>(
+    'registration_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _candidatesJsonMeta = const VerificationMeta(
+    'candidatesJson',
+  );
+  @override
+  late final GeneratedColumn<String> candidatesJson = GeneratedColumn<String>(
+    'candidates_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _reviewJsonMeta = const VerificationMeta(
+    'reviewJson',
+  );
+  @override
+  late final GeneratedColumn<String> reviewJson = GeneratedColumn<String>(
+    'review_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    seriesId,
+    imageId,
+    engineVersion,
+    backendVersion,
+    modelVersion,
+    qualityJson,
+    registrationJson,
+    candidatesJson,
+    reviewJson,
+    createdAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'vision_analyses';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VisionAnalysisRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('series_id')) {
+      context.handle(
+        _seriesIdMeta,
+        seriesId.isAcceptableOrUnknown(data['series_id']!, _seriesIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_seriesIdMeta);
+    }
+    if (data.containsKey('image_id')) {
+      context.handle(
+        _imageIdMeta,
+        imageId.isAcceptableOrUnknown(data['image_id']!, _imageIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_imageIdMeta);
+    }
+    if (data.containsKey('engine_version')) {
+      context.handle(
+        _engineVersionMeta,
+        engineVersion.isAcceptableOrUnknown(
+          data['engine_version']!,
+          _engineVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_engineVersionMeta);
+    }
+    if (data.containsKey('backend_version')) {
+      context.handle(
+        _backendVersionMeta,
+        backendVersion.isAcceptableOrUnknown(
+          data['backend_version']!,
+          _backendVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_backendVersionMeta);
+    }
+    if (data.containsKey('model_version')) {
+      context.handle(
+        _modelVersionMeta,
+        modelVersion.isAcceptableOrUnknown(
+          data['model_version']!,
+          _modelVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('quality_json')) {
+      context.handle(
+        _qualityJsonMeta,
+        qualityJson.isAcceptableOrUnknown(
+          data['quality_json']!,
+          _qualityJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_qualityJsonMeta);
+    }
+    if (data.containsKey('registration_json')) {
+      context.handle(
+        _registrationJsonMeta,
+        registrationJson.isAcceptableOrUnknown(
+          data['registration_json']!,
+          _registrationJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_registrationJsonMeta);
+    }
+    if (data.containsKey('candidates_json')) {
+      context.handle(
+        _candidatesJsonMeta,
+        candidatesJson.isAcceptableOrUnknown(
+          data['candidates_json']!,
+          _candidatesJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_candidatesJsonMeta);
+    }
+    if (data.containsKey('review_json')) {
+      context.handle(
+        _reviewJsonMeta,
+        reviewJson.isAcceptableOrUnknown(data['review_json']!, _reviewJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reviewJsonMeta);
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtUtcMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  VisionAnalysisRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VisionAnalysisRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      seriesId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}series_id'],
+      )!,
+      imageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_id'],
+      )!,
+      engineVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}engine_version'],
+      )!,
+      backendVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}backend_version'],
+      )!,
+      modelVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model_version'],
+      ),
+      qualityJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quality_json'],
+      )!,
+      registrationJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}registration_json'],
+      )!,
+      candidatesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}candidates_json'],
+      )!,
+      reviewJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}review_json'],
+      )!,
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $VisionAnalysesTable createAlias(String alias) {
+    return $VisionAnalysesTable(attachedDatabase, alias);
+  }
+}
+
+class VisionAnalysisRecord extends DataClass
+    implements Insertable<VisionAnalysisRecord> {
+  final String id;
+  final String seriesId;
+  final String imageId;
+  final String engineVersion;
+  final String backendVersion;
+  final String? modelVersion;
+  final String qualityJson;
+  final String registrationJson;
+  final String candidatesJson;
+  final String reviewJson;
+  final DateTime createdAtUtc;
+  const VisionAnalysisRecord({
+    required this.id,
+    required this.seriesId,
+    required this.imageId,
+    required this.engineVersion,
+    required this.backendVersion,
+    this.modelVersion,
+    required this.qualityJson,
+    required this.registrationJson,
+    required this.candidatesJson,
+    required this.reviewJson,
+    required this.createdAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['series_id'] = Variable<String>(seriesId);
+    map['image_id'] = Variable<String>(imageId);
+    map['engine_version'] = Variable<String>(engineVersion);
+    map['backend_version'] = Variable<String>(backendVersion);
+    if (!nullToAbsent || modelVersion != null) {
+      map['model_version'] = Variable<String>(modelVersion);
+    }
+    map['quality_json'] = Variable<String>(qualityJson);
+    map['registration_json'] = Variable<String>(registrationJson);
+    map['candidates_json'] = Variable<String>(candidatesJson);
+    map['review_json'] = Variable<String>(reviewJson);
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    return map;
+  }
+
+  VisionAnalysesCompanion toCompanion(bool nullToAbsent) {
+    return VisionAnalysesCompanion(
+      id: Value(id),
+      seriesId: Value(seriesId),
+      imageId: Value(imageId),
+      engineVersion: Value(engineVersion),
+      backendVersion: Value(backendVersion),
+      modelVersion: modelVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(modelVersion),
+      qualityJson: Value(qualityJson),
+      registrationJson: Value(registrationJson),
+      candidatesJson: Value(candidatesJson),
+      reviewJson: Value(reviewJson),
+      createdAtUtc: Value(createdAtUtc),
+    );
+  }
+
+  factory VisionAnalysisRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VisionAnalysisRecord(
+      id: serializer.fromJson<String>(json['id']),
+      seriesId: serializer.fromJson<String>(json['seriesId']),
+      imageId: serializer.fromJson<String>(json['imageId']),
+      engineVersion: serializer.fromJson<String>(json['engineVersion']),
+      backendVersion: serializer.fromJson<String>(json['backendVersion']),
+      modelVersion: serializer.fromJson<String?>(json['modelVersion']),
+      qualityJson: serializer.fromJson<String>(json['qualityJson']),
+      registrationJson: serializer.fromJson<String>(json['registrationJson']),
+      candidatesJson: serializer.fromJson<String>(json['candidatesJson']),
+      reviewJson: serializer.fromJson<String>(json['reviewJson']),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'seriesId': serializer.toJson<String>(seriesId),
+      'imageId': serializer.toJson<String>(imageId),
+      'engineVersion': serializer.toJson<String>(engineVersion),
+      'backendVersion': serializer.toJson<String>(backendVersion),
+      'modelVersion': serializer.toJson<String?>(modelVersion),
+      'qualityJson': serializer.toJson<String>(qualityJson),
+      'registrationJson': serializer.toJson<String>(registrationJson),
+      'candidatesJson': serializer.toJson<String>(candidatesJson),
+      'reviewJson': serializer.toJson<String>(reviewJson),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+    };
+  }
+
+  VisionAnalysisRecord copyWith({
+    String? id,
+    String? seriesId,
+    String? imageId,
+    String? engineVersion,
+    String? backendVersion,
+    Value<String?> modelVersion = const Value.absent(),
+    String? qualityJson,
+    String? registrationJson,
+    String? candidatesJson,
+    String? reviewJson,
+    DateTime? createdAtUtc,
+  }) => VisionAnalysisRecord(
+    id: id ?? this.id,
+    seriesId: seriesId ?? this.seriesId,
+    imageId: imageId ?? this.imageId,
+    engineVersion: engineVersion ?? this.engineVersion,
+    backendVersion: backendVersion ?? this.backendVersion,
+    modelVersion: modelVersion.present ? modelVersion.value : this.modelVersion,
+    qualityJson: qualityJson ?? this.qualityJson,
+    registrationJson: registrationJson ?? this.registrationJson,
+    candidatesJson: candidatesJson ?? this.candidatesJson,
+    reviewJson: reviewJson ?? this.reviewJson,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+  );
+  VisionAnalysisRecord copyWithCompanion(VisionAnalysesCompanion data) {
+    return VisionAnalysisRecord(
+      id: data.id.present ? data.id.value : this.id,
+      seriesId: data.seriesId.present ? data.seriesId.value : this.seriesId,
+      imageId: data.imageId.present ? data.imageId.value : this.imageId,
+      engineVersion: data.engineVersion.present
+          ? data.engineVersion.value
+          : this.engineVersion,
+      backendVersion: data.backendVersion.present
+          ? data.backendVersion.value
+          : this.backendVersion,
+      modelVersion: data.modelVersion.present
+          ? data.modelVersion.value
+          : this.modelVersion,
+      qualityJson: data.qualityJson.present
+          ? data.qualityJson.value
+          : this.qualityJson,
+      registrationJson: data.registrationJson.present
+          ? data.registrationJson.value
+          : this.registrationJson,
+      candidatesJson: data.candidatesJson.present
+          ? data.candidatesJson.value
+          : this.candidatesJson,
+      reviewJson: data.reviewJson.present
+          ? data.reviewJson.value
+          : this.reviewJson,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VisionAnalysisRecord(')
+          ..write('id: $id, ')
+          ..write('seriesId: $seriesId, ')
+          ..write('imageId: $imageId, ')
+          ..write('engineVersion: $engineVersion, ')
+          ..write('backendVersion: $backendVersion, ')
+          ..write('modelVersion: $modelVersion, ')
+          ..write('qualityJson: $qualityJson, ')
+          ..write('registrationJson: $registrationJson, ')
+          ..write('candidatesJson: $candidatesJson, ')
+          ..write('reviewJson: $reviewJson, ')
+          ..write('createdAtUtc: $createdAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    seriesId,
+    imageId,
+    engineVersion,
+    backendVersion,
+    modelVersion,
+    qualityJson,
+    registrationJson,
+    candidatesJson,
+    reviewJson,
+    createdAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VisionAnalysisRecord &&
+          other.id == this.id &&
+          other.seriesId == this.seriesId &&
+          other.imageId == this.imageId &&
+          other.engineVersion == this.engineVersion &&
+          other.backendVersion == this.backendVersion &&
+          other.modelVersion == this.modelVersion &&
+          other.qualityJson == this.qualityJson &&
+          other.registrationJson == this.registrationJson &&
+          other.candidatesJson == this.candidatesJson &&
+          other.reviewJson == this.reviewJson &&
+          other.createdAtUtc == this.createdAtUtc);
+}
+
+class VisionAnalysesCompanion extends UpdateCompanion<VisionAnalysisRecord> {
+  final Value<String> id;
+  final Value<String> seriesId;
+  final Value<String> imageId;
+  final Value<String> engineVersion;
+  final Value<String> backendVersion;
+  final Value<String?> modelVersion;
+  final Value<String> qualityJson;
+  final Value<String> registrationJson;
+  final Value<String> candidatesJson;
+  final Value<String> reviewJson;
+  final Value<DateTime> createdAtUtc;
+  final Value<int> rowid;
+  const VisionAnalysesCompanion({
+    this.id = const Value.absent(),
+    this.seriesId = const Value.absent(),
+    this.imageId = const Value.absent(),
+    this.engineVersion = const Value.absent(),
+    this.backendVersion = const Value.absent(),
+    this.modelVersion = const Value.absent(),
+    this.qualityJson = const Value.absent(),
+    this.registrationJson = const Value.absent(),
+    this.candidatesJson = const Value.absent(),
+    this.reviewJson = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VisionAnalysesCompanion.insert({
+    required String id,
+    required String seriesId,
+    required String imageId,
+    required String engineVersion,
+    required String backendVersion,
+    this.modelVersion = const Value.absent(),
+    required String qualityJson,
+    required String registrationJson,
+    required String candidatesJson,
+    required String reviewJson,
+    required DateTime createdAtUtc,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       seriesId = Value(seriesId),
+       imageId = Value(imageId),
+       engineVersion = Value(engineVersion),
+       backendVersion = Value(backendVersion),
+       qualityJson = Value(qualityJson),
+       registrationJson = Value(registrationJson),
+       candidatesJson = Value(candidatesJson),
+       reviewJson = Value(reviewJson),
+       createdAtUtc = Value(createdAtUtc);
+  static Insertable<VisionAnalysisRecord> custom({
+    Expression<String>? id,
+    Expression<String>? seriesId,
+    Expression<String>? imageId,
+    Expression<String>? engineVersion,
+    Expression<String>? backendVersion,
+    Expression<String>? modelVersion,
+    Expression<String>? qualityJson,
+    Expression<String>? registrationJson,
+    Expression<String>? candidatesJson,
+    Expression<String>? reviewJson,
+    Expression<DateTime>? createdAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (seriesId != null) 'series_id': seriesId,
+      if (imageId != null) 'image_id': imageId,
+      if (engineVersion != null) 'engine_version': engineVersion,
+      if (backendVersion != null) 'backend_version': backendVersion,
+      if (modelVersion != null) 'model_version': modelVersion,
+      if (qualityJson != null) 'quality_json': qualityJson,
+      if (registrationJson != null) 'registration_json': registrationJson,
+      if (candidatesJson != null) 'candidates_json': candidatesJson,
+      if (reviewJson != null) 'review_json': reviewJson,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VisionAnalysesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? seriesId,
+    Value<String>? imageId,
+    Value<String>? engineVersion,
+    Value<String>? backendVersion,
+    Value<String?>? modelVersion,
+    Value<String>? qualityJson,
+    Value<String>? registrationJson,
+    Value<String>? candidatesJson,
+    Value<String>? reviewJson,
+    Value<DateTime>? createdAtUtc,
+    Value<int>? rowid,
+  }) {
+    return VisionAnalysesCompanion(
+      id: id ?? this.id,
+      seriesId: seriesId ?? this.seriesId,
+      imageId: imageId ?? this.imageId,
+      engineVersion: engineVersion ?? this.engineVersion,
+      backendVersion: backendVersion ?? this.backendVersion,
+      modelVersion: modelVersion ?? this.modelVersion,
+      qualityJson: qualityJson ?? this.qualityJson,
+      registrationJson: registrationJson ?? this.registrationJson,
+      candidatesJson: candidatesJson ?? this.candidatesJson,
+      reviewJson: reviewJson ?? this.reviewJson,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (seriesId.present) {
+      map['series_id'] = Variable<String>(seriesId.value);
+    }
+    if (imageId.present) {
+      map['image_id'] = Variable<String>(imageId.value);
+    }
+    if (engineVersion.present) {
+      map['engine_version'] = Variable<String>(engineVersion.value);
+    }
+    if (backendVersion.present) {
+      map['backend_version'] = Variable<String>(backendVersion.value);
+    }
+    if (modelVersion.present) {
+      map['model_version'] = Variable<String>(modelVersion.value);
+    }
+    if (qualityJson.present) {
+      map['quality_json'] = Variable<String>(qualityJson.value);
+    }
+    if (registrationJson.present) {
+      map['registration_json'] = Variable<String>(registrationJson.value);
+    }
+    if (candidatesJson.present) {
+      map['candidates_json'] = Variable<String>(candidatesJson.value);
+    }
+    if (reviewJson.present) {
+      map['review_json'] = Variable<String>(reviewJson.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VisionAnalysesCompanion(')
+          ..write('id: $id, ')
+          ..write('seriesId: $seriesId, ')
+          ..write('imageId: $imageId, ')
+          ..write('engineVersion: $engineVersion, ')
+          ..write('backendVersion: $backendVersion, ')
+          ..write('modelVersion: $modelVersion, ')
+          ..write('qualityJson: $qualityJson, ')
+          ..write('registrationJson: $registrationJson, ')
+          ..write('candidatesJson: $candidatesJson, ')
+          ..write('reviewJson: $reviewJson, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ShotImpactsTable extends ShotImpacts
     with TableInfo<$ShotImpactsTable, ImpactRecord> {
   @override
@@ -5047,6 +7216,43 @@ class $ShotImpactsTable extends ShotImpacts
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _placementMethodMeta = const VerificationMeta(
+    'placementMethod',
+  );
+  @override
+  late final GeneratedColumn<String> placementMethod = GeneratedColumn<String>(
+    'placement_method',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('manual'),
+  );
+  static const VerificationMeta _visionAnalysisIdMeta = const VerificationMeta(
+    'visionAnalysisId',
+  );
+  @override
+  late final GeneratedColumn<String> visionAnalysisId = GeneratedColumn<String>(
+    'vision_analysis_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES vision_analyses (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _positionalUncertaintyMmMeta =
+      const VerificationMeta('positionalUncertaintyMm');
+  @override
+  late final GeneratedColumn<double> positionalUncertaintyMm =
+      GeneratedColumn<double>(
+        'positional_uncertainty_mm',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -5065,6 +7271,9 @@ class $ShotImpactsTable extends ShotImpacts
     scoreDisposition,
     isInnerTen,
     isBoundaryUncertain,
+    placementMethod,
+    visionAnalysisId,
+    positionalUncertaintyMm,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5211,6 +7420,33 @@ class $ShotImpactsTable extends ShotImpacts
         ),
       );
     }
+    if (data.containsKey('placement_method')) {
+      context.handle(
+        _placementMethodMeta,
+        placementMethod.isAcceptableOrUnknown(
+          data['placement_method']!,
+          _placementMethodMeta,
+        ),
+      );
+    }
+    if (data.containsKey('vision_analysis_id')) {
+      context.handle(
+        _visionAnalysisIdMeta,
+        visionAnalysisId.isAcceptableOrUnknown(
+          data['vision_analysis_id']!,
+          _visionAnalysisIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('positional_uncertainty_mm')) {
+      context.handle(
+        _positionalUncertaintyMmMeta,
+        positionalUncertaintyMm.isAcceptableOrUnknown(
+          data['positional_uncertainty_mm']!,
+          _positionalUncertaintyMmMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -5284,6 +7520,18 @@ class $ShotImpactsTable extends ShotImpacts
         DriftSqlType.bool,
         data['${effectivePrefix}is_boundary_uncertain'],
       )!,
+      placementMethod: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}placement_method'],
+      )!,
+      visionAnalysisId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}vision_analysis_id'],
+      ),
+      positionalUncertaintyMm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}positional_uncertainty_mm'],
+      ),
     );
   }
 
@@ -5310,6 +7558,9 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
   final String scoreDisposition;
   final bool isInnerTen;
   final bool isBoundaryUncertain;
+  final String placementMethod;
+  final String? visionAnalysisId;
+  final double? positionalUncertaintyMm;
   const ImpactRecord({
     required this.id,
     required this.seriesId,
@@ -5327,6 +7578,9 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
     required this.scoreDisposition,
     required this.isInnerTen,
     required this.isBoundaryUncertain,
+    required this.placementMethod,
+    this.visionAnalysisId,
+    this.positionalUncertaintyMm,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -5355,6 +7609,15 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
     map['score_disposition'] = Variable<String>(scoreDisposition);
     map['is_inner_ten'] = Variable<bool>(isInnerTen);
     map['is_boundary_uncertain'] = Variable<bool>(isBoundaryUncertain);
+    map['placement_method'] = Variable<String>(placementMethod);
+    if (!nullToAbsent || visionAnalysisId != null) {
+      map['vision_analysis_id'] = Variable<String>(visionAnalysisId);
+    }
+    if (!nullToAbsent || positionalUncertaintyMm != null) {
+      map['positional_uncertainty_mm'] = Variable<double>(
+        positionalUncertaintyMm,
+      );
+    }
     return map;
   }
 
@@ -5384,6 +7647,13 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
       scoreDisposition: Value(scoreDisposition),
       isInnerTen: Value(isInnerTen),
       isBoundaryUncertain: Value(isBoundaryUncertain),
+      placementMethod: Value(placementMethod),
+      visionAnalysisId: visionAnalysisId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(visionAnalysisId),
+      positionalUncertaintyMm: positionalUncertaintyMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(positionalUncertaintyMm),
     );
   }
 
@@ -5413,6 +7683,11 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
       isBoundaryUncertain: serializer.fromJson<bool>(
         json['isBoundaryUncertain'],
       ),
+      placementMethod: serializer.fromJson<String>(json['placementMethod']),
+      visionAnalysisId: serializer.fromJson<String?>(json['visionAnalysisId']),
+      positionalUncertaintyMm: serializer.fromJson<double?>(
+        json['positionalUncertaintyMm'],
+      ),
     );
   }
   @override
@@ -5435,6 +7710,11 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
       'scoreDisposition': serializer.toJson<String>(scoreDisposition),
       'isInnerTen': serializer.toJson<bool>(isInnerTen),
       'isBoundaryUncertain': serializer.toJson<bool>(isBoundaryUncertain),
+      'placementMethod': serializer.toJson<String>(placementMethod),
+      'visionAnalysisId': serializer.toJson<String?>(visionAnalysisId),
+      'positionalUncertaintyMm': serializer.toJson<double?>(
+        positionalUncertaintyMm,
+      ),
     };
   }
 
@@ -5455,6 +7735,9 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
     String? scoreDisposition,
     bool? isInnerTen,
     bool? isBoundaryUncertain,
+    String? placementMethod,
+    Value<String?> visionAnalysisId = const Value.absent(),
+    Value<double?> positionalUncertaintyMm = const Value.absent(),
   }) => ImpactRecord(
     id: id ?? this.id,
     seriesId: seriesId ?? this.seriesId,
@@ -5478,6 +7761,13 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
     scoreDisposition: scoreDisposition ?? this.scoreDisposition,
     isInnerTen: isInnerTen ?? this.isInnerTen,
     isBoundaryUncertain: isBoundaryUncertain ?? this.isBoundaryUncertain,
+    placementMethod: placementMethod ?? this.placementMethod,
+    visionAnalysisId: visionAnalysisId.present
+        ? visionAnalysisId.value
+        : this.visionAnalysisId,
+    positionalUncertaintyMm: positionalUncertaintyMm.present
+        ? positionalUncertaintyMm.value
+        : this.positionalUncertaintyMm,
   );
   ImpactRecord copyWithCompanion(ShotImpactsCompanion data) {
     return ImpactRecord(
@@ -5519,6 +7809,15 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
       isBoundaryUncertain: data.isBoundaryUncertain.present
           ? data.isBoundaryUncertain.value
           : this.isBoundaryUncertain,
+      placementMethod: data.placementMethod.present
+          ? data.placementMethod.value
+          : this.placementMethod,
+      visionAnalysisId: data.visionAnalysisId.present
+          ? data.visionAnalysisId.value
+          : this.visionAnalysisId,
+      positionalUncertaintyMm: data.positionalUncertaintyMm.present
+          ? data.positionalUncertaintyMm.value
+          : this.positionalUncertaintyMm,
     );
   }
 
@@ -5540,7 +7839,10 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
           ..write('rawScoreValue: $rawScoreValue, ')
           ..write('scoreDisposition: $scoreDisposition, ')
           ..write('isInnerTen: $isInnerTen, ')
-          ..write('isBoundaryUncertain: $isBoundaryUncertain')
+          ..write('isBoundaryUncertain: $isBoundaryUncertain, ')
+          ..write('placementMethod: $placementMethod, ')
+          ..write('visionAnalysisId: $visionAnalysisId, ')
+          ..write('positionalUncertaintyMm: $positionalUncertaintyMm')
           ..write(')'))
         .toString();
   }
@@ -5563,6 +7865,9 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
     scoreDisposition,
     isInnerTen,
     isBoundaryUncertain,
+    placementMethod,
+    visionAnalysisId,
+    positionalUncertaintyMm,
   );
   @override
   bool operator ==(Object other) =>
@@ -5583,7 +7888,10 @@ class ImpactRecord extends DataClass implements Insertable<ImpactRecord> {
           other.rawScoreValue == this.rawScoreValue &&
           other.scoreDisposition == this.scoreDisposition &&
           other.isInnerTen == this.isInnerTen &&
-          other.isBoundaryUncertain == this.isBoundaryUncertain);
+          other.isBoundaryUncertain == this.isBoundaryUncertain &&
+          other.placementMethod == this.placementMethod &&
+          other.visionAnalysisId == this.visionAnalysisId &&
+          other.positionalUncertaintyMm == this.positionalUncertaintyMm);
 }
 
 class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
@@ -5603,6 +7911,9 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
   final Value<String> scoreDisposition;
   final Value<bool> isInnerTen;
   final Value<bool> isBoundaryUncertain;
+  final Value<String> placementMethod;
+  final Value<String?> visionAnalysisId;
+  final Value<double?> positionalUncertaintyMm;
   final Value<int> rowid;
   const ShotImpactsCompanion({
     this.id = const Value.absent(),
@@ -5621,6 +7932,9 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
     this.scoreDisposition = const Value.absent(),
     this.isInnerTen = const Value.absent(),
     this.isBoundaryUncertain = const Value.absent(),
+    this.placementMethod = const Value.absent(),
+    this.visionAnalysisId = const Value.absent(),
+    this.positionalUncertaintyMm = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ShotImpactsCompanion.insert({
@@ -5640,6 +7954,9 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
     this.scoreDisposition = const Value.absent(),
     this.isInnerTen = const Value.absent(),
     this.isBoundaryUncertain = const Value.absent(),
+    this.placementMethod = const Value.absent(),
+    this.visionAnalysisId = const Value.absent(),
+    this.positionalUncertaintyMm = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        seriesId = Value(seriesId),
@@ -5663,6 +7980,9 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
     Expression<String>? scoreDisposition,
     Expression<bool>? isInnerTen,
     Expression<bool>? isBoundaryUncertain,
+    Expression<String>? placementMethod,
+    Expression<String>? visionAnalysisId,
+    Expression<double>? positionalUncertaintyMm,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -5684,6 +8004,10 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
       if (isInnerTen != null) 'is_inner_ten': isInnerTen,
       if (isBoundaryUncertain != null)
         'is_boundary_uncertain': isBoundaryUncertain,
+      if (placementMethod != null) 'placement_method': placementMethod,
+      if (visionAnalysisId != null) 'vision_analysis_id': visionAnalysisId,
+      if (positionalUncertaintyMm != null)
+        'positional_uncertainty_mm': positionalUncertaintyMm,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -5705,6 +8029,9 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
     Value<String>? scoreDisposition,
     Value<bool>? isInnerTen,
     Value<bool>? isBoundaryUncertain,
+    Value<String>? placementMethod,
+    Value<String?>? visionAnalysisId,
+    Value<double?>? positionalUncertaintyMm,
     Value<int>? rowid,
   }) {
     return ShotImpactsCompanion(
@@ -5724,6 +8051,10 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
       scoreDisposition: scoreDisposition ?? this.scoreDisposition,
       isInnerTen: isInnerTen ?? this.isInnerTen,
       isBoundaryUncertain: isBoundaryUncertain ?? this.isBoundaryUncertain,
+      placementMethod: placementMethod ?? this.placementMethod,
+      visionAnalysisId: visionAnalysisId ?? this.visionAnalysisId,
+      positionalUncertaintyMm:
+          positionalUncertaintyMm ?? this.positionalUncertaintyMm,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -5779,6 +8110,17 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
     if (isBoundaryUncertain.present) {
       map['is_boundary_uncertain'] = Variable<bool>(isBoundaryUncertain.value);
     }
+    if (placementMethod.present) {
+      map['placement_method'] = Variable<String>(placementMethod.value);
+    }
+    if (visionAnalysisId.present) {
+      map['vision_analysis_id'] = Variable<String>(visionAnalysisId.value);
+    }
+    if (positionalUncertaintyMm.present) {
+      map['positional_uncertainty_mm'] = Variable<double>(
+        positionalUncertaintyMm.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -5804,6 +8146,9 @@ class ShotImpactsCompanion extends UpdateCompanion<ImpactRecord> {
           ..write('scoreDisposition: $scoreDisposition, ')
           ..write('isInnerTen: $isInnerTen, ')
           ..write('isBoundaryUncertain: $isBoundaryUncertain, ')
+          ..write('placementMethod: $placementMethod, ')
+          ..write('visionAnalysisId: $visionAnalysisId, ')
+          ..write('positionalUncertaintyMm: $positionalUncertaintyMm, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5863,6 +8208,88 @@ class $PhotoAlignmentsTable extends PhotoAlignments
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _rotationQuarterTurnsMeta =
+      const VerificationMeta('rotationQuarterTurns');
+  @override
+  late final GeneratedColumn<int> rotationQuarterTurns = GeneratedColumn<int>(
+    'rotation_quarter_turns',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _alignmentModeMeta = const VerificationMeta(
+    'alignmentMode',
+  );
+  @override
+  late final GeneratedColumn<String> alignmentMode = GeneratedColumn<String>(
+    'alignment_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('fullCard'),
+  );
+  static const VerificationMeta _anchorsJsonMeta = const VerificationMeta(
+    'anchorsJson',
+  );
+  @override
+  late final GeneratedColumn<String> anchorsJson = GeneratedColumn<String>(
+    'anchors_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reprojectionRmsMmMeta = const VerificationMeta(
+    'reprojectionRmsMm',
+  );
+  @override
+  late final GeneratedColumn<double> reprojectionRmsMm =
+      GeneratedColumn<double>(
+        'reprojection_rms_mm',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _reprojectionMaxMmMeta = const VerificationMeta(
+    'reprojectionMaxMm',
+  );
+  @override
+  late final GeneratedColumn<double> reprojectionMaxMm =
+      GeneratedColumn<double>(
+        'reprojection_max_mm',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _planarityStatusMeta = const VerificationMeta(
+    'planarityStatus',
+  );
+  @override
+  late final GeneratedColumn<String> planarityStatus = GeneratedColumn<String>(
+    'planarity_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('unknown'),
+  );
+  static const VerificationMeta _confirmedAtUtcMeta = const VerificationMeta(
+    'confirmedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> confirmedAtUtc =
+      GeneratedColumn<DateTime>(
+        'confirmed_at_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
     'updatedAtUtc',
   );
@@ -5880,6 +8307,13 @@ class $PhotoAlignmentsTable extends PhotoAlignments
     cornersJson,
     matrixJson,
     algorithmVersion,
+    rotationQuarterTurns,
+    alignmentMode,
+    anchorsJson,
+    reprojectionRmsMm,
+    reprojectionMaxMm,
+    planarityStatus,
+    confirmedAtUtc,
     updatedAtUtc,
   ];
   @override
@@ -5932,6 +8366,69 @@ class $PhotoAlignmentsTable extends PhotoAlignments
     } else if (isInserting) {
       context.missing(_algorithmVersionMeta);
     }
+    if (data.containsKey('rotation_quarter_turns')) {
+      context.handle(
+        _rotationQuarterTurnsMeta,
+        rotationQuarterTurns.isAcceptableOrUnknown(
+          data['rotation_quarter_turns']!,
+          _rotationQuarterTurnsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('alignment_mode')) {
+      context.handle(
+        _alignmentModeMeta,
+        alignmentMode.isAcceptableOrUnknown(
+          data['alignment_mode']!,
+          _alignmentModeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('anchors_json')) {
+      context.handle(
+        _anchorsJsonMeta,
+        anchorsJson.isAcceptableOrUnknown(
+          data['anchors_json']!,
+          _anchorsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reprojection_rms_mm')) {
+      context.handle(
+        _reprojectionRmsMmMeta,
+        reprojectionRmsMm.isAcceptableOrUnknown(
+          data['reprojection_rms_mm']!,
+          _reprojectionRmsMmMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reprojection_max_mm')) {
+      context.handle(
+        _reprojectionMaxMmMeta,
+        reprojectionMaxMm.isAcceptableOrUnknown(
+          data['reprojection_max_mm']!,
+          _reprojectionMaxMmMeta,
+        ),
+      );
+    }
+    if (data.containsKey('planarity_status')) {
+      context.handle(
+        _planarityStatusMeta,
+        planarityStatus.isAcceptableOrUnknown(
+          data['planarity_status']!,
+          _planarityStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('confirmed_at_utc')) {
+      context.handle(
+        _confirmedAtUtcMeta,
+        confirmedAtUtc.isAcceptableOrUnknown(
+          data['confirmed_at_utc']!,
+          _confirmedAtUtcMeta,
+        ),
+      );
+    }
     if (data.containsKey('updated_at_utc')) {
       context.handle(
         _updatedAtUtcMeta,
@@ -5968,6 +8465,34 @@ class $PhotoAlignmentsTable extends PhotoAlignments
         DriftSqlType.string,
         data['${effectivePrefix}algorithm_version'],
       )!,
+      rotationQuarterTurns: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rotation_quarter_turns'],
+      )!,
+      alignmentMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}alignment_mode'],
+      )!,
+      anchorsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}anchors_json'],
+      ),
+      reprojectionRmsMm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}reprojection_rms_mm'],
+      ),
+      reprojectionMaxMm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}reprojection_max_mm'],
+      ),
+      planarityStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}planarity_status'],
+      )!,
+      confirmedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}confirmed_at_utc'],
+      ),
       updatedAtUtc: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at_utc'],
@@ -5987,12 +8512,26 @@ class PhotoAlignmentRecord extends DataClass
   final String cornersJson;
   final String matrixJson;
   final String algorithmVersion;
+  final int rotationQuarterTurns;
+  final String alignmentMode;
+  final String? anchorsJson;
+  final double? reprojectionRmsMm;
+  final double? reprojectionMaxMm;
+  final String planarityStatus;
+  final DateTime? confirmedAtUtc;
   final DateTime updatedAtUtc;
   const PhotoAlignmentRecord({
     required this.imageId,
     required this.cornersJson,
     required this.matrixJson,
     required this.algorithmVersion,
+    required this.rotationQuarterTurns,
+    required this.alignmentMode,
+    this.anchorsJson,
+    this.reprojectionRmsMm,
+    this.reprojectionMaxMm,
+    required this.planarityStatus,
+    this.confirmedAtUtc,
     required this.updatedAtUtc,
   });
   @override
@@ -6002,6 +8541,21 @@ class PhotoAlignmentRecord extends DataClass
     map['corners_json'] = Variable<String>(cornersJson);
     map['matrix_json'] = Variable<String>(matrixJson);
     map['algorithm_version'] = Variable<String>(algorithmVersion);
+    map['rotation_quarter_turns'] = Variable<int>(rotationQuarterTurns);
+    map['alignment_mode'] = Variable<String>(alignmentMode);
+    if (!nullToAbsent || anchorsJson != null) {
+      map['anchors_json'] = Variable<String>(anchorsJson);
+    }
+    if (!nullToAbsent || reprojectionRmsMm != null) {
+      map['reprojection_rms_mm'] = Variable<double>(reprojectionRmsMm);
+    }
+    if (!nullToAbsent || reprojectionMaxMm != null) {
+      map['reprojection_max_mm'] = Variable<double>(reprojectionMaxMm);
+    }
+    map['planarity_status'] = Variable<String>(planarityStatus);
+    if (!nullToAbsent || confirmedAtUtc != null) {
+      map['confirmed_at_utc'] = Variable<DateTime>(confirmedAtUtc);
+    }
     map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
     return map;
   }
@@ -6012,6 +8566,21 @@ class PhotoAlignmentRecord extends DataClass
       cornersJson: Value(cornersJson),
       matrixJson: Value(matrixJson),
       algorithmVersion: Value(algorithmVersion),
+      rotationQuarterTurns: Value(rotationQuarterTurns),
+      alignmentMode: Value(alignmentMode),
+      anchorsJson: anchorsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(anchorsJson),
+      reprojectionRmsMm: reprojectionRmsMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reprojectionRmsMm),
+      reprojectionMaxMm: reprojectionMaxMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reprojectionMaxMm),
+      planarityStatus: Value(planarityStatus),
+      confirmedAtUtc: confirmedAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confirmedAtUtc),
       updatedAtUtc: Value(updatedAtUtc),
     );
   }
@@ -6026,6 +8595,19 @@ class PhotoAlignmentRecord extends DataClass
       cornersJson: serializer.fromJson<String>(json['cornersJson']),
       matrixJson: serializer.fromJson<String>(json['matrixJson']),
       algorithmVersion: serializer.fromJson<String>(json['algorithmVersion']),
+      rotationQuarterTurns: serializer.fromJson<int>(
+        json['rotationQuarterTurns'],
+      ),
+      alignmentMode: serializer.fromJson<String>(json['alignmentMode']),
+      anchorsJson: serializer.fromJson<String?>(json['anchorsJson']),
+      reprojectionRmsMm: serializer.fromJson<double?>(
+        json['reprojectionRmsMm'],
+      ),
+      reprojectionMaxMm: serializer.fromJson<double?>(
+        json['reprojectionMaxMm'],
+      ),
+      planarityStatus: serializer.fromJson<String>(json['planarityStatus']),
+      confirmedAtUtc: serializer.fromJson<DateTime?>(json['confirmedAtUtc']),
       updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
     );
   }
@@ -6037,6 +8619,13 @@ class PhotoAlignmentRecord extends DataClass
       'cornersJson': serializer.toJson<String>(cornersJson),
       'matrixJson': serializer.toJson<String>(matrixJson),
       'algorithmVersion': serializer.toJson<String>(algorithmVersion),
+      'rotationQuarterTurns': serializer.toJson<int>(rotationQuarterTurns),
+      'alignmentMode': serializer.toJson<String>(alignmentMode),
+      'anchorsJson': serializer.toJson<String?>(anchorsJson),
+      'reprojectionRmsMm': serializer.toJson<double?>(reprojectionRmsMm),
+      'reprojectionMaxMm': serializer.toJson<double?>(reprojectionMaxMm),
+      'planarityStatus': serializer.toJson<String>(planarityStatus),
+      'confirmedAtUtc': serializer.toJson<DateTime?>(confirmedAtUtc),
       'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
     };
   }
@@ -6046,12 +8635,32 @@ class PhotoAlignmentRecord extends DataClass
     String? cornersJson,
     String? matrixJson,
     String? algorithmVersion,
+    int? rotationQuarterTurns,
+    String? alignmentMode,
+    Value<String?> anchorsJson = const Value.absent(),
+    Value<double?> reprojectionRmsMm = const Value.absent(),
+    Value<double?> reprojectionMaxMm = const Value.absent(),
+    String? planarityStatus,
+    Value<DateTime?> confirmedAtUtc = const Value.absent(),
     DateTime? updatedAtUtc,
   }) => PhotoAlignmentRecord(
     imageId: imageId ?? this.imageId,
     cornersJson: cornersJson ?? this.cornersJson,
     matrixJson: matrixJson ?? this.matrixJson,
     algorithmVersion: algorithmVersion ?? this.algorithmVersion,
+    rotationQuarterTurns: rotationQuarterTurns ?? this.rotationQuarterTurns,
+    alignmentMode: alignmentMode ?? this.alignmentMode,
+    anchorsJson: anchorsJson.present ? anchorsJson.value : this.anchorsJson,
+    reprojectionRmsMm: reprojectionRmsMm.present
+        ? reprojectionRmsMm.value
+        : this.reprojectionRmsMm,
+    reprojectionMaxMm: reprojectionMaxMm.present
+        ? reprojectionMaxMm.value
+        : this.reprojectionMaxMm,
+    planarityStatus: planarityStatus ?? this.planarityStatus,
+    confirmedAtUtc: confirmedAtUtc.present
+        ? confirmedAtUtc.value
+        : this.confirmedAtUtc,
     updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
   );
   PhotoAlignmentRecord copyWithCompanion(PhotoAlignmentsCompanion data) {
@@ -6066,6 +8675,27 @@ class PhotoAlignmentRecord extends DataClass
       algorithmVersion: data.algorithmVersion.present
           ? data.algorithmVersion.value
           : this.algorithmVersion,
+      rotationQuarterTurns: data.rotationQuarterTurns.present
+          ? data.rotationQuarterTurns.value
+          : this.rotationQuarterTurns,
+      alignmentMode: data.alignmentMode.present
+          ? data.alignmentMode.value
+          : this.alignmentMode,
+      anchorsJson: data.anchorsJson.present
+          ? data.anchorsJson.value
+          : this.anchorsJson,
+      reprojectionRmsMm: data.reprojectionRmsMm.present
+          ? data.reprojectionRmsMm.value
+          : this.reprojectionRmsMm,
+      reprojectionMaxMm: data.reprojectionMaxMm.present
+          ? data.reprojectionMaxMm.value
+          : this.reprojectionMaxMm,
+      planarityStatus: data.planarityStatus.present
+          ? data.planarityStatus.value
+          : this.planarityStatus,
+      confirmedAtUtc: data.confirmedAtUtc.present
+          ? data.confirmedAtUtc.value
+          : this.confirmedAtUtc,
       updatedAtUtc: data.updatedAtUtc.present
           ? data.updatedAtUtc.value
           : this.updatedAtUtc,
@@ -6079,6 +8709,13 @@ class PhotoAlignmentRecord extends DataClass
           ..write('cornersJson: $cornersJson, ')
           ..write('matrixJson: $matrixJson, ')
           ..write('algorithmVersion: $algorithmVersion, ')
+          ..write('rotationQuarterTurns: $rotationQuarterTurns, ')
+          ..write('alignmentMode: $alignmentMode, ')
+          ..write('anchorsJson: $anchorsJson, ')
+          ..write('reprojectionRmsMm: $reprojectionRmsMm, ')
+          ..write('reprojectionMaxMm: $reprojectionMaxMm, ')
+          ..write('planarityStatus: $planarityStatus, ')
+          ..write('confirmedAtUtc: $confirmedAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc')
           ..write(')'))
         .toString();
@@ -6090,6 +8727,13 @@ class PhotoAlignmentRecord extends DataClass
     cornersJson,
     matrixJson,
     algorithmVersion,
+    rotationQuarterTurns,
+    alignmentMode,
+    anchorsJson,
+    reprojectionRmsMm,
+    reprojectionMaxMm,
+    planarityStatus,
+    confirmedAtUtc,
     updatedAtUtc,
   );
   @override
@@ -6100,6 +8744,13 @@ class PhotoAlignmentRecord extends DataClass
           other.cornersJson == this.cornersJson &&
           other.matrixJson == this.matrixJson &&
           other.algorithmVersion == this.algorithmVersion &&
+          other.rotationQuarterTurns == this.rotationQuarterTurns &&
+          other.alignmentMode == this.alignmentMode &&
+          other.anchorsJson == this.anchorsJson &&
+          other.reprojectionRmsMm == this.reprojectionRmsMm &&
+          other.reprojectionMaxMm == this.reprojectionMaxMm &&
+          other.planarityStatus == this.planarityStatus &&
+          other.confirmedAtUtc == this.confirmedAtUtc &&
           other.updatedAtUtc == this.updatedAtUtc);
 }
 
@@ -6108,6 +8759,13 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
   final Value<String> cornersJson;
   final Value<String> matrixJson;
   final Value<String> algorithmVersion;
+  final Value<int> rotationQuarterTurns;
+  final Value<String> alignmentMode;
+  final Value<String?> anchorsJson;
+  final Value<double?> reprojectionRmsMm;
+  final Value<double?> reprojectionMaxMm;
+  final Value<String> planarityStatus;
+  final Value<DateTime?> confirmedAtUtc;
   final Value<DateTime> updatedAtUtc;
   final Value<int> rowid;
   const PhotoAlignmentsCompanion({
@@ -6115,6 +8773,13 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
     this.cornersJson = const Value.absent(),
     this.matrixJson = const Value.absent(),
     this.algorithmVersion = const Value.absent(),
+    this.rotationQuarterTurns = const Value.absent(),
+    this.alignmentMode = const Value.absent(),
+    this.anchorsJson = const Value.absent(),
+    this.reprojectionRmsMm = const Value.absent(),
+    this.reprojectionMaxMm = const Value.absent(),
+    this.planarityStatus = const Value.absent(),
+    this.confirmedAtUtc = const Value.absent(),
     this.updatedAtUtc = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -6123,6 +8788,13 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
     required String cornersJson,
     required String matrixJson,
     required String algorithmVersion,
+    this.rotationQuarterTurns = const Value.absent(),
+    this.alignmentMode = const Value.absent(),
+    this.anchorsJson = const Value.absent(),
+    this.reprojectionRmsMm = const Value.absent(),
+    this.reprojectionMaxMm = const Value.absent(),
+    this.planarityStatus = const Value.absent(),
+    this.confirmedAtUtc = const Value.absent(),
     required DateTime updatedAtUtc,
     this.rowid = const Value.absent(),
   }) : imageId = Value(imageId),
@@ -6135,6 +8807,13 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
     Expression<String>? cornersJson,
     Expression<String>? matrixJson,
     Expression<String>? algorithmVersion,
+    Expression<int>? rotationQuarterTurns,
+    Expression<String>? alignmentMode,
+    Expression<String>? anchorsJson,
+    Expression<double>? reprojectionRmsMm,
+    Expression<double>? reprojectionMaxMm,
+    Expression<String>? planarityStatus,
+    Expression<DateTime>? confirmedAtUtc,
     Expression<DateTime>? updatedAtUtc,
     Expression<int>? rowid,
   }) {
@@ -6143,6 +8822,14 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
       if (cornersJson != null) 'corners_json': cornersJson,
       if (matrixJson != null) 'matrix_json': matrixJson,
       if (algorithmVersion != null) 'algorithm_version': algorithmVersion,
+      if (rotationQuarterTurns != null)
+        'rotation_quarter_turns': rotationQuarterTurns,
+      if (alignmentMode != null) 'alignment_mode': alignmentMode,
+      if (anchorsJson != null) 'anchors_json': anchorsJson,
+      if (reprojectionRmsMm != null) 'reprojection_rms_mm': reprojectionRmsMm,
+      if (reprojectionMaxMm != null) 'reprojection_max_mm': reprojectionMaxMm,
+      if (planarityStatus != null) 'planarity_status': planarityStatus,
+      if (confirmedAtUtc != null) 'confirmed_at_utc': confirmedAtUtc,
       if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
       if (rowid != null) 'rowid': rowid,
     });
@@ -6153,6 +8840,13 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
     Value<String>? cornersJson,
     Value<String>? matrixJson,
     Value<String>? algorithmVersion,
+    Value<int>? rotationQuarterTurns,
+    Value<String>? alignmentMode,
+    Value<String?>? anchorsJson,
+    Value<double?>? reprojectionRmsMm,
+    Value<double?>? reprojectionMaxMm,
+    Value<String>? planarityStatus,
+    Value<DateTime?>? confirmedAtUtc,
     Value<DateTime>? updatedAtUtc,
     Value<int>? rowid,
   }) {
@@ -6161,6 +8855,13 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
       cornersJson: cornersJson ?? this.cornersJson,
       matrixJson: matrixJson ?? this.matrixJson,
       algorithmVersion: algorithmVersion ?? this.algorithmVersion,
+      rotationQuarterTurns: rotationQuarterTurns ?? this.rotationQuarterTurns,
+      alignmentMode: alignmentMode ?? this.alignmentMode,
+      anchorsJson: anchorsJson ?? this.anchorsJson,
+      reprojectionRmsMm: reprojectionRmsMm ?? this.reprojectionRmsMm,
+      reprojectionMaxMm: reprojectionMaxMm ?? this.reprojectionMaxMm,
+      planarityStatus: planarityStatus ?? this.planarityStatus,
+      confirmedAtUtc: confirmedAtUtc ?? this.confirmedAtUtc,
       updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
       rowid: rowid ?? this.rowid,
     );
@@ -6181,6 +8882,27 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
     if (algorithmVersion.present) {
       map['algorithm_version'] = Variable<String>(algorithmVersion.value);
     }
+    if (rotationQuarterTurns.present) {
+      map['rotation_quarter_turns'] = Variable<int>(rotationQuarterTurns.value);
+    }
+    if (alignmentMode.present) {
+      map['alignment_mode'] = Variable<String>(alignmentMode.value);
+    }
+    if (anchorsJson.present) {
+      map['anchors_json'] = Variable<String>(anchorsJson.value);
+    }
+    if (reprojectionRmsMm.present) {
+      map['reprojection_rms_mm'] = Variable<double>(reprojectionRmsMm.value);
+    }
+    if (reprojectionMaxMm.present) {
+      map['reprojection_max_mm'] = Variable<double>(reprojectionMaxMm.value);
+    }
+    if (planarityStatus.present) {
+      map['planarity_status'] = Variable<String>(planarityStatus.value);
+    }
+    if (confirmedAtUtc.present) {
+      map['confirmed_at_utc'] = Variable<DateTime>(confirmedAtUtc.value);
+    }
     if (updatedAtUtc.present) {
       map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
     }
@@ -6197,6 +8919,13 @@ class PhotoAlignmentsCompanion extends UpdateCompanion<PhotoAlignmentRecord> {
           ..write('cornersJson: $cornersJson, ')
           ..write('matrixJson: $matrixJson, ')
           ..write('algorithmVersion: $algorithmVersion, ')
+          ..write('rotationQuarterTurns: $rotationQuarterTurns, ')
+          ..write('alignmentMode: $alignmentMode, ')
+          ..write('anchorsJson: $anchorsJson, ')
+          ..write('reprojectionRmsMm: $reprojectionRmsMm, ')
+          ..write('reprojectionMaxMm: $reprojectionMaxMm, ')
+          ..write('planarityStatus: $planarityStatus, ')
+          ..write('confirmedAtUtc: $confirmedAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -8490,6 +11219,3269 @@ class TargetProfilesCompanion extends UpdateCompanion<TargetProfileRecord> {
   }
 }
 
+class $TrainingActivitiesTable extends TrainingActivities
+    with TableInfo<$TrainingActivitiesTable, TrainingActivityRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrainingActivitiesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _schemaVersionMeta = const VerificationMeta(
+    'schemaVersion',
+  );
+  @override
+  late final GeneratedColumn<int> schemaVersion = GeneratedColumn<int>(
+    'schema_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES training_sessions (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _configurationJsonMeta = const VerificationMeta(
+    'configurationJson',
+  );
+  @override
+  late final GeneratedColumn<String> configurationJson =
+      GeneratedColumn<String>(
+        'configuration_json',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _summaryJsonMeta = const VerificationMeta(
+    'summaryJson',
+  );
+  @override
+  late final GeneratedColumn<String> summaryJson = GeneratedColumn<String>(
+    'summary_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _detectorVersionMeta = const VerificationMeta(
+    'detectorVersion',
+  );
+  @override
+  late final GeneratedColumn<String> detectorVersion = GeneratedColumn<String>(
+    'detector_version',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startedAtUtcMeta = const VerificationMeta(
+    'startedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAtUtc = GeneratedColumn<DateTime>(
+    'started_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localUtcOffsetMinutesMeta =
+      const VerificationMeta('localUtcOffsetMinutes');
+  @override
+  late final GeneratedColumn<int> localUtcOffsetMinutes = GeneratedColumn<int>(
+    'local_utc_offset_minutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _completedAtUtcMeta = const VerificationMeta(
+    'completedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAtUtc =
+      GeneratedColumn<DateTime>(
+        'completed_at_utc',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    kind,
+    schemaVersion,
+    status,
+    sessionId,
+    configurationJson,
+    summaryJson,
+    detectorVersion,
+    startedAtUtc,
+    localUtcOffsetMinutes,
+    completedAtUtc,
+    notes,
+    createdAtUtc,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'training_activities';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TrainingActivityRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('schema_version')) {
+      context.handle(
+        _schemaVersionMeta,
+        schemaVersion.isAcceptableOrUnknown(
+          data['schema_version']!,
+          _schemaVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    }
+    if (data.containsKey('configuration_json')) {
+      context.handle(
+        _configurationJsonMeta,
+        configurationJson.isAcceptableOrUnknown(
+          data['configuration_json']!,
+          _configurationJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_configurationJsonMeta);
+    }
+    if (data.containsKey('summary_json')) {
+      context.handle(
+        _summaryJsonMeta,
+        summaryJson.isAcceptableOrUnknown(
+          data['summary_json']!,
+          _summaryJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_summaryJsonMeta);
+    }
+    if (data.containsKey('detector_version')) {
+      context.handle(
+        _detectorVersionMeta,
+        detectorVersion.isAcceptableOrUnknown(
+          data['detector_version']!,
+          _detectorVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('started_at_utc')) {
+      context.handle(
+        _startedAtUtcMeta,
+        startedAtUtc.isAcceptableOrUnknown(
+          data['started_at_utc']!,
+          _startedAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtUtcMeta);
+    }
+    if (data.containsKey('local_utc_offset_minutes')) {
+      context.handle(
+        _localUtcOffsetMinutesMeta,
+        localUtcOffsetMinutes.isAcceptableOrUnknown(
+          data['local_utc_offset_minutes']!,
+          _localUtcOffsetMinutesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_localUtcOffsetMinutesMeta);
+    }
+    if (data.containsKey('completed_at_utc')) {
+      context.handle(
+        _completedAtUtcMeta,
+        completedAtUtc.isAcceptableOrUnknown(
+          data['completed_at_utc']!,
+          _completedAtUtcMeta,
+        ),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtUtcMeta);
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtUtcMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TrainingActivityRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrainingActivityRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      schemaVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}schema_version'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      ),
+      configurationJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}configuration_json'],
+      )!,
+      summaryJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}summary_json'],
+      )!,
+      detectorVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}detector_version'],
+      ),
+      startedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at_utc'],
+      )!,
+      localUtcOffsetMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}local_utc_offset_minutes'],
+      )!,
+      completedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at_utc'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $TrainingActivitiesTable createAlias(String alias) {
+    return $TrainingActivitiesTable(attachedDatabase, alias);
+  }
+}
+
+class TrainingActivityRecord extends DataClass
+    implements Insertable<TrainingActivityRecord> {
+  final String id;
+  final String kind;
+  final int schemaVersion;
+  final String status;
+  final String? sessionId;
+  final String configurationJson;
+  final String summaryJson;
+  final String? detectorVersion;
+  final DateTime startedAtUtc;
+  final int localUtcOffsetMinutes;
+  final DateTime? completedAtUtc;
+  final String? notes;
+  final DateTime createdAtUtc;
+  final DateTime updatedAtUtc;
+  const TrainingActivityRecord({
+    required this.id,
+    required this.kind,
+    required this.schemaVersion,
+    required this.status,
+    this.sessionId,
+    required this.configurationJson,
+    required this.summaryJson,
+    this.detectorVersion,
+    required this.startedAtUtc,
+    required this.localUtcOffsetMinutes,
+    this.completedAtUtc,
+    this.notes,
+    required this.createdAtUtc,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['kind'] = Variable<String>(kind);
+    map['schema_version'] = Variable<int>(schemaVersion);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || sessionId != null) {
+      map['session_id'] = Variable<String>(sessionId);
+    }
+    map['configuration_json'] = Variable<String>(configurationJson);
+    map['summary_json'] = Variable<String>(summaryJson);
+    if (!nullToAbsent || detectorVersion != null) {
+      map['detector_version'] = Variable<String>(detectorVersion);
+    }
+    map['started_at_utc'] = Variable<DateTime>(startedAtUtc);
+    map['local_utc_offset_minutes'] = Variable<int>(localUtcOffsetMinutes);
+    if (!nullToAbsent || completedAtUtc != null) {
+      map['completed_at_utc'] = Variable<DateTime>(completedAtUtc);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  TrainingActivitiesCompanion toCompanion(bool nullToAbsent) {
+    return TrainingActivitiesCompanion(
+      id: Value(id),
+      kind: Value(kind),
+      schemaVersion: Value(schemaVersion),
+      status: Value(status),
+      sessionId: sessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sessionId),
+      configurationJson: Value(configurationJson),
+      summaryJson: Value(summaryJson),
+      detectorVersion: detectorVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(detectorVersion),
+      startedAtUtc: Value(startedAtUtc),
+      localUtcOffsetMinutes: Value(localUtcOffsetMinutes),
+      completedAtUtc: completedAtUtc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAtUtc),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      createdAtUtc: Value(createdAtUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory TrainingActivityRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrainingActivityRecord(
+      id: serializer.fromJson<String>(json['id']),
+      kind: serializer.fromJson<String>(json['kind']),
+      schemaVersion: serializer.fromJson<int>(json['schemaVersion']),
+      status: serializer.fromJson<String>(json['status']),
+      sessionId: serializer.fromJson<String?>(json['sessionId']),
+      configurationJson: serializer.fromJson<String>(json['configurationJson']),
+      summaryJson: serializer.fromJson<String>(json['summaryJson']),
+      detectorVersion: serializer.fromJson<String?>(json['detectorVersion']),
+      startedAtUtc: serializer.fromJson<DateTime>(json['startedAtUtc']),
+      localUtcOffsetMinutes: serializer.fromJson<int>(
+        json['localUtcOffsetMinutes'],
+      ),
+      completedAtUtc: serializer.fromJson<DateTime?>(json['completedAtUtc']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'kind': serializer.toJson<String>(kind),
+      'schemaVersion': serializer.toJson<int>(schemaVersion),
+      'status': serializer.toJson<String>(status),
+      'sessionId': serializer.toJson<String?>(sessionId),
+      'configurationJson': serializer.toJson<String>(configurationJson),
+      'summaryJson': serializer.toJson<String>(summaryJson),
+      'detectorVersion': serializer.toJson<String?>(detectorVersion),
+      'startedAtUtc': serializer.toJson<DateTime>(startedAtUtc),
+      'localUtcOffsetMinutes': serializer.toJson<int>(localUtcOffsetMinutes),
+      'completedAtUtc': serializer.toJson<DateTime?>(completedAtUtc),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  TrainingActivityRecord copyWith({
+    String? id,
+    String? kind,
+    int? schemaVersion,
+    String? status,
+    Value<String?> sessionId = const Value.absent(),
+    String? configurationJson,
+    String? summaryJson,
+    Value<String?> detectorVersion = const Value.absent(),
+    DateTime? startedAtUtc,
+    int? localUtcOffsetMinutes,
+    Value<DateTime?> completedAtUtc = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+    DateTime? createdAtUtc,
+    DateTime? updatedAtUtc,
+  }) => TrainingActivityRecord(
+    id: id ?? this.id,
+    kind: kind ?? this.kind,
+    schemaVersion: schemaVersion ?? this.schemaVersion,
+    status: status ?? this.status,
+    sessionId: sessionId.present ? sessionId.value : this.sessionId,
+    configurationJson: configurationJson ?? this.configurationJson,
+    summaryJson: summaryJson ?? this.summaryJson,
+    detectorVersion: detectorVersion.present
+        ? detectorVersion.value
+        : this.detectorVersion,
+    startedAtUtc: startedAtUtc ?? this.startedAtUtc,
+    localUtcOffsetMinutes: localUtcOffsetMinutes ?? this.localUtcOffsetMinutes,
+    completedAtUtc: completedAtUtc.present
+        ? completedAtUtc.value
+        : this.completedAtUtc,
+    notes: notes.present ? notes.value : this.notes,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  TrainingActivityRecord copyWithCompanion(TrainingActivitiesCompanion data) {
+    return TrainingActivityRecord(
+      id: data.id.present ? data.id.value : this.id,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      schemaVersion: data.schemaVersion.present
+          ? data.schemaVersion.value
+          : this.schemaVersion,
+      status: data.status.present ? data.status.value : this.status,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      configurationJson: data.configurationJson.present
+          ? data.configurationJson.value
+          : this.configurationJson,
+      summaryJson: data.summaryJson.present
+          ? data.summaryJson.value
+          : this.summaryJson,
+      detectorVersion: data.detectorVersion.present
+          ? data.detectorVersion.value
+          : this.detectorVersion,
+      startedAtUtc: data.startedAtUtc.present
+          ? data.startedAtUtc.value
+          : this.startedAtUtc,
+      localUtcOffsetMinutes: data.localUtcOffsetMinutes.present
+          ? data.localUtcOffsetMinutes.value
+          : this.localUtcOffsetMinutes,
+      completedAtUtc: data.completedAtUtc.present
+          ? data.completedAtUtc.value
+          : this.completedAtUtc,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrainingActivityRecord(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('schemaVersion: $schemaVersion, ')
+          ..write('status: $status, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('configurationJson: $configurationJson, ')
+          ..write('summaryJson: $summaryJson, ')
+          ..write('detectorVersion: $detectorVersion, ')
+          ..write('startedAtUtc: $startedAtUtc, ')
+          ..write('localUtcOffsetMinutes: $localUtcOffsetMinutes, ')
+          ..write('completedAtUtc: $completedAtUtc, ')
+          ..write('notes: $notes, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    kind,
+    schemaVersion,
+    status,
+    sessionId,
+    configurationJson,
+    summaryJson,
+    detectorVersion,
+    startedAtUtc,
+    localUtcOffsetMinutes,
+    completedAtUtc,
+    notes,
+    createdAtUtc,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrainingActivityRecord &&
+          other.id == this.id &&
+          other.kind == this.kind &&
+          other.schemaVersion == this.schemaVersion &&
+          other.status == this.status &&
+          other.sessionId == this.sessionId &&
+          other.configurationJson == this.configurationJson &&
+          other.summaryJson == this.summaryJson &&
+          other.detectorVersion == this.detectorVersion &&
+          other.startedAtUtc == this.startedAtUtc &&
+          other.localUtcOffsetMinutes == this.localUtcOffsetMinutes &&
+          other.completedAtUtc == this.completedAtUtc &&
+          other.notes == this.notes &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class TrainingActivitiesCompanion
+    extends UpdateCompanion<TrainingActivityRecord> {
+  final Value<String> id;
+  final Value<String> kind;
+  final Value<int> schemaVersion;
+  final Value<String> status;
+  final Value<String?> sessionId;
+  final Value<String> configurationJson;
+  final Value<String> summaryJson;
+  final Value<String?> detectorVersion;
+  final Value<DateTime> startedAtUtc;
+  final Value<int> localUtcOffsetMinutes;
+  final Value<DateTime?> completedAtUtc;
+  final Value<String?> notes;
+  final Value<DateTime> createdAtUtc;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const TrainingActivitiesCompanion({
+    this.id = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.schemaVersion = const Value.absent(),
+    this.status = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.configurationJson = const Value.absent(),
+    this.summaryJson = const Value.absent(),
+    this.detectorVersion = const Value.absent(),
+    this.startedAtUtc = const Value.absent(),
+    this.localUtcOffsetMinutes = const Value.absent(),
+    this.completedAtUtc = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TrainingActivitiesCompanion.insert({
+    required String id,
+    required String kind,
+    this.schemaVersion = const Value.absent(),
+    required String status,
+    this.sessionId = const Value.absent(),
+    required String configurationJson,
+    required String summaryJson,
+    this.detectorVersion = const Value.absent(),
+    required DateTime startedAtUtc,
+    required int localUtcOffsetMinutes,
+    this.completedAtUtc = const Value.absent(),
+    this.notes = const Value.absent(),
+    required DateTime createdAtUtc,
+    required DateTime updatedAtUtc,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       kind = Value(kind),
+       status = Value(status),
+       configurationJson = Value(configurationJson),
+       summaryJson = Value(summaryJson),
+       startedAtUtc = Value(startedAtUtc),
+       localUtcOffsetMinutes = Value(localUtcOffsetMinutes),
+       createdAtUtc = Value(createdAtUtc),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<TrainingActivityRecord> custom({
+    Expression<String>? id,
+    Expression<String>? kind,
+    Expression<int>? schemaVersion,
+    Expression<String>? status,
+    Expression<String>? sessionId,
+    Expression<String>? configurationJson,
+    Expression<String>? summaryJson,
+    Expression<String>? detectorVersion,
+    Expression<DateTime>? startedAtUtc,
+    Expression<int>? localUtcOffsetMinutes,
+    Expression<DateTime>? completedAtUtc,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAtUtc,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (kind != null) 'kind': kind,
+      if (schemaVersion != null) 'schema_version': schemaVersion,
+      if (status != null) 'status': status,
+      if (sessionId != null) 'session_id': sessionId,
+      if (configurationJson != null) 'configuration_json': configurationJson,
+      if (summaryJson != null) 'summary_json': summaryJson,
+      if (detectorVersion != null) 'detector_version': detectorVersion,
+      if (startedAtUtc != null) 'started_at_utc': startedAtUtc,
+      if (localUtcOffsetMinutes != null)
+        'local_utc_offset_minutes': localUtcOffsetMinutes,
+      if (completedAtUtc != null) 'completed_at_utc': completedAtUtc,
+      if (notes != null) 'notes': notes,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TrainingActivitiesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? kind,
+    Value<int>? schemaVersion,
+    Value<String>? status,
+    Value<String?>? sessionId,
+    Value<String>? configurationJson,
+    Value<String>? summaryJson,
+    Value<String?>? detectorVersion,
+    Value<DateTime>? startedAtUtc,
+    Value<int>? localUtcOffsetMinutes,
+    Value<DateTime?>? completedAtUtc,
+    Value<String?>? notes,
+    Value<DateTime>? createdAtUtc,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return TrainingActivitiesCompanion(
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      status: status ?? this.status,
+      sessionId: sessionId ?? this.sessionId,
+      configurationJson: configurationJson ?? this.configurationJson,
+      summaryJson: summaryJson ?? this.summaryJson,
+      detectorVersion: detectorVersion ?? this.detectorVersion,
+      startedAtUtc: startedAtUtc ?? this.startedAtUtc,
+      localUtcOffsetMinutes:
+          localUtcOffsetMinutes ?? this.localUtcOffsetMinutes,
+      completedAtUtc: completedAtUtc ?? this.completedAtUtc,
+      notes: notes ?? this.notes,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (schemaVersion.present) {
+      map['schema_version'] = Variable<int>(schemaVersion.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (configurationJson.present) {
+      map['configuration_json'] = Variable<String>(configurationJson.value);
+    }
+    if (summaryJson.present) {
+      map['summary_json'] = Variable<String>(summaryJson.value);
+    }
+    if (detectorVersion.present) {
+      map['detector_version'] = Variable<String>(detectorVersion.value);
+    }
+    if (startedAtUtc.present) {
+      map['started_at_utc'] = Variable<DateTime>(startedAtUtc.value);
+    }
+    if (localUtcOffsetMinutes.present) {
+      map['local_utc_offset_minutes'] = Variable<int>(
+        localUtcOffsetMinutes.value,
+      );
+    }
+    if (completedAtUtc.present) {
+      map['completed_at_utc'] = Variable<DateTime>(completedAtUtc.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrainingActivitiesCompanion(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('schemaVersion: $schemaVersion, ')
+          ..write('status: $status, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('configurationJson: $configurationJson, ')
+          ..write('summaryJson: $summaryJson, ')
+          ..write('detectorVersion: $detectorVersion, ')
+          ..write('startedAtUtc: $startedAtUtc, ')
+          ..write('localUtcOffsetMinutes: $localUtcOffsetMinutes, ')
+          ..write('completedAtUtc: $completedAtUtc, ')
+          ..write('notes: $notes, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TrainingActivitySeriesLinksTable extends TrainingActivitySeriesLinks
+    with
+        TableInfo<
+          $TrainingActivitySeriesLinksTable,
+          TrainingActivitySeriesLinkRecord
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrainingActivitySeriesLinksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _activityIdMeta = const VerificationMeta(
+    'activityId',
+  );
+  @override
+  late final GeneratedColumn<String> activityId = GeneratedColumn<String>(
+    'activity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES training_activities (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _seriesIdMeta = const VerificationMeta(
+    'seriesId',
+  );
+  @override
+  late final GeneratedColumn<String> seriesId = GeneratedColumn<String>(
+    'series_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES shooting_series (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _sequenceNumberMeta = const VerificationMeta(
+    'sequenceNumber',
+  );
+  @override
+  late final GeneratedColumn<int> sequenceNumber = GeneratedColumn<int>(
+    'sequence_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _roleMeta = const VerificationMeta('role');
+  @override
+  late final GeneratedColumn<String> role = GeneratedColumn<String>(
+    'role',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _variantIdMeta = const VerificationMeta(
+    'variantId',
+  );
+  @override
+  late final GeneratedColumn<String> variantId = GeneratedColumn<String>(
+    'variant_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    activityId,
+    seriesId,
+    sequenceNumber,
+    role,
+    variantId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'training_activity_series_links';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TrainingActivitySeriesLinkRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('activity_id')) {
+      context.handle(
+        _activityIdMeta,
+        activityId.isAcceptableOrUnknown(data['activity_id']!, _activityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_activityIdMeta);
+    }
+    if (data.containsKey('series_id')) {
+      context.handle(
+        _seriesIdMeta,
+        seriesId.isAcceptableOrUnknown(data['series_id']!, _seriesIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_seriesIdMeta);
+    }
+    if (data.containsKey('sequence_number')) {
+      context.handle(
+        _sequenceNumberMeta,
+        sequenceNumber.isAcceptableOrUnknown(
+          data['sequence_number']!,
+          _sequenceNumberMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sequenceNumberMeta);
+    }
+    if (data.containsKey('role')) {
+      context.handle(
+        _roleMeta,
+        role.isAcceptableOrUnknown(data['role']!, _roleMeta),
+      );
+    }
+    if (data.containsKey('variant_id')) {
+      context.handle(
+        _variantIdMeta,
+        variantId.isAcceptableOrUnknown(data['variant_id']!, _variantIdMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {activityId, seriesId};
+  @override
+  TrainingActivitySeriesLinkRecord map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrainingActivitySeriesLinkRecord(
+      activityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}activity_id'],
+      )!,
+      seriesId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}series_id'],
+      )!,
+      sequenceNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sequence_number'],
+      )!,
+      role: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}role'],
+      ),
+      variantId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}variant_id'],
+      ),
+    );
+  }
+
+  @override
+  $TrainingActivitySeriesLinksTable createAlias(String alias) {
+    return $TrainingActivitySeriesLinksTable(attachedDatabase, alias);
+  }
+}
+
+class TrainingActivitySeriesLinkRecord extends DataClass
+    implements Insertable<TrainingActivitySeriesLinkRecord> {
+  final String activityId;
+  final String seriesId;
+  final int sequenceNumber;
+  final String? role;
+  final String? variantId;
+  const TrainingActivitySeriesLinkRecord({
+    required this.activityId,
+    required this.seriesId,
+    required this.sequenceNumber,
+    this.role,
+    this.variantId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['activity_id'] = Variable<String>(activityId);
+    map['series_id'] = Variable<String>(seriesId);
+    map['sequence_number'] = Variable<int>(sequenceNumber);
+    if (!nullToAbsent || role != null) {
+      map['role'] = Variable<String>(role);
+    }
+    if (!nullToAbsent || variantId != null) {
+      map['variant_id'] = Variable<String>(variantId);
+    }
+    return map;
+  }
+
+  TrainingActivitySeriesLinksCompanion toCompanion(bool nullToAbsent) {
+    return TrainingActivitySeriesLinksCompanion(
+      activityId: Value(activityId),
+      seriesId: Value(seriesId),
+      sequenceNumber: Value(sequenceNumber),
+      role: role == null && nullToAbsent ? const Value.absent() : Value(role),
+      variantId: variantId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(variantId),
+    );
+  }
+
+  factory TrainingActivitySeriesLinkRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrainingActivitySeriesLinkRecord(
+      activityId: serializer.fromJson<String>(json['activityId']),
+      seriesId: serializer.fromJson<String>(json['seriesId']),
+      sequenceNumber: serializer.fromJson<int>(json['sequenceNumber']),
+      role: serializer.fromJson<String?>(json['role']),
+      variantId: serializer.fromJson<String?>(json['variantId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'activityId': serializer.toJson<String>(activityId),
+      'seriesId': serializer.toJson<String>(seriesId),
+      'sequenceNumber': serializer.toJson<int>(sequenceNumber),
+      'role': serializer.toJson<String?>(role),
+      'variantId': serializer.toJson<String?>(variantId),
+    };
+  }
+
+  TrainingActivitySeriesLinkRecord copyWith({
+    String? activityId,
+    String? seriesId,
+    int? sequenceNumber,
+    Value<String?> role = const Value.absent(),
+    Value<String?> variantId = const Value.absent(),
+  }) => TrainingActivitySeriesLinkRecord(
+    activityId: activityId ?? this.activityId,
+    seriesId: seriesId ?? this.seriesId,
+    sequenceNumber: sequenceNumber ?? this.sequenceNumber,
+    role: role.present ? role.value : this.role,
+    variantId: variantId.present ? variantId.value : this.variantId,
+  );
+  TrainingActivitySeriesLinkRecord copyWithCompanion(
+    TrainingActivitySeriesLinksCompanion data,
+  ) {
+    return TrainingActivitySeriesLinkRecord(
+      activityId: data.activityId.present
+          ? data.activityId.value
+          : this.activityId,
+      seriesId: data.seriesId.present ? data.seriesId.value : this.seriesId,
+      sequenceNumber: data.sequenceNumber.present
+          ? data.sequenceNumber.value
+          : this.sequenceNumber,
+      role: data.role.present ? data.role.value : this.role,
+      variantId: data.variantId.present ? data.variantId.value : this.variantId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrainingActivitySeriesLinkRecord(')
+          ..write('activityId: $activityId, ')
+          ..write('seriesId: $seriesId, ')
+          ..write('sequenceNumber: $sequenceNumber, ')
+          ..write('role: $role, ')
+          ..write('variantId: $variantId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(activityId, seriesId, sequenceNumber, role, variantId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrainingActivitySeriesLinkRecord &&
+          other.activityId == this.activityId &&
+          other.seriesId == this.seriesId &&
+          other.sequenceNumber == this.sequenceNumber &&
+          other.role == this.role &&
+          other.variantId == this.variantId);
+}
+
+class TrainingActivitySeriesLinksCompanion
+    extends UpdateCompanion<TrainingActivitySeriesLinkRecord> {
+  final Value<String> activityId;
+  final Value<String> seriesId;
+  final Value<int> sequenceNumber;
+  final Value<String?> role;
+  final Value<String?> variantId;
+  final Value<int> rowid;
+  const TrainingActivitySeriesLinksCompanion({
+    this.activityId = const Value.absent(),
+    this.seriesId = const Value.absent(),
+    this.sequenceNumber = const Value.absent(),
+    this.role = const Value.absent(),
+    this.variantId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TrainingActivitySeriesLinksCompanion.insert({
+    required String activityId,
+    required String seriesId,
+    required int sequenceNumber,
+    this.role = const Value.absent(),
+    this.variantId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : activityId = Value(activityId),
+       seriesId = Value(seriesId),
+       sequenceNumber = Value(sequenceNumber);
+  static Insertable<TrainingActivitySeriesLinkRecord> custom({
+    Expression<String>? activityId,
+    Expression<String>? seriesId,
+    Expression<int>? sequenceNumber,
+    Expression<String>? role,
+    Expression<String>? variantId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (activityId != null) 'activity_id': activityId,
+      if (seriesId != null) 'series_id': seriesId,
+      if (sequenceNumber != null) 'sequence_number': sequenceNumber,
+      if (role != null) 'role': role,
+      if (variantId != null) 'variant_id': variantId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TrainingActivitySeriesLinksCompanion copyWith({
+    Value<String>? activityId,
+    Value<String>? seriesId,
+    Value<int>? sequenceNumber,
+    Value<String?>? role,
+    Value<String?>? variantId,
+    Value<int>? rowid,
+  }) {
+    return TrainingActivitySeriesLinksCompanion(
+      activityId: activityId ?? this.activityId,
+      seriesId: seriesId ?? this.seriesId,
+      sequenceNumber: sequenceNumber ?? this.sequenceNumber,
+      role: role ?? this.role,
+      variantId: variantId ?? this.variantId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (activityId.present) {
+      map['activity_id'] = Variable<String>(activityId.value);
+    }
+    if (seriesId.present) {
+      map['series_id'] = Variable<String>(seriesId.value);
+    }
+    if (sequenceNumber.present) {
+      map['sequence_number'] = Variable<int>(sequenceNumber.value);
+    }
+    if (role.present) {
+      map['role'] = Variable<String>(role.value);
+    }
+    if (variantId.present) {
+      map['variant_id'] = Variable<String>(variantId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrainingActivitySeriesLinksCompanion(')
+          ..write('activityId: $activityId, ')
+          ..write('seriesId: $seriesId, ')
+          ..write('sequenceNumber: $sequenceNumber, ')
+          ..write('role: $role, ')
+          ..write('variantId: $variantId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ShotTimerEventsTable extends ShotTimerEvents
+    with TableInfo<$ShotTimerEventsTable, ShotTimerEventRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ShotTimerEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _activityIdMeta = const VerificationMeta(
+    'activityId',
+  );
+  @override
+  late final GeneratedColumn<String> activityId = GeneratedColumn<String>(
+    'activity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES training_activities (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _sequenceNumberMeta = const VerificationMeta(
+    'sequenceNumber',
+  );
+  @override
+  late final GeneratedColumn<int> sequenceNumber = GeneratedColumn<int>(
+    'sequence_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _elapsedMicrosecondsMeta =
+      const VerificationMeta('elapsedMicroseconds');
+  @override
+  late final GeneratedColumn<int> elapsedMicroseconds = GeneratedColumn<int>(
+    'elapsed_microseconds',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _splitMicrosecondsMeta = const VerificationMeta(
+    'splitMicroseconds',
+  );
+  @override
+  late final GeneratedColumn<int> splitMicroseconds = GeneratedColumn<int>(
+    'split_microseconds',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dispositionMeta = const VerificationMeta(
+    'disposition',
+  );
+  @override
+  late final GeneratedColumn<String> disposition = GeneratedColumn<String>(
+    'disposition',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _normalizedPeakMeta = const VerificationMeta(
+    'normalizedPeak',
+  );
+  @override
+  late final GeneratedColumn<double> normalizedPeak = GeneratedColumn<double>(
+    'normalized_peak',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _detectionQualityMeta = const VerificationMeta(
+    'detectionQuality',
+  );
+  @override
+  late final GeneratedColumn<String> detectionQuality = GeneratedColumn<String>(
+    'detection_quality',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _exclusionReasonMeta = const VerificationMeta(
+    'exclusionReason',
+  );
+  @override
+  late final GeneratedColumn<String> exclusionReason = GeneratedColumn<String>(
+    'exclusion_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    activityId,
+    sequenceNumber,
+    elapsedMicroseconds,
+    splitMicroseconds,
+    source,
+    disposition,
+    normalizedPeak,
+    detectionQuality,
+    exclusionReason,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'shot_timer_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ShotTimerEventRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('activity_id')) {
+      context.handle(
+        _activityIdMeta,
+        activityId.isAcceptableOrUnknown(data['activity_id']!, _activityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_activityIdMeta);
+    }
+    if (data.containsKey('sequence_number')) {
+      context.handle(
+        _sequenceNumberMeta,
+        sequenceNumber.isAcceptableOrUnknown(
+          data['sequence_number']!,
+          _sequenceNumberMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sequenceNumberMeta);
+    }
+    if (data.containsKey('elapsed_microseconds')) {
+      context.handle(
+        _elapsedMicrosecondsMeta,
+        elapsedMicroseconds.isAcceptableOrUnknown(
+          data['elapsed_microseconds']!,
+          _elapsedMicrosecondsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_elapsedMicrosecondsMeta);
+    }
+    if (data.containsKey('split_microseconds')) {
+      context.handle(
+        _splitMicrosecondsMeta,
+        splitMicroseconds.isAcceptableOrUnknown(
+          data['split_microseconds']!,
+          _splitMicrosecondsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_splitMicrosecondsMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('disposition')) {
+      context.handle(
+        _dispositionMeta,
+        disposition.isAcceptableOrUnknown(
+          data['disposition']!,
+          _dispositionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_dispositionMeta);
+    }
+    if (data.containsKey('normalized_peak')) {
+      context.handle(
+        _normalizedPeakMeta,
+        normalizedPeak.isAcceptableOrUnknown(
+          data['normalized_peak']!,
+          _normalizedPeakMeta,
+        ),
+      );
+    }
+    if (data.containsKey('detection_quality')) {
+      context.handle(
+        _detectionQualityMeta,
+        detectionQuality.isAcceptableOrUnknown(
+          data['detection_quality']!,
+          _detectionQualityMeta,
+        ),
+      );
+    }
+    if (data.containsKey('exclusion_reason')) {
+      context.handle(
+        _exclusionReasonMeta,
+        exclusionReason.isAcceptableOrUnknown(
+          data['exclusion_reason']!,
+          _exclusionReasonMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ShotTimerEventRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ShotTimerEventRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      activityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}activity_id'],
+      )!,
+      sequenceNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sequence_number'],
+      )!,
+      elapsedMicroseconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}elapsed_microseconds'],
+      )!,
+      splitMicroseconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}split_microseconds'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      disposition: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}disposition'],
+      )!,
+      normalizedPeak: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}normalized_peak'],
+      ),
+      detectionQuality: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}detection_quality'],
+      ),
+      exclusionReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exclusion_reason'],
+      ),
+    );
+  }
+
+  @override
+  $ShotTimerEventsTable createAlias(String alias) {
+    return $ShotTimerEventsTable(attachedDatabase, alias);
+  }
+}
+
+class ShotTimerEventRecord extends DataClass
+    implements Insertable<ShotTimerEventRecord> {
+  final String id;
+  final String activityId;
+  final int sequenceNumber;
+  final int elapsedMicroseconds;
+  final int splitMicroseconds;
+  final String source;
+  final String disposition;
+  final double? normalizedPeak;
+  final String? detectionQuality;
+  final String? exclusionReason;
+  const ShotTimerEventRecord({
+    required this.id,
+    required this.activityId,
+    required this.sequenceNumber,
+    required this.elapsedMicroseconds,
+    required this.splitMicroseconds,
+    required this.source,
+    required this.disposition,
+    this.normalizedPeak,
+    this.detectionQuality,
+    this.exclusionReason,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['activity_id'] = Variable<String>(activityId);
+    map['sequence_number'] = Variable<int>(sequenceNumber);
+    map['elapsed_microseconds'] = Variable<int>(elapsedMicroseconds);
+    map['split_microseconds'] = Variable<int>(splitMicroseconds);
+    map['source'] = Variable<String>(source);
+    map['disposition'] = Variable<String>(disposition);
+    if (!nullToAbsent || normalizedPeak != null) {
+      map['normalized_peak'] = Variable<double>(normalizedPeak);
+    }
+    if (!nullToAbsent || detectionQuality != null) {
+      map['detection_quality'] = Variable<String>(detectionQuality);
+    }
+    if (!nullToAbsent || exclusionReason != null) {
+      map['exclusion_reason'] = Variable<String>(exclusionReason);
+    }
+    return map;
+  }
+
+  ShotTimerEventsCompanion toCompanion(bool nullToAbsent) {
+    return ShotTimerEventsCompanion(
+      id: Value(id),
+      activityId: Value(activityId),
+      sequenceNumber: Value(sequenceNumber),
+      elapsedMicroseconds: Value(elapsedMicroseconds),
+      splitMicroseconds: Value(splitMicroseconds),
+      source: Value(source),
+      disposition: Value(disposition),
+      normalizedPeak: normalizedPeak == null && nullToAbsent
+          ? const Value.absent()
+          : Value(normalizedPeak),
+      detectionQuality: detectionQuality == null && nullToAbsent
+          ? const Value.absent()
+          : Value(detectionQuality),
+      exclusionReason: exclusionReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exclusionReason),
+    );
+  }
+
+  factory ShotTimerEventRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ShotTimerEventRecord(
+      id: serializer.fromJson<String>(json['id']),
+      activityId: serializer.fromJson<String>(json['activityId']),
+      sequenceNumber: serializer.fromJson<int>(json['sequenceNumber']),
+      elapsedMicroseconds: serializer.fromJson<int>(
+        json['elapsedMicroseconds'],
+      ),
+      splitMicroseconds: serializer.fromJson<int>(json['splitMicroseconds']),
+      source: serializer.fromJson<String>(json['source']),
+      disposition: serializer.fromJson<String>(json['disposition']),
+      normalizedPeak: serializer.fromJson<double?>(json['normalizedPeak']),
+      detectionQuality: serializer.fromJson<String?>(json['detectionQuality']),
+      exclusionReason: serializer.fromJson<String?>(json['exclusionReason']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'activityId': serializer.toJson<String>(activityId),
+      'sequenceNumber': serializer.toJson<int>(sequenceNumber),
+      'elapsedMicroseconds': serializer.toJson<int>(elapsedMicroseconds),
+      'splitMicroseconds': serializer.toJson<int>(splitMicroseconds),
+      'source': serializer.toJson<String>(source),
+      'disposition': serializer.toJson<String>(disposition),
+      'normalizedPeak': serializer.toJson<double?>(normalizedPeak),
+      'detectionQuality': serializer.toJson<String?>(detectionQuality),
+      'exclusionReason': serializer.toJson<String?>(exclusionReason),
+    };
+  }
+
+  ShotTimerEventRecord copyWith({
+    String? id,
+    String? activityId,
+    int? sequenceNumber,
+    int? elapsedMicroseconds,
+    int? splitMicroseconds,
+    String? source,
+    String? disposition,
+    Value<double?> normalizedPeak = const Value.absent(),
+    Value<String?> detectionQuality = const Value.absent(),
+    Value<String?> exclusionReason = const Value.absent(),
+  }) => ShotTimerEventRecord(
+    id: id ?? this.id,
+    activityId: activityId ?? this.activityId,
+    sequenceNumber: sequenceNumber ?? this.sequenceNumber,
+    elapsedMicroseconds: elapsedMicroseconds ?? this.elapsedMicroseconds,
+    splitMicroseconds: splitMicroseconds ?? this.splitMicroseconds,
+    source: source ?? this.source,
+    disposition: disposition ?? this.disposition,
+    normalizedPeak: normalizedPeak.present
+        ? normalizedPeak.value
+        : this.normalizedPeak,
+    detectionQuality: detectionQuality.present
+        ? detectionQuality.value
+        : this.detectionQuality,
+    exclusionReason: exclusionReason.present
+        ? exclusionReason.value
+        : this.exclusionReason,
+  );
+  ShotTimerEventRecord copyWithCompanion(ShotTimerEventsCompanion data) {
+    return ShotTimerEventRecord(
+      id: data.id.present ? data.id.value : this.id,
+      activityId: data.activityId.present
+          ? data.activityId.value
+          : this.activityId,
+      sequenceNumber: data.sequenceNumber.present
+          ? data.sequenceNumber.value
+          : this.sequenceNumber,
+      elapsedMicroseconds: data.elapsedMicroseconds.present
+          ? data.elapsedMicroseconds.value
+          : this.elapsedMicroseconds,
+      splitMicroseconds: data.splitMicroseconds.present
+          ? data.splitMicroseconds.value
+          : this.splitMicroseconds,
+      source: data.source.present ? data.source.value : this.source,
+      disposition: data.disposition.present
+          ? data.disposition.value
+          : this.disposition,
+      normalizedPeak: data.normalizedPeak.present
+          ? data.normalizedPeak.value
+          : this.normalizedPeak,
+      detectionQuality: data.detectionQuality.present
+          ? data.detectionQuality.value
+          : this.detectionQuality,
+      exclusionReason: data.exclusionReason.present
+          ? data.exclusionReason.value
+          : this.exclusionReason,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShotTimerEventRecord(')
+          ..write('id: $id, ')
+          ..write('activityId: $activityId, ')
+          ..write('sequenceNumber: $sequenceNumber, ')
+          ..write('elapsedMicroseconds: $elapsedMicroseconds, ')
+          ..write('splitMicroseconds: $splitMicroseconds, ')
+          ..write('source: $source, ')
+          ..write('disposition: $disposition, ')
+          ..write('normalizedPeak: $normalizedPeak, ')
+          ..write('detectionQuality: $detectionQuality, ')
+          ..write('exclusionReason: $exclusionReason')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    activityId,
+    sequenceNumber,
+    elapsedMicroseconds,
+    splitMicroseconds,
+    source,
+    disposition,
+    normalizedPeak,
+    detectionQuality,
+    exclusionReason,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ShotTimerEventRecord &&
+          other.id == this.id &&
+          other.activityId == this.activityId &&
+          other.sequenceNumber == this.sequenceNumber &&
+          other.elapsedMicroseconds == this.elapsedMicroseconds &&
+          other.splitMicroseconds == this.splitMicroseconds &&
+          other.source == this.source &&
+          other.disposition == this.disposition &&
+          other.normalizedPeak == this.normalizedPeak &&
+          other.detectionQuality == this.detectionQuality &&
+          other.exclusionReason == this.exclusionReason);
+}
+
+class ShotTimerEventsCompanion extends UpdateCompanion<ShotTimerEventRecord> {
+  final Value<String> id;
+  final Value<String> activityId;
+  final Value<int> sequenceNumber;
+  final Value<int> elapsedMicroseconds;
+  final Value<int> splitMicroseconds;
+  final Value<String> source;
+  final Value<String> disposition;
+  final Value<double?> normalizedPeak;
+  final Value<String?> detectionQuality;
+  final Value<String?> exclusionReason;
+  final Value<int> rowid;
+  const ShotTimerEventsCompanion({
+    this.id = const Value.absent(),
+    this.activityId = const Value.absent(),
+    this.sequenceNumber = const Value.absent(),
+    this.elapsedMicroseconds = const Value.absent(),
+    this.splitMicroseconds = const Value.absent(),
+    this.source = const Value.absent(),
+    this.disposition = const Value.absent(),
+    this.normalizedPeak = const Value.absent(),
+    this.detectionQuality = const Value.absent(),
+    this.exclusionReason = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ShotTimerEventsCompanion.insert({
+    required String id,
+    required String activityId,
+    required int sequenceNumber,
+    required int elapsedMicroseconds,
+    required int splitMicroseconds,
+    required String source,
+    required String disposition,
+    this.normalizedPeak = const Value.absent(),
+    this.detectionQuality = const Value.absent(),
+    this.exclusionReason = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       activityId = Value(activityId),
+       sequenceNumber = Value(sequenceNumber),
+       elapsedMicroseconds = Value(elapsedMicroseconds),
+       splitMicroseconds = Value(splitMicroseconds),
+       source = Value(source),
+       disposition = Value(disposition);
+  static Insertable<ShotTimerEventRecord> custom({
+    Expression<String>? id,
+    Expression<String>? activityId,
+    Expression<int>? sequenceNumber,
+    Expression<int>? elapsedMicroseconds,
+    Expression<int>? splitMicroseconds,
+    Expression<String>? source,
+    Expression<String>? disposition,
+    Expression<double>? normalizedPeak,
+    Expression<String>? detectionQuality,
+    Expression<String>? exclusionReason,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (activityId != null) 'activity_id': activityId,
+      if (sequenceNumber != null) 'sequence_number': sequenceNumber,
+      if (elapsedMicroseconds != null)
+        'elapsed_microseconds': elapsedMicroseconds,
+      if (splitMicroseconds != null) 'split_microseconds': splitMicroseconds,
+      if (source != null) 'source': source,
+      if (disposition != null) 'disposition': disposition,
+      if (normalizedPeak != null) 'normalized_peak': normalizedPeak,
+      if (detectionQuality != null) 'detection_quality': detectionQuality,
+      if (exclusionReason != null) 'exclusion_reason': exclusionReason,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ShotTimerEventsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? activityId,
+    Value<int>? sequenceNumber,
+    Value<int>? elapsedMicroseconds,
+    Value<int>? splitMicroseconds,
+    Value<String>? source,
+    Value<String>? disposition,
+    Value<double?>? normalizedPeak,
+    Value<String?>? detectionQuality,
+    Value<String?>? exclusionReason,
+    Value<int>? rowid,
+  }) {
+    return ShotTimerEventsCompanion(
+      id: id ?? this.id,
+      activityId: activityId ?? this.activityId,
+      sequenceNumber: sequenceNumber ?? this.sequenceNumber,
+      elapsedMicroseconds: elapsedMicroseconds ?? this.elapsedMicroseconds,
+      splitMicroseconds: splitMicroseconds ?? this.splitMicroseconds,
+      source: source ?? this.source,
+      disposition: disposition ?? this.disposition,
+      normalizedPeak: normalizedPeak ?? this.normalizedPeak,
+      detectionQuality: detectionQuality ?? this.detectionQuality,
+      exclusionReason: exclusionReason ?? this.exclusionReason,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (activityId.present) {
+      map['activity_id'] = Variable<String>(activityId.value);
+    }
+    if (sequenceNumber.present) {
+      map['sequence_number'] = Variable<int>(sequenceNumber.value);
+    }
+    if (elapsedMicroseconds.present) {
+      map['elapsed_microseconds'] = Variable<int>(elapsedMicroseconds.value);
+    }
+    if (splitMicroseconds.present) {
+      map['split_microseconds'] = Variable<int>(splitMicroseconds.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (disposition.present) {
+      map['disposition'] = Variable<String>(disposition.value);
+    }
+    if (normalizedPeak.present) {
+      map['normalized_peak'] = Variable<double>(normalizedPeak.value);
+    }
+    if (detectionQuality.present) {
+      map['detection_quality'] = Variable<String>(detectionQuality.value);
+    }
+    if (exclusionReason.present) {
+      map['exclusion_reason'] = Variable<String>(exclusionReason.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShotTimerEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('activityId: $activityId, ')
+          ..write('sequenceNumber: $sequenceNumber, ')
+          ..write('elapsedMicroseconds: $elapsedMicroseconds, ')
+          ..write('splitMicroseconds: $splitMicroseconds, ')
+          ..write('source: $source, ')
+          ..write('disposition: $disposition, ')
+          ..write('normalizedPeak: $normalizedPeak, ')
+          ..write('detectionQuality: $detectionQuality, ')
+          ..write('exclusionReason: $exclusionReason, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TimerPresetsTable extends TimerPresets
+    with TableInfo<$TimerPresetsTable, TimerPresetRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TimerPresetsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
+  @override
+  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
+    'mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _configurationJsonMeta = const VerificationMeta(
+    'configurationJson',
+  );
+  @override
+  late final GeneratedColumn<String> configurationJson =
+      GeneratedColumn<String>(
+        'configuration_json',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _builtInMeta = const VerificationMeta(
+    'builtIn',
+  );
+  @override
+  late final GeneratedColumn<bool> builtIn = GeneratedColumn<bool>(
+    'built_in',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("built_in" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _archivedMeta = const VerificationMeta(
+    'archived',
+  );
+  @override
+  late final GeneratedColumn<bool> archived = GeneratedColumn<bool>(
+    'archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    mode,
+    configurationJson,
+    builtIn,
+    archived,
+    createdAtUtc,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'timer_presets';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TimerPresetRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('mode')) {
+      context.handle(
+        _modeMeta,
+        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modeMeta);
+    }
+    if (data.containsKey('configuration_json')) {
+      context.handle(
+        _configurationJsonMeta,
+        configurationJson.isAcceptableOrUnknown(
+          data['configuration_json']!,
+          _configurationJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_configurationJsonMeta);
+    }
+    if (data.containsKey('built_in')) {
+      context.handle(
+        _builtInMeta,
+        builtIn.isAcceptableOrUnknown(data['built_in']!, _builtInMeta),
+      );
+    }
+    if (data.containsKey('archived')) {
+      context.handle(
+        _archivedMeta,
+        archived.isAcceptableOrUnknown(data['archived']!, _archivedMeta),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtUtcMeta);
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtUtcMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TimerPresetRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TimerPresetRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      mode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mode'],
+      )!,
+      configurationJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}configuration_json'],
+      )!,
+      builtIn: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}built_in'],
+      )!,
+      archived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}archived'],
+      )!,
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $TimerPresetsTable createAlias(String alias) {
+    return $TimerPresetsTable(attachedDatabase, alias);
+  }
+}
+
+class TimerPresetRecord extends DataClass
+    implements Insertable<TimerPresetRecord> {
+  final String id;
+  final String name;
+  final String mode;
+  final String configurationJson;
+  final bool builtIn;
+  final bool archived;
+  final DateTime createdAtUtc;
+  final DateTime updatedAtUtc;
+  const TimerPresetRecord({
+    required this.id,
+    required this.name,
+    required this.mode,
+    required this.configurationJson,
+    required this.builtIn,
+    required this.archived,
+    required this.createdAtUtc,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['mode'] = Variable<String>(mode);
+    map['configuration_json'] = Variable<String>(configurationJson);
+    map['built_in'] = Variable<bool>(builtIn);
+    map['archived'] = Variable<bool>(archived);
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  TimerPresetsCompanion toCompanion(bool nullToAbsent) {
+    return TimerPresetsCompanion(
+      id: Value(id),
+      name: Value(name),
+      mode: Value(mode),
+      configurationJson: Value(configurationJson),
+      builtIn: Value(builtIn),
+      archived: Value(archived),
+      createdAtUtc: Value(createdAtUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory TimerPresetRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TimerPresetRecord(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      mode: serializer.fromJson<String>(json['mode']),
+      configurationJson: serializer.fromJson<String>(json['configurationJson']),
+      builtIn: serializer.fromJson<bool>(json['builtIn']),
+      archived: serializer.fromJson<bool>(json['archived']),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'mode': serializer.toJson<String>(mode),
+      'configurationJson': serializer.toJson<String>(configurationJson),
+      'builtIn': serializer.toJson<bool>(builtIn),
+      'archived': serializer.toJson<bool>(archived),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  TimerPresetRecord copyWith({
+    String? id,
+    String? name,
+    String? mode,
+    String? configurationJson,
+    bool? builtIn,
+    bool? archived,
+    DateTime? createdAtUtc,
+    DateTime? updatedAtUtc,
+  }) => TimerPresetRecord(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    mode: mode ?? this.mode,
+    configurationJson: configurationJson ?? this.configurationJson,
+    builtIn: builtIn ?? this.builtIn,
+    archived: archived ?? this.archived,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  TimerPresetRecord copyWithCompanion(TimerPresetsCompanion data) {
+    return TimerPresetRecord(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      mode: data.mode.present ? data.mode.value : this.mode,
+      configurationJson: data.configurationJson.present
+          ? data.configurationJson.value
+          : this.configurationJson,
+      builtIn: data.builtIn.present ? data.builtIn.value : this.builtIn,
+      archived: data.archived.present ? data.archived.value : this.archived,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TimerPresetRecord(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('mode: $mode, ')
+          ..write('configurationJson: $configurationJson, ')
+          ..write('builtIn: $builtIn, ')
+          ..write('archived: $archived, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    mode,
+    configurationJson,
+    builtIn,
+    archived,
+    createdAtUtc,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TimerPresetRecord &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.mode == this.mode &&
+          other.configurationJson == this.configurationJson &&
+          other.builtIn == this.builtIn &&
+          other.archived == this.archived &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class TimerPresetsCompanion extends UpdateCompanion<TimerPresetRecord> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> mode;
+  final Value<String> configurationJson;
+  final Value<bool> builtIn;
+  final Value<bool> archived;
+  final Value<DateTime> createdAtUtc;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const TimerPresetsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.mode = const Value.absent(),
+    this.configurationJson = const Value.absent(),
+    this.builtIn = const Value.absent(),
+    this.archived = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TimerPresetsCompanion.insert({
+    required String id,
+    required String name,
+    required String mode,
+    required String configurationJson,
+    this.builtIn = const Value.absent(),
+    this.archived = const Value.absent(),
+    required DateTime createdAtUtc,
+    required DateTime updatedAtUtc,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       mode = Value(mode),
+       configurationJson = Value(configurationJson),
+       createdAtUtc = Value(createdAtUtc),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<TimerPresetRecord> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? mode,
+    Expression<String>? configurationJson,
+    Expression<bool>? builtIn,
+    Expression<bool>? archived,
+    Expression<DateTime>? createdAtUtc,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (mode != null) 'mode': mode,
+      if (configurationJson != null) 'configuration_json': configurationJson,
+      if (builtIn != null) 'built_in': builtIn,
+      if (archived != null) 'archived': archived,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TimerPresetsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? mode,
+    Value<String>? configurationJson,
+    Value<bool>? builtIn,
+    Value<bool>? archived,
+    Value<DateTime>? createdAtUtc,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return TimerPresetsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      mode: mode ?? this.mode,
+      configurationJson: configurationJson ?? this.configurationJson,
+      builtIn: builtIn ?? this.builtIn,
+      archived: archived ?? this.archived,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (mode.present) {
+      map['mode'] = Variable<String>(mode.value);
+    }
+    if (configurationJson.present) {
+      map['configuration_json'] = Variable<String>(configurationJson.value);
+    }
+    if (builtIn.present) {
+      map['built_in'] = Variable<bool>(builtIn.value);
+    }
+    if (archived.present) {
+      map['archived'] = Variable<bool>(archived.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TimerPresetsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('mode: $mode, ')
+          ..write('configurationJson: $configurationJson, ')
+          ..write('builtIn: $builtIn, ')
+          ..write('archived: $archived, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AcousticCalibrationProfilesTable extends AcousticCalibrationProfiles
+    with
+        TableInfo<
+          $AcousticCalibrationProfilesTable,
+          AcousticCalibrationProfileRecord
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AcousticCalibrationProfilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _firearmIdMeta = const VerificationMeta(
+    'firearmId',
+  );
+  @override
+  late final GeneratedColumn<String> firearmId = GeneratedColumn<String>(
+    'firearm_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES firearms (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _cartridgeIdMeta = const VerificationMeta(
+    'cartridgeId',
+  );
+  @override
+  late final GeneratedColumn<String> cartridgeId = GeneratedColumn<String>(
+    'cartridge_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES cartridges (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _environmentMeta = const VerificationMeta(
+    'environment',
+  );
+  @override
+  late final GeneratedColumn<String> environment = GeneratedColumn<String>(
+    'environment',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _audioRouteMeta = const VerificationMeta(
+    'audioRoute',
+  );
+  @override
+  late final GeneratedColumn<String> audioRoute = GeneratedColumn<String>(
+    'audio_route',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sampleRateMeta = const VerificationMeta(
+    'sampleRate',
+  );
+  @override
+  late final GeneratedColumn<int> sampleRate = GeneratedColumn<int>(
+    'sample_rate',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sensitivityMeta = const VerificationMeta(
+    'sensitivity',
+  );
+  @override
+  late final GeneratedColumn<double> sensitivity = GeneratedColumn<double>(
+    'sensitivity',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _echoLockoutMicrosecondsMeta =
+      const VerificationMeta('echoLockoutMicroseconds');
+  @override
+  late final GeneratedColumn<int> echoLockoutMicroseconds =
+      GeneratedColumn<int>(
+        'echo_lockout_microseconds',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _beepBlankingMicrosecondsMeta =
+      const VerificationMeta('beepBlankingMicroseconds');
+  @override
+  late final GeneratedColumn<int> beepBlankingMicroseconds =
+      GeneratedColumn<int>(
+        'beep_blanking_microseconds',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _detectorVersionMeta = const VerificationMeta(
+    'detectorVersion',
+  );
+  @override
+  late final GeneratedColumn<String> detectorVersion = GeneratedColumn<String>(
+    'detector_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAtUtc = GeneratedColumn<DateTime>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAtUtc = GeneratedColumn<DateTime>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    firearmId,
+    cartridgeId,
+    environment,
+    audioRoute,
+    sampleRate,
+    sensitivity,
+    echoLockoutMicroseconds,
+    beepBlankingMicroseconds,
+    detectorVersion,
+    createdAtUtc,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'acoustic_calibration_profiles';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AcousticCalibrationProfileRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('firearm_id')) {
+      context.handle(
+        _firearmIdMeta,
+        firearmId.isAcceptableOrUnknown(data['firearm_id']!, _firearmIdMeta),
+      );
+    }
+    if (data.containsKey('cartridge_id')) {
+      context.handle(
+        _cartridgeIdMeta,
+        cartridgeId.isAcceptableOrUnknown(
+          data['cartridge_id']!,
+          _cartridgeIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('environment')) {
+      context.handle(
+        _environmentMeta,
+        environment.isAcceptableOrUnknown(
+          data['environment']!,
+          _environmentMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_environmentMeta);
+    }
+    if (data.containsKey('audio_route')) {
+      context.handle(
+        _audioRouteMeta,
+        audioRoute.isAcceptableOrUnknown(data['audio_route']!, _audioRouteMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_audioRouteMeta);
+    }
+    if (data.containsKey('sample_rate')) {
+      context.handle(
+        _sampleRateMeta,
+        sampleRate.isAcceptableOrUnknown(data['sample_rate']!, _sampleRateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sampleRateMeta);
+    }
+    if (data.containsKey('sensitivity')) {
+      context.handle(
+        _sensitivityMeta,
+        sensitivity.isAcceptableOrUnknown(
+          data['sensitivity']!,
+          _sensitivityMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sensitivityMeta);
+    }
+    if (data.containsKey('echo_lockout_microseconds')) {
+      context.handle(
+        _echoLockoutMicrosecondsMeta,
+        echoLockoutMicroseconds.isAcceptableOrUnknown(
+          data['echo_lockout_microseconds']!,
+          _echoLockoutMicrosecondsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_echoLockoutMicrosecondsMeta);
+    }
+    if (data.containsKey('beep_blanking_microseconds')) {
+      context.handle(
+        _beepBlankingMicrosecondsMeta,
+        beepBlankingMicroseconds.isAcceptableOrUnknown(
+          data['beep_blanking_microseconds']!,
+          _beepBlankingMicrosecondsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_beepBlankingMicrosecondsMeta);
+    }
+    if (data.containsKey('detector_version')) {
+      context.handle(
+        _detectorVersionMeta,
+        detectorVersion.isAcceptableOrUnknown(
+          data['detector_version']!,
+          _detectorVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_detectorVersionMeta);
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtUtcMeta);
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtUtcMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AcousticCalibrationProfileRecord map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AcousticCalibrationProfileRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      firearmId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}firearm_id'],
+      ),
+      cartridgeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cartridge_id'],
+      ),
+      environment: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}environment'],
+      )!,
+      audioRoute: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}audio_route'],
+      )!,
+      sampleRate: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sample_rate'],
+      )!,
+      sensitivity: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}sensitivity'],
+      )!,
+      echoLockoutMicroseconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}echo_lockout_microseconds'],
+      )!,
+      beepBlankingMicroseconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}beep_blanking_microseconds'],
+      )!,
+      detectorVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}detector_version'],
+      )!,
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $AcousticCalibrationProfilesTable createAlias(String alias) {
+    return $AcousticCalibrationProfilesTable(attachedDatabase, alias);
+  }
+}
+
+class AcousticCalibrationProfileRecord extends DataClass
+    implements Insertable<AcousticCalibrationProfileRecord> {
+  final String id;
+  final String name;
+  final String? firearmId;
+  final String? cartridgeId;
+  final String environment;
+  final String audioRoute;
+  final int sampleRate;
+  final double sensitivity;
+  final int echoLockoutMicroseconds;
+  final int beepBlankingMicroseconds;
+  final String detectorVersion;
+  final DateTime createdAtUtc;
+  final DateTime updatedAtUtc;
+  const AcousticCalibrationProfileRecord({
+    required this.id,
+    required this.name,
+    this.firearmId,
+    this.cartridgeId,
+    required this.environment,
+    required this.audioRoute,
+    required this.sampleRate,
+    required this.sensitivity,
+    required this.echoLockoutMicroseconds,
+    required this.beepBlankingMicroseconds,
+    required this.detectorVersion,
+    required this.createdAtUtc,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || firearmId != null) {
+      map['firearm_id'] = Variable<String>(firearmId);
+    }
+    if (!nullToAbsent || cartridgeId != null) {
+      map['cartridge_id'] = Variable<String>(cartridgeId);
+    }
+    map['environment'] = Variable<String>(environment);
+    map['audio_route'] = Variable<String>(audioRoute);
+    map['sample_rate'] = Variable<int>(sampleRate);
+    map['sensitivity'] = Variable<double>(sensitivity);
+    map['echo_lockout_microseconds'] = Variable<int>(echoLockoutMicroseconds);
+    map['beep_blanking_microseconds'] = Variable<int>(beepBlankingMicroseconds);
+    map['detector_version'] = Variable<String>(detectorVersion);
+    map['created_at_utc'] = Variable<DateTime>(createdAtUtc);
+    map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc);
+    return map;
+  }
+
+  AcousticCalibrationProfilesCompanion toCompanion(bool nullToAbsent) {
+    return AcousticCalibrationProfilesCompanion(
+      id: Value(id),
+      name: Value(name),
+      firearmId: firearmId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firearmId),
+      cartridgeId: cartridgeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cartridgeId),
+      environment: Value(environment),
+      audioRoute: Value(audioRoute),
+      sampleRate: Value(sampleRate),
+      sensitivity: Value(sensitivity),
+      echoLockoutMicroseconds: Value(echoLockoutMicroseconds),
+      beepBlankingMicroseconds: Value(beepBlankingMicroseconds),
+      detectorVersion: Value(detectorVersion),
+      createdAtUtc: Value(createdAtUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory AcousticCalibrationProfileRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AcousticCalibrationProfileRecord(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      firearmId: serializer.fromJson<String?>(json['firearmId']),
+      cartridgeId: serializer.fromJson<String?>(json['cartridgeId']),
+      environment: serializer.fromJson<String>(json['environment']),
+      audioRoute: serializer.fromJson<String>(json['audioRoute']),
+      sampleRate: serializer.fromJson<int>(json['sampleRate']),
+      sensitivity: serializer.fromJson<double>(json['sensitivity']),
+      echoLockoutMicroseconds: serializer.fromJson<int>(
+        json['echoLockoutMicroseconds'],
+      ),
+      beepBlankingMicroseconds: serializer.fromJson<int>(
+        json['beepBlankingMicroseconds'],
+      ),
+      detectorVersion: serializer.fromJson<String>(json['detectorVersion']),
+      createdAtUtc: serializer.fromJson<DateTime>(json['createdAtUtc']),
+      updatedAtUtc: serializer.fromJson<DateTime>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'firearmId': serializer.toJson<String?>(firearmId),
+      'cartridgeId': serializer.toJson<String?>(cartridgeId),
+      'environment': serializer.toJson<String>(environment),
+      'audioRoute': serializer.toJson<String>(audioRoute),
+      'sampleRate': serializer.toJson<int>(sampleRate),
+      'sensitivity': serializer.toJson<double>(sensitivity),
+      'echoLockoutMicroseconds': serializer.toJson<int>(
+        echoLockoutMicroseconds,
+      ),
+      'beepBlankingMicroseconds': serializer.toJson<int>(
+        beepBlankingMicroseconds,
+      ),
+      'detectorVersion': serializer.toJson<String>(detectorVersion),
+      'createdAtUtc': serializer.toJson<DateTime>(createdAtUtc),
+      'updatedAtUtc': serializer.toJson<DateTime>(updatedAtUtc),
+    };
+  }
+
+  AcousticCalibrationProfileRecord copyWith({
+    String? id,
+    String? name,
+    Value<String?> firearmId = const Value.absent(),
+    Value<String?> cartridgeId = const Value.absent(),
+    String? environment,
+    String? audioRoute,
+    int? sampleRate,
+    double? sensitivity,
+    int? echoLockoutMicroseconds,
+    int? beepBlankingMicroseconds,
+    String? detectorVersion,
+    DateTime? createdAtUtc,
+    DateTime? updatedAtUtc,
+  }) => AcousticCalibrationProfileRecord(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    firearmId: firearmId.present ? firearmId.value : this.firearmId,
+    cartridgeId: cartridgeId.present ? cartridgeId.value : this.cartridgeId,
+    environment: environment ?? this.environment,
+    audioRoute: audioRoute ?? this.audioRoute,
+    sampleRate: sampleRate ?? this.sampleRate,
+    sensitivity: sensitivity ?? this.sensitivity,
+    echoLockoutMicroseconds:
+        echoLockoutMicroseconds ?? this.echoLockoutMicroseconds,
+    beepBlankingMicroseconds:
+        beepBlankingMicroseconds ?? this.beepBlankingMicroseconds,
+    detectorVersion: detectorVersion ?? this.detectorVersion,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  AcousticCalibrationProfileRecord copyWithCompanion(
+    AcousticCalibrationProfilesCompanion data,
+  ) {
+    return AcousticCalibrationProfileRecord(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      firearmId: data.firearmId.present ? data.firearmId.value : this.firearmId,
+      cartridgeId: data.cartridgeId.present
+          ? data.cartridgeId.value
+          : this.cartridgeId,
+      environment: data.environment.present
+          ? data.environment.value
+          : this.environment,
+      audioRoute: data.audioRoute.present
+          ? data.audioRoute.value
+          : this.audioRoute,
+      sampleRate: data.sampleRate.present
+          ? data.sampleRate.value
+          : this.sampleRate,
+      sensitivity: data.sensitivity.present
+          ? data.sensitivity.value
+          : this.sensitivity,
+      echoLockoutMicroseconds: data.echoLockoutMicroseconds.present
+          ? data.echoLockoutMicroseconds.value
+          : this.echoLockoutMicroseconds,
+      beepBlankingMicroseconds: data.beepBlankingMicroseconds.present
+          ? data.beepBlankingMicroseconds.value
+          : this.beepBlankingMicroseconds,
+      detectorVersion: data.detectorVersion.present
+          ? data.detectorVersion.value
+          : this.detectorVersion,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AcousticCalibrationProfileRecord(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('firearmId: $firearmId, ')
+          ..write('cartridgeId: $cartridgeId, ')
+          ..write('environment: $environment, ')
+          ..write('audioRoute: $audioRoute, ')
+          ..write('sampleRate: $sampleRate, ')
+          ..write('sensitivity: $sensitivity, ')
+          ..write('echoLockoutMicroseconds: $echoLockoutMicroseconds, ')
+          ..write('beepBlankingMicroseconds: $beepBlankingMicroseconds, ')
+          ..write('detectorVersion: $detectorVersion, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    firearmId,
+    cartridgeId,
+    environment,
+    audioRoute,
+    sampleRate,
+    sensitivity,
+    echoLockoutMicroseconds,
+    beepBlankingMicroseconds,
+    detectorVersion,
+    createdAtUtc,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AcousticCalibrationProfileRecord &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.firearmId == this.firearmId &&
+          other.cartridgeId == this.cartridgeId &&
+          other.environment == this.environment &&
+          other.audioRoute == this.audioRoute &&
+          other.sampleRate == this.sampleRate &&
+          other.sensitivity == this.sensitivity &&
+          other.echoLockoutMicroseconds == this.echoLockoutMicroseconds &&
+          other.beepBlankingMicroseconds == this.beepBlankingMicroseconds &&
+          other.detectorVersion == this.detectorVersion &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class AcousticCalibrationProfilesCompanion
+    extends UpdateCompanion<AcousticCalibrationProfileRecord> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String?> firearmId;
+  final Value<String?> cartridgeId;
+  final Value<String> environment;
+  final Value<String> audioRoute;
+  final Value<int> sampleRate;
+  final Value<double> sensitivity;
+  final Value<int> echoLockoutMicroseconds;
+  final Value<int> beepBlankingMicroseconds;
+  final Value<String> detectorVersion;
+  final Value<DateTime> createdAtUtc;
+  final Value<DateTime> updatedAtUtc;
+  final Value<int> rowid;
+  const AcousticCalibrationProfilesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.firearmId = const Value.absent(),
+    this.cartridgeId = const Value.absent(),
+    this.environment = const Value.absent(),
+    this.audioRoute = const Value.absent(),
+    this.sampleRate = const Value.absent(),
+    this.sensitivity = const Value.absent(),
+    this.echoLockoutMicroseconds = const Value.absent(),
+    this.beepBlankingMicroseconds = const Value.absent(),
+    this.detectorVersion = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AcousticCalibrationProfilesCompanion.insert({
+    required String id,
+    required String name,
+    this.firearmId = const Value.absent(),
+    this.cartridgeId = const Value.absent(),
+    required String environment,
+    required String audioRoute,
+    required int sampleRate,
+    required double sensitivity,
+    required int echoLockoutMicroseconds,
+    required int beepBlankingMicroseconds,
+    required String detectorVersion,
+    required DateTime createdAtUtc,
+    required DateTime updatedAtUtc,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       environment = Value(environment),
+       audioRoute = Value(audioRoute),
+       sampleRate = Value(sampleRate),
+       sensitivity = Value(sensitivity),
+       echoLockoutMicroseconds = Value(echoLockoutMicroseconds),
+       beepBlankingMicroseconds = Value(beepBlankingMicroseconds),
+       detectorVersion = Value(detectorVersion),
+       createdAtUtc = Value(createdAtUtc),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<AcousticCalibrationProfileRecord> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? firearmId,
+    Expression<String>? cartridgeId,
+    Expression<String>? environment,
+    Expression<String>? audioRoute,
+    Expression<int>? sampleRate,
+    Expression<double>? sensitivity,
+    Expression<int>? echoLockoutMicroseconds,
+    Expression<int>? beepBlankingMicroseconds,
+    Expression<String>? detectorVersion,
+    Expression<DateTime>? createdAtUtc,
+    Expression<DateTime>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (firearmId != null) 'firearm_id': firearmId,
+      if (cartridgeId != null) 'cartridge_id': cartridgeId,
+      if (environment != null) 'environment': environment,
+      if (audioRoute != null) 'audio_route': audioRoute,
+      if (sampleRate != null) 'sample_rate': sampleRate,
+      if (sensitivity != null) 'sensitivity': sensitivity,
+      if (echoLockoutMicroseconds != null)
+        'echo_lockout_microseconds': echoLockoutMicroseconds,
+      if (beepBlankingMicroseconds != null)
+        'beep_blanking_microseconds': beepBlankingMicroseconds,
+      if (detectorVersion != null) 'detector_version': detectorVersion,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AcousticCalibrationProfilesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String?>? firearmId,
+    Value<String?>? cartridgeId,
+    Value<String>? environment,
+    Value<String>? audioRoute,
+    Value<int>? sampleRate,
+    Value<double>? sensitivity,
+    Value<int>? echoLockoutMicroseconds,
+    Value<int>? beepBlankingMicroseconds,
+    Value<String>? detectorVersion,
+    Value<DateTime>? createdAtUtc,
+    Value<DateTime>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return AcousticCalibrationProfilesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      firearmId: firearmId ?? this.firearmId,
+      cartridgeId: cartridgeId ?? this.cartridgeId,
+      environment: environment ?? this.environment,
+      audioRoute: audioRoute ?? this.audioRoute,
+      sampleRate: sampleRate ?? this.sampleRate,
+      sensitivity: sensitivity ?? this.sensitivity,
+      echoLockoutMicroseconds:
+          echoLockoutMicroseconds ?? this.echoLockoutMicroseconds,
+      beepBlankingMicroseconds:
+          beepBlankingMicroseconds ?? this.beepBlankingMicroseconds,
+      detectorVersion: detectorVersion ?? this.detectorVersion,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (firearmId.present) {
+      map['firearm_id'] = Variable<String>(firearmId.value);
+    }
+    if (cartridgeId.present) {
+      map['cartridge_id'] = Variable<String>(cartridgeId.value);
+    }
+    if (environment.present) {
+      map['environment'] = Variable<String>(environment.value);
+    }
+    if (audioRoute.present) {
+      map['audio_route'] = Variable<String>(audioRoute.value);
+    }
+    if (sampleRate.present) {
+      map['sample_rate'] = Variable<int>(sampleRate.value);
+    }
+    if (sensitivity.present) {
+      map['sensitivity'] = Variable<double>(sensitivity.value);
+    }
+    if (echoLockoutMicroseconds.present) {
+      map['echo_lockout_microseconds'] = Variable<int>(
+        echoLockoutMicroseconds.value,
+      );
+    }
+    if (beepBlankingMicroseconds.present) {
+      map['beep_blanking_microseconds'] = Variable<int>(
+        beepBlankingMicroseconds.value,
+      );
+    }
+    if (detectorVersion.present) {
+      map['detector_version'] = Variable<String>(detectorVersion.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<DateTime>(createdAtUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<DateTime>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AcousticCalibrationProfilesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('firearmId: $firearmId, ')
+          ..write('cartridgeId: $cartridgeId, ')
+          ..write('environment: $environment, ')
+          ..write('audioRoute: $audioRoute, ')
+          ..write('sampleRate: $sampleRate, ')
+          ..write('sensitivity: $sensitivity, ')
+          ..write('echoLockoutMicroseconds: $echoLockoutMicroseconds, ')
+          ..write('beepBlankingMicroseconds: $beepBlankingMicroseconds, ')
+          ..write('detectorVersion: $detectorVersion, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -8502,6 +14494,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $ShootingSeriesTable shootingSeries = $ShootingSeriesTable(this);
   late final $ImageAssetsTable imageAssets = $ImageAssetsTable(this);
+  late final $VisionScanDraftsTable visionScanDrafts = $VisionScanDraftsTable(
+    this,
+  );
+  late final $VisionAnalysesTable visionAnalyses = $VisionAnalysesTable(this);
   late final $ShotImpactsTable shotImpacts = $ShotImpactsTable(this);
   late final $PhotoAlignmentsTable photoAlignments = $PhotoAlignmentsTable(
     this,
@@ -8512,6 +14508,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CoachFeedbackTable coachFeedback = $CoachFeedbackTable(this);
   late final $PreferencesTable preferences = $PreferencesTable(this);
   late final $TargetProfilesTable targetProfiles = $TargetProfilesTable(this);
+  late final $TrainingActivitiesTable trainingActivities =
+      $TrainingActivitiesTable(this);
+  late final $TrainingActivitySeriesLinksTable trainingActivitySeriesLinks =
+      $TrainingActivitySeriesLinksTable(this);
+  late final $ShotTimerEventsTable shotTimerEvents = $ShotTimerEventsTable(
+    this,
+  );
+  late final $TimerPresetsTable timerPresets = $TimerPresetsTable(this);
+  late final $AcousticCalibrationProfilesTable acousticCalibrationProfiles =
+      $AcousticCalibrationProfilesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -8524,6 +14530,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     trainingSessions,
     shootingSeries,
     imageAssets,
+    visionScanDrafts,
+    visionAnalyses,
     shotImpacts,
     photoAlignments,
     goals,
@@ -8531,6 +14539,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     coachFeedback,
     preferences,
     targetProfiles,
+    trainingActivities,
+    trainingActivitySeriesLinks,
+    shotTimerEvents,
+    timerPresets,
+    acousticCalibrationProfiles,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -8560,11 +14573,32 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         'shooting_series',
         limitUpdateKind: UpdateKind.delete,
       ),
+      result: [TableUpdate('vision_analyses', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'image_assets',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('vision_analyses', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'shooting_series',
+        limitUpdateKind: UpdateKind.delete,
+      ),
       result: [TableUpdate('shot_impacts', kind: UpdateKind.delete)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'image_assets',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('shot_impacts', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'vision_analyses',
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('shot_impacts', kind: UpdateKind.update)],
@@ -8582,6 +14616,56 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('series_reflections', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'training_sessions',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('training_activities', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'training_activities',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('training_activity_series_links', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'shooting_series',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('training_activity_series_links', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'training_activities',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('shot_timer_events', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'firearms',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('acoustic_calibration_profiles', kind: UpdateKind.update),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'cartridges',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('acoustic_calibration_profiles', kind: UpdateKind.update),
+      ],
     ),
   ]);
 }
@@ -8647,6 +14731,31 @@ final class $$FirearmsTableReferences
     ).filter((f) => f.firearmId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_goalsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $AcousticCalibrationProfilesTable,
+    List<AcousticCalibrationProfileRecord>
+  >
+  _acousticCalibrationProfilesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.acousticCalibrationProfiles,
+        aliasName: 'firearms__id__acoustic_calibration_profiles__firearm_id',
+      );
+
+  $$AcousticCalibrationProfilesTableProcessedTableManager
+  get acousticCalibrationProfilesRefs {
+    final manager = $$AcousticCalibrationProfilesTableTableManager(
+      $_db,
+      $_db.acousticCalibrationProfiles,
+    ).filter((f) => f.firearmId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _acousticCalibrationProfilesRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -8749,6 +14858,35 @@ class $$FirearmsTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> acousticCalibrationProfilesRefs(
+    Expression<bool> Function(
+      $$AcousticCalibrationProfilesTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$AcousticCalibrationProfilesTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.acousticCalibrationProfiles,
+          getReferencedColumn: (t) => t.firearmId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AcousticCalibrationProfilesTableFilterComposer(
+                $db: $db,
+                $table: $db.acousticCalibrationProfiles,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -8891,6 +15029,35 @@ class $$FirearmsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> acousticCalibrationProfilesRefs<T extends Object>(
+    Expression<T> Function(
+      $$AcousticCalibrationProfilesTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$AcousticCalibrationProfilesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.acousticCalibrationProfiles,
+          getReferencedColumn: (t) => t.firearmId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AcousticCalibrationProfilesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.acousticCalibrationProfiles,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$FirearmsTableTableManager
@@ -8906,7 +15073,11 @@ class $$FirearmsTableTableManager
           $$FirearmsTableUpdateCompanionBuilder,
           (FirearmRecord, $$FirearmsTableReferences),
           FirearmRecord,
-          PrefetchHooks Function({bool shootingSeriesRefs, bool goalsRefs})
+          PrefetchHooks Function({
+            bool shootingSeriesRefs,
+            bool goalsRefs,
+            bool acousticCalibrationProfilesRefs,
+          })
         > {
   $$FirearmsTableTableManager(_$AppDatabase db, $FirearmsTable table)
     : super(
@@ -8972,12 +15143,18 @@ class $$FirearmsTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({shootingSeriesRefs = false, goalsRefs = false}) {
+              ({
+                shootingSeriesRefs = false,
+                goalsRefs = false,
+                acousticCalibrationProfilesRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (shootingSeriesRefs) db.shootingSeries,
                     if (goalsRefs) db.goals,
+                    if (acousticCalibrationProfilesRefs)
+                      db.acousticCalibrationProfiles,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -9024,6 +15201,27 @@ class $$FirearmsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (acousticCalibrationProfilesRefs)
+                        await $_getPrefetchedData<
+                          FirearmRecord,
+                          $FirearmsTable,
+                          AcousticCalibrationProfileRecord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$FirearmsTableReferences
+                              ._acousticCalibrationProfilesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$FirearmsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).acousticCalibrationProfilesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.firearmId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -9044,7 +15242,11 @@ typedef $$FirearmsTableProcessedTableManager =
       $$FirearmsTableUpdateCompanionBuilder,
       (FirearmRecord, $$FirearmsTableReferences),
       FirearmRecord,
-      PrefetchHooks Function({bool shootingSeriesRefs, bool goalsRefs})
+      PrefetchHooks Function({
+        bool shootingSeriesRefs,
+        bool goalsRefs,
+        bool acousticCalibrationProfilesRefs,
+      })
     >;
 typedef $$CartridgesTableCreateCompanionBuilder =
     CartridgesCompanion Function({
@@ -9102,6 +15304,32 @@ final class $$CartridgesTableReferences
     ).filter((f) => f.cartridgeId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_shootingSeriesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $AcousticCalibrationProfilesTable,
+    List<AcousticCalibrationProfileRecord>
+  >
+  _acousticCalibrationProfilesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.acousticCalibrationProfiles,
+        aliasName:
+            'cartridges__id__acoustic_calibration_profiles__cartridge_id',
+      );
+
+  $$AcousticCalibrationProfilesTableProcessedTableManager
+  get acousticCalibrationProfilesRefs {
+    final manager = $$AcousticCalibrationProfilesTableTableManager(
+      $_db,
+      $_db.acousticCalibrationProfiles,
+    ).filter((f) => f.cartridgeId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _acousticCalibrationProfilesRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -9194,6 +15422,35 @@ class $$CartridgesTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> acousticCalibrationProfilesRefs(
+    Expression<bool> Function(
+      $$AcousticCalibrationProfilesTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$AcousticCalibrationProfilesTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.acousticCalibrationProfiles,
+          getReferencedColumn: (t) => t.cartridgeId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AcousticCalibrationProfilesTableFilterComposer(
+                $db: $db,
+                $table: $db.acousticCalibrationProfiles,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -9316,6 +15573,35 @@ class $$CartridgesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> acousticCalibrationProfilesRefs<T extends Object>(
+    Expression<T> Function(
+      $$AcousticCalibrationProfilesTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$AcousticCalibrationProfilesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.acousticCalibrationProfiles,
+          getReferencedColumn: (t) => t.cartridgeId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AcousticCalibrationProfilesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.acousticCalibrationProfiles,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$CartridgesTableTableManager
@@ -9331,7 +15617,11 @@ class $$CartridgesTableTableManager
           $$CartridgesTableUpdateCompanionBuilder,
           (CartridgeRecord, $$CartridgesTableReferences),
           CartridgeRecord,
-          PrefetchHooks Function({bool ammoLotsRefs, bool shootingSeriesRefs})
+          PrefetchHooks Function({
+            bool ammoLotsRefs,
+            bool shootingSeriesRefs,
+            bool acousticCalibrationProfilesRefs,
+          })
         > {
   $$CartridgesTableTableManager(_$AppDatabase db, $CartridgesTable table)
     : super(
@@ -9389,12 +15679,18 @@ class $$CartridgesTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({ammoLotsRefs = false, shootingSeriesRefs = false}) {
+              ({
+                ammoLotsRefs = false,
+                shootingSeriesRefs = false,
+                acousticCalibrationProfilesRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (ammoLotsRefs) db.ammoLots,
                     if (shootingSeriesRefs) db.shootingSeries,
+                    if (acousticCalibrationProfilesRefs)
+                      db.acousticCalibrationProfiles,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -9441,6 +15737,27 @@ class $$CartridgesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (acousticCalibrationProfilesRefs)
+                        await $_getPrefetchedData<
+                          CartridgeRecord,
+                          $CartridgesTable,
+                          AcousticCalibrationProfileRecord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CartridgesTableReferences
+                              ._acousticCalibrationProfilesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CartridgesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).acousticCalibrationProfilesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.cartridgeId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -9461,7 +15778,11 @@ typedef $$CartridgesTableProcessedTableManager =
       $$CartridgesTableUpdateCompanionBuilder,
       (CartridgeRecord, $$CartridgesTableReferences),
       CartridgeRecord,
-      PrefetchHooks Function({bool ammoLotsRefs, bool shootingSeriesRefs})
+      PrefetchHooks Function({
+        bool ammoLotsRefs,
+        bool shootingSeriesRefs,
+        bool acousticCalibrationProfilesRefs,
+      })
     >;
 typedef $$AmmoLotsTableCreateCompanionBuilder =
     AmmoLotsCompanion Function({
@@ -10517,6 +16838,30 @@ final class $$TrainingSessionsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $TrainingActivitiesTable,
+    List<TrainingActivityRecord>
+  >
+  _trainingActivitiesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.trainingActivities,
+        aliasName: 'training_sessions__id__training_activities__session_id',
+      );
+
+  $$TrainingActivitiesTableProcessedTableManager get trainingActivitiesRefs {
+    final manager = $$TrainingActivitiesTableTableManager(
+      $_db,
+      $_db.trainingActivities,
+    ).filter((f) => f.sessionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _trainingActivitiesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$TrainingSessionsTableFilterComposer
@@ -10643,6 +16988,31 @@ class $$TrainingSessionsTableFilterComposer
           }) => $$ImageAssetsTableFilterComposer(
             $db: $db,
             $table: $db.imageAssets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> trainingActivitiesRefs(
+    Expression<bool> Function($$TrainingActivitiesTableFilterComposer f) f,
+  ) {
+    final $$TrainingActivitiesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.trainingActivities,
+      getReferencedColumn: (t) => t.sessionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrainingActivitiesTableFilterComposer(
+            $db: $db,
+            $table: $db.trainingActivities,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -10863,6 +17233,32 @@ class $$TrainingSessionsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> trainingActivitiesRefs<T extends Object>(
+    Expression<T> Function($$TrainingActivitiesTableAnnotationComposer a) f,
+  ) {
+    final $$TrainingActivitiesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.trainingActivities,
+          getReferencedColumn: (t) => t.sessionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$TrainingActivitiesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.trainingActivities,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$TrainingSessionsTableTableManager
@@ -10882,6 +17278,7 @@ class $$TrainingSessionsTableTableManager
             bool rangeId,
             bool shootingSeriesRefs,
             bool imageAssetsRefs,
+            bool trainingActivitiesRefs,
           })
         > {
   $$TrainingSessionsTableTableManager(
@@ -10968,12 +17365,14 @@ class $$TrainingSessionsTableTableManager
                 rangeId = false,
                 shootingSeriesRefs = false,
                 imageAssetsRefs = false,
+                trainingActivitiesRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (shootingSeriesRefs) db.shootingSeries,
                     if (imageAssetsRefs) db.imageAssets,
+                    if (trainingActivitiesRefs) db.trainingActivities,
                   ],
                   addJoins:
                       <
@@ -11053,6 +17452,27 @@ class $$TrainingSessionsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (trainingActivitiesRefs)
+                        await $_getPrefetchedData<
+                          SessionRecord,
+                          $TrainingSessionsTable,
+                          TrainingActivityRecord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TrainingSessionsTableReferences
+                              ._trainingActivitiesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TrainingSessionsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).trainingActivitiesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.sessionId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -11077,6 +17497,7 @@ typedef $$TrainingSessionsTableProcessedTableManager =
         bool rangeId,
         bool shootingSeriesRefs,
         bool imageAssetsRefs,
+        bool trainingActivitiesRefs,
       })
     >;
 typedef $$ShootingSeriesTableCreateCompanionBuilder =
@@ -11229,6 +17650,24 @@ final class $$ShootingSeriesTableReferences
     );
   }
 
+  static MultiTypedResultKey<$VisionAnalysesTable, List<VisionAnalysisRecord>>
+  _visionAnalysesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.visionAnalyses,
+    aliasName: 'shooting_series__id__vision_analyses__series_id',
+  );
+
+  $$VisionAnalysesTableProcessedTableManager get visionAnalysesRefs {
+    final manager = $$VisionAnalysesTableTableManager(
+      $_db,
+      $_db.visionAnalyses,
+    ).filter((f) => f.seriesId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_visionAnalysesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<$ShotImpactsTable, List<ImpactRecord>>
   _shotImpactsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.shotImpacts,
@@ -11265,6 +17704,32 @@ final class $$ShootingSeriesTableReferences
 
     final cache = $_typedResult.readTableOrNull(
       _seriesReflectionsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $TrainingActivitySeriesLinksTable,
+    List<TrainingActivitySeriesLinkRecord>
+  >
+  _trainingActivitySeriesLinksRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.trainingActivitySeriesLinks,
+        aliasName:
+            'shooting_series__id__training_activity_series_links__series_id',
+      );
+
+  $$TrainingActivitySeriesLinksTableProcessedTableManager
+  get trainingActivitySeriesLinksRefs {
+    final manager = $$TrainingActivitySeriesLinksTableTableManager(
+      $_db,
+      $_db.trainingActivitySeriesLinks,
+    ).filter((f) => f.seriesId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _trainingActivitySeriesLinksRefsTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
@@ -11493,6 +17958,31 @@ class $$ShootingSeriesTableFilterComposer
     return f(composer);
   }
 
+  Expression<bool> visionAnalysesRefs(
+    Expression<bool> Function($$VisionAnalysesTableFilterComposer f) f,
+  ) {
+    final $$VisionAnalysesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.visionAnalyses,
+      getReferencedColumn: (t) => t.seriesId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VisionAnalysesTableFilterComposer(
+            $db: $db,
+            $table: $db.visionAnalyses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<bool> shotImpactsRefs(
     Expression<bool> Function($$ShotImpactsTableFilterComposer f) f,
   ) {
@@ -11540,6 +18030,35 @@ class $$ShootingSeriesTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> trainingActivitySeriesLinksRefs(
+    Expression<bool> Function(
+      $$TrainingActivitySeriesLinksTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$TrainingActivitySeriesLinksTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.trainingActivitySeriesLinks,
+          getReferencedColumn: (t) => t.seriesId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$TrainingActivitySeriesLinksTableFilterComposer(
+                $db: $db,
+                $table: $db.trainingActivitySeriesLinks,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -11952,6 +18471,31 @@ class $$ShootingSeriesTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> visionAnalysesRefs<T extends Object>(
+    Expression<T> Function($$VisionAnalysesTableAnnotationComposer a) f,
+  ) {
+    final $$VisionAnalysesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.visionAnalyses,
+      getReferencedColumn: (t) => t.seriesId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VisionAnalysesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.visionAnalyses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> shotImpactsRefs<T extends Object>(
     Expression<T> Function($$ShotImpactsTableAnnotationComposer a) f,
   ) {
@@ -12002,6 +18546,35 @@ class $$ShootingSeriesTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> trainingActivitySeriesLinksRefs<T extends Object>(
+    Expression<T> Function(
+      $$TrainingActivitySeriesLinksTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$TrainingActivitySeriesLinksTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.trainingActivitySeriesLinks,
+          getReferencedColumn: (t) => t.seriesId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$TrainingActivitySeriesLinksTableAnnotationComposer(
+                $db: $db,
+                $table: $db.trainingActivitySeriesLinks,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ShootingSeriesTableTableManager
@@ -12023,8 +18596,10 @@ class $$ShootingSeriesTableTableManager
             bool firearmId,
             bool ammoLotId,
             bool imageAssetsRefs,
+            bool visionAnalysesRefs,
             bool shotImpactsRefs,
             bool seriesReflectionsRefs,
+            bool trainingActivitySeriesLinksRefs,
           })
         > {
   $$ShootingSeriesTableTableManager(
@@ -12159,15 +18734,20 @@ class $$ShootingSeriesTableTableManager
                 firearmId = false,
                 ammoLotId = false,
                 imageAssetsRefs = false,
+                visionAnalysesRefs = false,
                 shotImpactsRefs = false,
                 seriesReflectionsRefs = false,
+                trainingActivitySeriesLinksRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (imageAssetsRefs) db.imageAssets,
+                    if (visionAnalysesRefs) db.visionAnalyses,
                     if (shotImpactsRefs) db.shotImpacts,
                     if (seriesReflectionsRefs) db.seriesReflections,
+                    if (trainingActivitySeriesLinksRefs)
+                      db.trainingActivitySeriesLinks,
                   ],
                   addJoins:
                       <
@@ -12271,6 +18851,27 @@ class $$ShootingSeriesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (visionAnalysesRefs)
+                        await $_getPrefetchedData<
+                          SeriesRecord,
+                          $ShootingSeriesTable,
+                          VisionAnalysisRecord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ShootingSeriesTableReferences
+                              ._visionAnalysesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ShootingSeriesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).visionAnalysesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.seriesId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (shotImpactsRefs)
                         await $_getPrefetchedData<
                           SeriesRecord,
@@ -12313,6 +18914,27 @@ class $$ShootingSeriesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (trainingActivitySeriesLinksRefs)
+                        await $_getPrefetchedData<
+                          SeriesRecord,
+                          $ShootingSeriesTable,
+                          TrainingActivitySeriesLinkRecord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ShootingSeriesTableReferences
+                              ._trainingActivitySeriesLinksRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ShootingSeriesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).trainingActivitySeriesLinksRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.seriesId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -12339,8 +18961,10 @@ typedef $$ShootingSeriesTableProcessedTableManager =
         bool firearmId,
         bool ammoLotId,
         bool imageAssetsRefs,
+        bool visionAnalysesRefs,
         bool shotImpactsRefs,
         bool seriesReflectionsRefs,
+        bool trainingActivitySeriesLinksRefs,
       })
     >;
 typedef $$ImageAssetsTableCreateCompanionBuilder =
@@ -12413,6 +19037,24 @@ final class $$ImageAssetsTableReferences
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$VisionAnalysesTable, List<VisionAnalysisRecord>>
+  _visionAnalysesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.visionAnalyses,
+    aliasName: 'image_assets__id__vision_analyses__image_id',
+  );
+
+  $$VisionAnalysesTableProcessedTableManager get visionAnalysesRefs {
+    final manager = $$VisionAnalysesTableTableManager(
+      $_db,
+      $_db.visionAnalyses,
+    ).filter((f) => f.imageId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_visionAnalysesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
     );
   }
 
@@ -12558,6 +19200,31 @@ class $$ImageAssetsTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> visionAnalysesRefs(
+    Expression<bool> Function($$VisionAnalysesTableFilterComposer f) f,
+  ) {
+    final $$VisionAnalysesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.visionAnalyses,
+      getReferencedColumn: (t) => t.imageId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VisionAnalysesTableFilterComposer(
+            $db: $db,
+            $table: $db.visionAnalyses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 
   Expression<bool> shotImpactsRefs(
@@ -12806,6 +19473,31 @@ class $$ImageAssetsTableAnnotationComposer
     return composer;
   }
 
+  Expression<T> visionAnalysesRefs<T extends Object>(
+    Expression<T> Function($$VisionAnalysesTableAnnotationComposer a) f,
+  ) {
+    final $$VisionAnalysesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.visionAnalyses,
+      getReferencedColumn: (t) => t.imageId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VisionAnalysesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.visionAnalyses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> shotImpactsRefs<T extends Object>(
     Expression<T> Function($$ShotImpactsTableAnnotationComposer a) f,
   ) {
@@ -12873,6 +19565,7 @@ class $$ImageAssetsTableTableManager
           PrefetchHooks Function({
             bool sessionId,
             bool seriesId,
+            bool visionAnalysesRefs,
             bool shotImpactsRefs,
             bool photoAlignmentsRefs,
           })
@@ -12960,12 +19653,14 @@ class $$ImageAssetsTableTableManager
               ({
                 sessionId = false,
                 seriesId = false,
+                visionAnalysesRefs = false,
                 shotImpactsRefs = false,
                 photoAlignmentsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
+                    if (visionAnalysesRefs) db.visionAnalyses,
                     if (shotImpactsRefs) db.shotImpacts,
                     if (photoAlignmentsRefs) db.photoAlignments,
                   ],
@@ -13020,6 +19715,27 @@ class $$ImageAssetsTableTableManager
                       },
                   getPrefetchedDataCallback: (items) async {
                     return [
+                      if (visionAnalysesRefs)
+                        await $_getPrefetchedData<
+                          ImageAssetRecord,
+                          $ImageAssetsTable,
+                          VisionAnalysisRecord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ImageAssetsTableReferences
+                              ._visionAnalysesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ImageAssetsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).visionAnalysesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.imageId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (shotImpactsRefs)
                         await $_getPrefetchedData<
                           ImageAssetRecord,
@@ -13085,8 +19801,1287 @@ typedef $$ImageAssetsTableProcessedTableManager =
       PrefetchHooks Function({
         bool sessionId,
         bool seriesId,
+        bool visionAnalysesRefs,
         bool shotImpactsRefs,
         bool photoAlignmentsRefs,
+      })
+    >;
+typedef $$VisionScanDraftsTableCreateCompanionBuilder =
+    VisionScanDraftsCompanion Function({
+      required String id,
+      required String status,
+      required String originalImagePath,
+      required String sha256,
+      required int width,
+      required int height,
+      required int sizeBytes,
+      required String targetProfileJson,
+      required double projectileDiameterMm,
+      Value<String?> qualityJson,
+      Value<String?> registrationJson,
+      Value<String?> candidatesJson,
+      Value<String?> reviewJson,
+      Value<String?> engineVersion,
+      Value<String?> failureCode,
+      Value<int> rotationQuarterTurns,
+      Value<String> alignmentMode,
+      Value<String?> anchorsJson,
+      Value<double?> reprojectionRmsMm,
+      Value<double?> reprojectionMaxMm,
+      Value<String> planarityStatus,
+      Value<String?> alignmentAlgorithmVersion,
+      Value<DateTime?> alignmentConfirmedAtUtc,
+      required DateTime createdAtUtc,
+      required DateTime updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$VisionScanDraftsTableUpdateCompanionBuilder =
+    VisionScanDraftsCompanion Function({
+      Value<String> id,
+      Value<String> status,
+      Value<String> originalImagePath,
+      Value<String> sha256,
+      Value<int> width,
+      Value<int> height,
+      Value<int> sizeBytes,
+      Value<String> targetProfileJson,
+      Value<double> projectileDiameterMm,
+      Value<String?> qualityJson,
+      Value<String?> registrationJson,
+      Value<String?> candidatesJson,
+      Value<String?> reviewJson,
+      Value<String?> engineVersion,
+      Value<String?> failureCode,
+      Value<int> rotationQuarterTurns,
+      Value<String> alignmentMode,
+      Value<String?> anchorsJson,
+      Value<double?> reprojectionRmsMm,
+      Value<double?> reprojectionMaxMm,
+      Value<String> planarityStatus,
+      Value<String?> alignmentAlgorithmVersion,
+      Value<DateTime?> alignmentConfirmedAtUtc,
+      Value<DateTime> createdAtUtc,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+class $$VisionScanDraftsTableFilterComposer
+    extends Composer<_$AppDatabase, $VisionScanDraftsTable> {
+  $$VisionScanDraftsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get originalImagePath => $composableBuilder(
+    column: $table.originalImagePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sha256 => $composableBuilder(
+    column: $table.sha256,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get width => $composableBuilder(
+    column: $table.width,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get height => $composableBuilder(
+    column: $table.height,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sizeBytes => $composableBuilder(
+    column: $table.sizeBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetProfileJson => $composableBuilder(
+    column: $table.targetProfileJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get projectileDiameterMm => $composableBuilder(
+    column: $table.projectileDiameterMm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get qualityJson => $composableBuilder(
+    column: $table.qualityJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get registrationJson => $composableBuilder(
+    column: $table.registrationJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get candidatesJson => $composableBuilder(
+    column: $table.candidatesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reviewJson => $composableBuilder(
+    column: $table.reviewJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get engineVersion => $composableBuilder(
+    column: $table.engineVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get failureCode => $composableBuilder(
+    column: $table.failureCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rotationQuarterTurns => $composableBuilder(
+    column: $table.rotationQuarterTurns,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get alignmentMode => $composableBuilder(
+    column: $table.alignmentMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get anchorsJson => $composableBuilder(
+    column: $table.anchorsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get reprojectionRmsMm => $composableBuilder(
+    column: $table.reprojectionRmsMm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get reprojectionMaxMm => $composableBuilder(
+    column: $table.reprojectionMaxMm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get planarityStatus => $composableBuilder(
+    column: $table.planarityStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get alignmentAlgorithmVersion => $composableBuilder(
+    column: $table.alignmentAlgorithmVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get alignmentConfirmedAtUtc => $composableBuilder(
+    column: $table.alignmentConfirmedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$VisionScanDraftsTableOrderingComposer
+    extends Composer<_$AppDatabase, $VisionScanDraftsTable> {
+  $$VisionScanDraftsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get originalImagePath => $composableBuilder(
+    column: $table.originalImagePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sha256 => $composableBuilder(
+    column: $table.sha256,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get width => $composableBuilder(
+    column: $table.width,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get height => $composableBuilder(
+    column: $table.height,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sizeBytes => $composableBuilder(
+    column: $table.sizeBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetProfileJson => $composableBuilder(
+    column: $table.targetProfileJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get projectileDiameterMm => $composableBuilder(
+    column: $table.projectileDiameterMm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get qualityJson => $composableBuilder(
+    column: $table.qualityJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get registrationJson => $composableBuilder(
+    column: $table.registrationJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get candidatesJson => $composableBuilder(
+    column: $table.candidatesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reviewJson => $composableBuilder(
+    column: $table.reviewJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get engineVersion => $composableBuilder(
+    column: $table.engineVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get failureCode => $composableBuilder(
+    column: $table.failureCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rotationQuarterTurns => $composableBuilder(
+    column: $table.rotationQuarterTurns,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get alignmentMode => $composableBuilder(
+    column: $table.alignmentMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get anchorsJson => $composableBuilder(
+    column: $table.anchorsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get reprojectionRmsMm => $composableBuilder(
+    column: $table.reprojectionRmsMm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get reprojectionMaxMm => $composableBuilder(
+    column: $table.reprojectionMaxMm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get planarityStatus => $composableBuilder(
+    column: $table.planarityStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get alignmentAlgorithmVersion => $composableBuilder(
+    column: $table.alignmentAlgorithmVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get alignmentConfirmedAtUtc => $composableBuilder(
+    column: $table.alignmentConfirmedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$VisionScanDraftsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VisionScanDraftsTable> {
+  $$VisionScanDraftsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get originalImagePath => $composableBuilder(
+    column: $table.originalImagePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sha256 =>
+      $composableBuilder(column: $table.sha256, builder: (column) => column);
+
+  GeneratedColumn<int> get width =>
+      $composableBuilder(column: $table.width, builder: (column) => column);
+
+  GeneratedColumn<int> get height =>
+      $composableBuilder(column: $table.height, builder: (column) => column);
+
+  GeneratedColumn<int> get sizeBytes =>
+      $composableBuilder(column: $table.sizeBytes, builder: (column) => column);
+
+  GeneratedColumn<String> get targetProfileJson => $composableBuilder(
+    column: $table.targetProfileJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get projectileDiameterMm => $composableBuilder(
+    column: $table.projectileDiameterMm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get qualityJson => $composableBuilder(
+    column: $table.qualityJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get registrationJson => $composableBuilder(
+    column: $table.registrationJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get candidatesJson => $composableBuilder(
+    column: $table.candidatesJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get reviewJson => $composableBuilder(
+    column: $table.reviewJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get engineVersion => $composableBuilder(
+    column: $table.engineVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get failureCode => $composableBuilder(
+    column: $table.failureCode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get rotationQuarterTurns => $composableBuilder(
+    column: $table.rotationQuarterTurns,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get alignmentMode => $composableBuilder(
+    column: $table.alignmentMode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get anchorsJson => $composableBuilder(
+    column: $table.anchorsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get reprojectionRmsMm => $composableBuilder(
+    column: $table.reprojectionRmsMm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get reprojectionMaxMm => $composableBuilder(
+    column: $table.reprojectionMaxMm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get planarityStatus => $composableBuilder(
+    column: $table.planarityStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get alignmentAlgorithmVersion => $composableBuilder(
+    column: $table.alignmentAlgorithmVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get alignmentConfirmedAtUtc => $composableBuilder(
+    column: $table.alignmentConfirmedAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => column,
+  );
+}
+
+class $$VisionScanDraftsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VisionScanDraftsTable,
+          VisionScanDraftRecord,
+          $$VisionScanDraftsTableFilterComposer,
+          $$VisionScanDraftsTableOrderingComposer,
+          $$VisionScanDraftsTableAnnotationComposer,
+          $$VisionScanDraftsTableCreateCompanionBuilder,
+          $$VisionScanDraftsTableUpdateCompanionBuilder,
+          (
+            VisionScanDraftRecord,
+            BaseReferences<
+              _$AppDatabase,
+              $VisionScanDraftsTable,
+              VisionScanDraftRecord
+            >,
+          ),
+          VisionScanDraftRecord,
+          PrefetchHooks Function()
+        > {
+  $$VisionScanDraftsTableTableManager(
+    _$AppDatabase db,
+    $VisionScanDraftsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$VisionScanDraftsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$VisionScanDraftsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$VisionScanDraftsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> originalImagePath = const Value.absent(),
+                Value<String> sha256 = const Value.absent(),
+                Value<int> width = const Value.absent(),
+                Value<int> height = const Value.absent(),
+                Value<int> sizeBytes = const Value.absent(),
+                Value<String> targetProfileJson = const Value.absent(),
+                Value<double> projectileDiameterMm = const Value.absent(),
+                Value<String?> qualityJson = const Value.absent(),
+                Value<String?> registrationJson = const Value.absent(),
+                Value<String?> candidatesJson = const Value.absent(),
+                Value<String?> reviewJson = const Value.absent(),
+                Value<String?> engineVersion = const Value.absent(),
+                Value<String?> failureCode = const Value.absent(),
+                Value<int> rotationQuarterTurns = const Value.absent(),
+                Value<String> alignmentMode = const Value.absent(),
+                Value<String?> anchorsJson = const Value.absent(),
+                Value<double?> reprojectionRmsMm = const Value.absent(),
+                Value<double?> reprojectionMaxMm = const Value.absent(),
+                Value<String> planarityStatus = const Value.absent(),
+                Value<String?> alignmentAlgorithmVersion = const Value.absent(),
+                Value<DateTime?> alignmentConfirmedAtUtc = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VisionScanDraftsCompanion(
+                id: id,
+                status: status,
+                originalImagePath: originalImagePath,
+                sha256: sha256,
+                width: width,
+                height: height,
+                sizeBytes: sizeBytes,
+                targetProfileJson: targetProfileJson,
+                projectileDiameterMm: projectileDiameterMm,
+                qualityJson: qualityJson,
+                registrationJson: registrationJson,
+                candidatesJson: candidatesJson,
+                reviewJson: reviewJson,
+                engineVersion: engineVersion,
+                failureCode: failureCode,
+                rotationQuarterTurns: rotationQuarterTurns,
+                alignmentMode: alignmentMode,
+                anchorsJson: anchorsJson,
+                reprojectionRmsMm: reprojectionRmsMm,
+                reprojectionMaxMm: reprojectionMaxMm,
+                planarityStatus: planarityStatus,
+                alignmentAlgorithmVersion: alignmentAlgorithmVersion,
+                alignmentConfirmedAtUtc: alignmentConfirmedAtUtc,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String status,
+                required String originalImagePath,
+                required String sha256,
+                required int width,
+                required int height,
+                required int sizeBytes,
+                required String targetProfileJson,
+                required double projectileDiameterMm,
+                Value<String?> qualityJson = const Value.absent(),
+                Value<String?> registrationJson = const Value.absent(),
+                Value<String?> candidatesJson = const Value.absent(),
+                Value<String?> reviewJson = const Value.absent(),
+                Value<String?> engineVersion = const Value.absent(),
+                Value<String?> failureCode = const Value.absent(),
+                Value<int> rotationQuarterTurns = const Value.absent(),
+                Value<String> alignmentMode = const Value.absent(),
+                Value<String?> anchorsJson = const Value.absent(),
+                Value<double?> reprojectionRmsMm = const Value.absent(),
+                Value<double?> reprojectionMaxMm = const Value.absent(),
+                Value<String> planarityStatus = const Value.absent(),
+                Value<String?> alignmentAlgorithmVersion = const Value.absent(),
+                Value<DateTime?> alignmentConfirmedAtUtc = const Value.absent(),
+                required DateTime createdAtUtc,
+                required DateTime updatedAtUtc,
+                Value<int> rowid = const Value.absent(),
+              }) => VisionScanDraftsCompanion.insert(
+                id: id,
+                status: status,
+                originalImagePath: originalImagePath,
+                sha256: sha256,
+                width: width,
+                height: height,
+                sizeBytes: sizeBytes,
+                targetProfileJson: targetProfileJson,
+                projectileDiameterMm: projectileDiameterMm,
+                qualityJson: qualityJson,
+                registrationJson: registrationJson,
+                candidatesJson: candidatesJson,
+                reviewJson: reviewJson,
+                engineVersion: engineVersion,
+                failureCode: failureCode,
+                rotationQuarterTurns: rotationQuarterTurns,
+                alignmentMode: alignmentMode,
+                anchorsJson: anchorsJson,
+                reprojectionRmsMm: reprojectionRmsMm,
+                reprojectionMaxMm: reprojectionMaxMm,
+                planarityStatus: planarityStatus,
+                alignmentAlgorithmVersion: alignmentAlgorithmVersion,
+                alignmentConfirmedAtUtc: alignmentConfirmedAtUtc,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$VisionScanDraftsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VisionScanDraftsTable,
+      VisionScanDraftRecord,
+      $$VisionScanDraftsTableFilterComposer,
+      $$VisionScanDraftsTableOrderingComposer,
+      $$VisionScanDraftsTableAnnotationComposer,
+      $$VisionScanDraftsTableCreateCompanionBuilder,
+      $$VisionScanDraftsTableUpdateCompanionBuilder,
+      (
+        VisionScanDraftRecord,
+        BaseReferences<
+          _$AppDatabase,
+          $VisionScanDraftsTable,
+          VisionScanDraftRecord
+        >,
+      ),
+      VisionScanDraftRecord,
+      PrefetchHooks Function()
+    >;
+typedef $$VisionAnalysesTableCreateCompanionBuilder =
+    VisionAnalysesCompanion Function({
+      required String id,
+      required String seriesId,
+      required String imageId,
+      required String engineVersion,
+      required String backendVersion,
+      Value<String?> modelVersion,
+      required String qualityJson,
+      required String registrationJson,
+      required String candidatesJson,
+      required String reviewJson,
+      required DateTime createdAtUtc,
+      Value<int> rowid,
+    });
+typedef $$VisionAnalysesTableUpdateCompanionBuilder =
+    VisionAnalysesCompanion Function({
+      Value<String> id,
+      Value<String> seriesId,
+      Value<String> imageId,
+      Value<String> engineVersion,
+      Value<String> backendVersion,
+      Value<String?> modelVersion,
+      Value<String> qualityJson,
+      Value<String> registrationJson,
+      Value<String> candidatesJson,
+      Value<String> reviewJson,
+      Value<DateTime> createdAtUtc,
+      Value<int> rowid,
+    });
+
+final class $$VisionAnalysesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $VisionAnalysesTable,
+          VisionAnalysisRecord
+        > {
+  $$VisionAnalysesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ShootingSeriesTable _seriesIdTable(_$AppDatabase db) => db
+      .shootingSeries
+      .createAlias('vision_analyses__series_id__shooting_series__id');
+
+  $$ShootingSeriesTableProcessedTableManager get seriesId {
+    final $_column = $_itemColumn<String>('series_id')!;
+
+    final manager = $$ShootingSeriesTableTableManager(
+      $_db,
+      $_db.shootingSeries,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_seriesIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ImageAssetsTable _imageIdTable(_$AppDatabase db) =>
+      db.imageAssets.createAlias('vision_analyses__image_id__image_assets__id');
+
+  $$ImageAssetsTableProcessedTableManager get imageId {
+    final $_column = $_itemColumn<String>('image_id')!;
+
+    final manager = $$ImageAssetsTableTableManager(
+      $_db,
+      $_db.imageAssets,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_imageIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$ShotImpactsTable, List<ImpactRecord>>
+  _shotImpactsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.shotImpacts,
+    aliasName: 'vision_analyses__id__shot_impacts__vision_analysis_id',
+  );
+
+  $$ShotImpactsTableProcessedTableManager get shotImpactsRefs {
+    final manager = $$ShotImpactsTableTableManager($_db, $_db.shotImpacts)
+        .filter(
+          (f) => f.visionAnalysisId.id.sqlEquals($_itemColumn<String>('id')!),
+        );
+
+    final cache = $_typedResult.readTableOrNull(_shotImpactsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$VisionAnalysesTableFilterComposer
+    extends Composer<_$AppDatabase, $VisionAnalysesTable> {
+  $$VisionAnalysesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get engineVersion => $composableBuilder(
+    column: $table.engineVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get backendVersion => $composableBuilder(
+    column: $table.backendVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modelVersion => $composableBuilder(
+    column: $table.modelVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get qualityJson => $composableBuilder(
+    column: $table.qualityJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get registrationJson => $composableBuilder(
+    column: $table.registrationJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get candidatesJson => $composableBuilder(
+    column: $table.candidatesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reviewJson => $composableBuilder(
+    column: $table.reviewJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ShootingSeriesTableFilterComposer get seriesId {
+    final $$ShootingSeriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.shootingSeries,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShootingSeriesTableFilterComposer(
+            $db: $db,
+            $table: $db.shootingSeries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ImageAssetsTableFilterComposer get imageId {
+    final $$ImageAssetsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.imageId,
+      referencedTable: $db.imageAssets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ImageAssetsTableFilterComposer(
+            $db: $db,
+            $table: $db.imageAssets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> shotImpactsRefs(
+    Expression<bool> Function($$ShotImpactsTableFilterComposer f) f,
+  ) {
+    final $$ShotImpactsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.shotImpacts,
+      getReferencedColumn: (t) => t.visionAnalysisId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShotImpactsTableFilterComposer(
+            $db: $db,
+            $table: $db.shotImpacts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$VisionAnalysesTableOrderingComposer
+    extends Composer<_$AppDatabase, $VisionAnalysesTable> {
+  $$VisionAnalysesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get engineVersion => $composableBuilder(
+    column: $table.engineVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get backendVersion => $composableBuilder(
+    column: $table.backendVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modelVersion => $composableBuilder(
+    column: $table.modelVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get qualityJson => $composableBuilder(
+    column: $table.qualityJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get registrationJson => $composableBuilder(
+    column: $table.registrationJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get candidatesJson => $composableBuilder(
+    column: $table.candidatesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reviewJson => $composableBuilder(
+    column: $table.reviewJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ShootingSeriesTableOrderingComposer get seriesId {
+    final $$ShootingSeriesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.shootingSeries,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShootingSeriesTableOrderingComposer(
+            $db: $db,
+            $table: $db.shootingSeries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ImageAssetsTableOrderingComposer get imageId {
+    final $$ImageAssetsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.imageId,
+      referencedTable: $db.imageAssets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ImageAssetsTableOrderingComposer(
+            $db: $db,
+            $table: $db.imageAssets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$VisionAnalysesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VisionAnalysesTable> {
+  $$VisionAnalysesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get engineVersion => $composableBuilder(
+    column: $table.engineVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get backendVersion => $composableBuilder(
+    column: $table.backendVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get modelVersion => $composableBuilder(
+    column: $table.modelVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get qualityJson => $composableBuilder(
+    column: $table.qualityJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get registrationJson => $composableBuilder(
+    column: $table.registrationJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get candidatesJson => $composableBuilder(
+    column: $table.candidatesJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get reviewJson => $composableBuilder(
+    column: $table.reviewJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => column,
+  );
+
+  $$ShootingSeriesTableAnnotationComposer get seriesId {
+    final $$ShootingSeriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.shootingSeries,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShootingSeriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.shootingSeries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ImageAssetsTableAnnotationComposer get imageId {
+    final $$ImageAssetsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.imageId,
+      referencedTable: $db.imageAssets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ImageAssetsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.imageAssets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> shotImpactsRefs<T extends Object>(
+    Expression<T> Function($$ShotImpactsTableAnnotationComposer a) f,
+  ) {
+    final $$ShotImpactsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.shotImpacts,
+      getReferencedColumn: (t) => t.visionAnalysisId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShotImpactsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.shotImpacts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$VisionAnalysesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VisionAnalysesTable,
+          VisionAnalysisRecord,
+          $$VisionAnalysesTableFilterComposer,
+          $$VisionAnalysesTableOrderingComposer,
+          $$VisionAnalysesTableAnnotationComposer,
+          $$VisionAnalysesTableCreateCompanionBuilder,
+          $$VisionAnalysesTableUpdateCompanionBuilder,
+          (VisionAnalysisRecord, $$VisionAnalysesTableReferences),
+          VisionAnalysisRecord,
+          PrefetchHooks Function({
+            bool seriesId,
+            bool imageId,
+            bool shotImpactsRefs,
+          })
+        > {
+  $$VisionAnalysesTableTableManager(
+    _$AppDatabase db,
+    $VisionAnalysesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$VisionAnalysesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$VisionAnalysesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$VisionAnalysesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> seriesId = const Value.absent(),
+                Value<String> imageId = const Value.absent(),
+                Value<String> engineVersion = const Value.absent(),
+                Value<String> backendVersion = const Value.absent(),
+                Value<String?> modelVersion = const Value.absent(),
+                Value<String> qualityJson = const Value.absent(),
+                Value<String> registrationJson = const Value.absent(),
+                Value<String> candidatesJson = const Value.absent(),
+                Value<String> reviewJson = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VisionAnalysesCompanion(
+                id: id,
+                seriesId: seriesId,
+                imageId: imageId,
+                engineVersion: engineVersion,
+                backendVersion: backendVersion,
+                modelVersion: modelVersion,
+                qualityJson: qualityJson,
+                registrationJson: registrationJson,
+                candidatesJson: candidatesJson,
+                reviewJson: reviewJson,
+                createdAtUtc: createdAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String seriesId,
+                required String imageId,
+                required String engineVersion,
+                required String backendVersion,
+                Value<String?> modelVersion = const Value.absent(),
+                required String qualityJson,
+                required String registrationJson,
+                required String candidatesJson,
+                required String reviewJson,
+                required DateTime createdAtUtc,
+                Value<int> rowid = const Value.absent(),
+              }) => VisionAnalysesCompanion.insert(
+                id: id,
+                seriesId: seriesId,
+                imageId: imageId,
+                engineVersion: engineVersion,
+                backendVersion: backendVersion,
+                modelVersion: modelVersion,
+                qualityJson: qualityJson,
+                registrationJson: registrationJson,
+                candidatesJson: candidatesJson,
+                reviewJson: reviewJson,
+                createdAtUtc: createdAtUtc,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$VisionAnalysesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({seriesId = false, imageId = false, shotImpactsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (shotImpactsRefs) db.shotImpacts,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (seriesId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.seriesId,
+                                    referencedTable:
+                                        $$VisionAnalysesTableReferences
+                                            ._seriesIdTable(db),
+                                    referencedColumn:
+                                        $$VisionAnalysesTableReferences
+                                            ._seriesIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (imageId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.imageId,
+                                    referencedTable:
+                                        $$VisionAnalysesTableReferences
+                                            ._imageIdTable(db),
+                                    referencedColumn:
+                                        $$VisionAnalysesTableReferences
+                                            ._imageIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (shotImpactsRefs)
+                        await $_getPrefetchedData<
+                          VisionAnalysisRecord,
+                          $VisionAnalysesTable,
+                          ImpactRecord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$VisionAnalysesTableReferences
+                              ._shotImpactsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$VisionAnalysesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).shotImpactsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.visionAnalysisId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$VisionAnalysesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VisionAnalysesTable,
+      VisionAnalysisRecord,
+      $$VisionAnalysesTableFilterComposer,
+      $$VisionAnalysesTableOrderingComposer,
+      $$VisionAnalysesTableAnnotationComposer,
+      $$VisionAnalysesTableCreateCompanionBuilder,
+      $$VisionAnalysesTableUpdateCompanionBuilder,
+      (VisionAnalysisRecord, $$VisionAnalysesTableReferences),
+      VisionAnalysisRecord,
+      PrefetchHooks Function({
+        bool seriesId,
+        bool imageId,
+        bool shotImpactsRefs,
       })
     >;
 typedef $$ShotImpactsTableCreateCompanionBuilder =
@@ -13107,6 +21102,9 @@ typedef $$ShotImpactsTableCreateCompanionBuilder =
       Value<String> scoreDisposition,
       Value<bool> isInnerTen,
       Value<bool> isBoundaryUncertain,
+      Value<String> placementMethod,
+      Value<String?> visionAnalysisId,
+      Value<double?> positionalUncertaintyMm,
       Value<int> rowid,
     });
 typedef $$ShotImpactsTableUpdateCompanionBuilder =
@@ -13127,6 +21125,9 @@ typedef $$ShotImpactsTableUpdateCompanionBuilder =
       Value<String> scoreDisposition,
       Value<bool> isInnerTen,
       Value<bool> isBoundaryUncertain,
+      Value<String> placementMethod,
+      Value<String?> visionAnalysisId,
+      Value<double?> positionalUncertaintyMm,
       Value<int> rowid,
     });
 
@@ -13164,6 +21165,24 @@ final class $$ShotImpactsTableReferences
       $_db.imageAssets,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_sourceImageIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $VisionAnalysesTable _visionAnalysisIdTable(_$AppDatabase db) => db
+      .visionAnalyses
+      .createAlias('shot_impacts__vision_analysis_id__vision_analyses__id');
+
+  $$VisionAnalysesTableProcessedTableManager? get visionAnalysisId {
+    final $_column = $_itemColumn<String>('vision_analysis_id');
+    if ($_column == null) return null;
+    final manager = $$VisionAnalysesTableTableManager(
+      $_db,
+      $_db.visionAnalyses,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_visionAnalysisIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -13250,6 +21269,16 @@ class $$ShotImpactsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get placementMethod => $composableBuilder(
+    column: $table.placementMethod,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get positionalUncertaintyMm => $composableBuilder(
+    column: $table.positionalUncertaintyMm,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$ShootingSeriesTableFilterComposer get seriesId {
     final $$ShootingSeriesTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -13287,6 +21316,29 @@ class $$ShotImpactsTableFilterComposer
           }) => $$ImageAssetsTableFilterComposer(
             $db: $db,
             $table: $db.imageAssets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$VisionAnalysesTableFilterComposer get visionAnalysisId {
+    final $$VisionAnalysesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.visionAnalysisId,
+      referencedTable: $db.visionAnalyses,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VisionAnalysesTableFilterComposer(
+            $db: $db,
+            $table: $db.visionAnalyses,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -13376,6 +21428,16 @@ class $$ShotImpactsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get placementMethod => $composableBuilder(
+    column: $table.placementMethod,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get positionalUncertaintyMm => $composableBuilder(
+    column: $table.positionalUncertaintyMm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ShootingSeriesTableOrderingComposer get seriesId {
     final $$ShootingSeriesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -13413,6 +21475,29 @@ class $$ShotImpactsTableOrderingComposer
           }) => $$ImageAssetsTableOrderingComposer(
             $db: $db,
             $table: $db.imageAssets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$VisionAnalysesTableOrderingComposer get visionAnalysisId {
+    final $$VisionAnalysesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.visionAnalysisId,
+      referencedTable: $db.visionAnalyses,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VisionAnalysesTableOrderingComposer(
+            $db: $db,
+            $table: $db.visionAnalyses,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -13494,6 +21579,16 @@ class $$ShotImpactsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get placementMethod => $composableBuilder(
+    column: $table.placementMethod,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get positionalUncertaintyMm => $composableBuilder(
+    column: $table.positionalUncertaintyMm,
+    builder: (column) => column,
+  );
+
   $$ShootingSeriesTableAnnotationComposer get seriesId {
     final $$ShootingSeriesTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -13539,6 +21634,29 @@ class $$ShotImpactsTableAnnotationComposer
     );
     return composer;
   }
+
+  $$VisionAnalysesTableAnnotationComposer get visionAnalysisId {
+    final $$VisionAnalysesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.visionAnalysisId,
+      referencedTable: $db.visionAnalyses,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VisionAnalysesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.visionAnalyses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ShotImpactsTableTableManager
@@ -13554,7 +21672,11 @@ class $$ShotImpactsTableTableManager
           $$ShotImpactsTableUpdateCompanionBuilder,
           (ImpactRecord, $$ShotImpactsTableReferences),
           ImpactRecord,
-          PrefetchHooks Function({bool seriesId, bool sourceImageId})
+          PrefetchHooks Function({
+            bool seriesId,
+            bool sourceImageId,
+            bool visionAnalysisId,
+          })
         > {
   $$ShotImpactsTableTableManager(_$AppDatabase db, $ShotImpactsTable table)
     : super(
@@ -13585,6 +21707,9 @@ class $$ShotImpactsTableTableManager
                 Value<String> scoreDisposition = const Value.absent(),
                 Value<bool> isInnerTen = const Value.absent(),
                 Value<bool> isBoundaryUncertain = const Value.absent(),
+                Value<String> placementMethod = const Value.absent(),
+                Value<String?> visionAnalysisId = const Value.absent(),
+                Value<double?> positionalUncertaintyMm = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ShotImpactsCompanion(
                 id: id,
@@ -13603,6 +21728,9 @@ class $$ShotImpactsTableTableManager
                 scoreDisposition: scoreDisposition,
                 isInnerTen: isInnerTen,
                 isBoundaryUncertain: isBoundaryUncertain,
+                placementMethod: placementMethod,
+                visionAnalysisId: visionAnalysisId,
+                positionalUncertaintyMm: positionalUncertaintyMm,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -13623,6 +21751,9 @@ class $$ShotImpactsTableTableManager
                 Value<String> scoreDisposition = const Value.absent(),
                 Value<bool> isInnerTen = const Value.absent(),
                 Value<bool> isBoundaryUncertain = const Value.absent(),
+                Value<String> placementMethod = const Value.absent(),
+                Value<String?> visionAnalysisId = const Value.absent(),
+                Value<double?> positionalUncertaintyMm = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ShotImpactsCompanion.insert(
                 id: id,
@@ -13641,6 +21772,9 @@ class $$ShotImpactsTableTableManager
                 scoreDisposition: scoreDisposition,
                 isInnerTen: isInnerTen,
                 isBoundaryUncertain: isBoundaryUncertain,
+                placementMethod: placementMethod,
+                visionAnalysisId: visionAnalysisId,
+                positionalUncertaintyMm: positionalUncertaintyMm,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -13651,60 +21785,84 @@ class $$ShotImpactsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({seriesId = false, sourceImageId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (seriesId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.seriesId,
-                                referencedTable: $$ShotImpactsTableReferences
-                                    ._seriesIdTable(db),
-                                referencedColumn: $$ShotImpactsTableReferences
-                                    ._seriesIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-                    if (sourceImageId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.sourceImageId,
-                                referencedTable: $$ShotImpactsTableReferences
-                                    ._sourceImageIdTable(db),
-                                referencedColumn: $$ShotImpactsTableReferences
-                                    ._sourceImageIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
+          prefetchHooksCallback:
+              ({
+                seriesId = false,
+                sourceImageId = false,
+                visionAnalysisId = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (seriesId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.seriesId,
+                                    referencedTable:
+                                        $$ShotImpactsTableReferences
+                                            ._seriesIdTable(db),
+                                    referencedColumn:
+                                        $$ShotImpactsTableReferences
+                                            ._seriesIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (sourceImageId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.sourceImageId,
+                                    referencedTable:
+                                        $$ShotImpactsTableReferences
+                                            ._sourceImageIdTable(db),
+                                    referencedColumn:
+                                        $$ShotImpactsTableReferences
+                                            ._sourceImageIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (visionAnalysisId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.visionAnalysisId,
+                                    referencedTable:
+                                        $$ShotImpactsTableReferences
+                                            ._visionAnalysisIdTable(db),
+                                    referencedColumn:
+                                        $$ShotImpactsTableReferences
+                                            ._visionAnalysisIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -13721,7 +21879,11 @@ typedef $$ShotImpactsTableProcessedTableManager =
       $$ShotImpactsTableUpdateCompanionBuilder,
       (ImpactRecord, $$ShotImpactsTableReferences),
       ImpactRecord,
-      PrefetchHooks Function({bool seriesId, bool sourceImageId})
+      PrefetchHooks Function({
+        bool seriesId,
+        bool sourceImageId,
+        bool visionAnalysisId,
+      })
     >;
 typedef $$PhotoAlignmentsTableCreateCompanionBuilder =
     PhotoAlignmentsCompanion Function({
@@ -13729,6 +21891,13 @@ typedef $$PhotoAlignmentsTableCreateCompanionBuilder =
       required String cornersJson,
       required String matrixJson,
       required String algorithmVersion,
+      Value<int> rotationQuarterTurns,
+      Value<String> alignmentMode,
+      Value<String?> anchorsJson,
+      Value<double?> reprojectionRmsMm,
+      Value<double?> reprojectionMaxMm,
+      Value<String> planarityStatus,
+      Value<DateTime?> confirmedAtUtc,
       required DateTime updatedAtUtc,
       Value<int> rowid,
     });
@@ -13738,6 +21907,13 @@ typedef $$PhotoAlignmentsTableUpdateCompanionBuilder =
       Value<String> cornersJson,
       Value<String> matrixJson,
       Value<String> algorithmVersion,
+      Value<int> rotationQuarterTurns,
+      Value<String> alignmentMode,
+      Value<String?> anchorsJson,
+      Value<double?> reprojectionRmsMm,
+      Value<double?> reprojectionMaxMm,
+      Value<String> planarityStatus,
+      Value<DateTime?> confirmedAtUtc,
       Value<DateTime> updatedAtUtc,
       Value<int> rowid,
     });
@@ -13797,6 +21973,41 @@ class $$PhotoAlignmentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get rotationQuarterTurns => $composableBuilder(
+    column: $table.rotationQuarterTurns,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get alignmentMode => $composableBuilder(
+    column: $table.alignmentMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get anchorsJson => $composableBuilder(
+    column: $table.anchorsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get reprojectionRmsMm => $composableBuilder(
+    column: $table.reprojectionRmsMm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get reprojectionMaxMm => $composableBuilder(
+    column: $table.reprojectionMaxMm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get planarityStatus => $composableBuilder(
+    column: $table.planarityStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get confirmedAtUtc => $composableBuilder(
+    column: $table.confirmedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get updatedAtUtc => $composableBuilder(
     column: $table.updatedAtUtc,
     builder: (column) => ColumnFilters(column),
@@ -13850,6 +22061,41 @@ class $$PhotoAlignmentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get rotationQuarterTurns => $composableBuilder(
+    column: $table.rotationQuarterTurns,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get alignmentMode => $composableBuilder(
+    column: $table.alignmentMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get anchorsJson => $composableBuilder(
+    column: $table.anchorsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get reprojectionRmsMm => $composableBuilder(
+    column: $table.reprojectionRmsMm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get reprojectionMaxMm => $composableBuilder(
+    column: $table.reprojectionMaxMm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get planarityStatus => $composableBuilder(
+    column: $table.planarityStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get confirmedAtUtc => $composableBuilder(
+    column: $table.confirmedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAtUtc => $composableBuilder(
     column: $table.updatedAtUtc,
     builder: (column) => ColumnOrderings(column),
@@ -13900,6 +22146,41 @@ class $$PhotoAlignmentsTableAnnotationComposer
 
   GeneratedColumn<String> get algorithmVersion => $composableBuilder(
     column: $table.algorithmVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get rotationQuarterTurns => $composableBuilder(
+    column: $table.rotationQuarterTurns,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get alignmentMode => $composableBuilder(
+    column: $table.alignmentMode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get anchorsJson => $composableBuilder(
+    column: $table.anchorsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get reprojectionRmsMm => $composableBuilder(
+    column: $table.reprojectionRmsMm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get reprojectionMaxMm => $composableBuilder(
+    column: $table.reprojectionMaxMm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get planarityStatus => $composableBuilder(
+    column: $table.planarityStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get confirmedAtUtc => $composableBuilder(
+    column: $table.confirmedAtUtc,
     builder: (column) => column,
   );
 
@@ -13966,6 +22247,13 @@ class $$PhotoAlignmentsTableTableManager
                 Value<String> cornersJson = const Value.absent(),
                 Value<String> matrixJson = const Value.absent(),
                 Value<String> algorithmVersion = const Value.absent(),
+                Value<int> rotationQuarterTurns = const Value.absent(),
+                Value<String> alignmentMode = const Value.absent(),
+                Value<String?> anchorsJson = const Value.absent(),
+                Value<double?> reprojectionRmsMm = const Value.absent(),
+                Value<double?> reprojectionMaxMm = const Value.absent(),
+                Value<String> planarityStatus = const Value.absent(),
+                Value<DateTime?> confirmedAtUtc = const Value.absent(),
                 Value<DateTime> updatedAtUtc = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PhotoAlignmentsCompanion(
@@ -13973,6 +22261,13 @@ class $$PhotoAlignmentsTableTableManager
                 cornersJson: cornersJson,
                 matrixJson: matrixJson,
                 algorithmVersion: algorithmVersion,
+                rotationQuarterTurns: rotationQuarterTurns,
+                alignmentMode: alignmentMode,
+                anchorsJson: anchorsJson,
+                reprojectionRmsMm: reprojectionRmsMm,
+                reprojectionMaxMm: reprojectionMaxMm,
+                planarityStatus: planarityStatus,
+                confirmedAtUtc: confirmedAtUtc,
                 updatedAtUtc: updatedAtUtc,
                 rowid: rowid,
               ),
@@ -13982,6 +22277,13 @@ class $$PhotoAlignmentsTableTableManager
                 required String cornersJson,
                 required String matrixJson,
                 required String algorithmVersion,
+                Value<int> rotationQuarterTurns = const Value.absent(),
+                Value<String> alignmentMode = const Value.absent(),
+                Value<String?> anchorsJson = const Value.absent(),
+                Value<double?> reprojectionRmsMm = const Value.absent(),
+                Value<double?> reprojectionMaxMm = const Value.absent(),
+                Value<String> planarityStatus = const Value.absent(),
+                Value<DateTime?> confirmedAtUtc = const Value.absent(),
                 required DateTime updatedAtUtc,
                 Value<int> rowid = const Value.absent(),
               }) => PhotoAlignmentsCompanion.insert(
@@ -13989,6 +22291,13 @@ class $$PhotoAlignmentsTableTableManager
                 cornersJson: cornersJson,
                 matrixJson: matrixJson,
                 algorithmVersion: algorithmVersion,
+                rotationQuarterTurns: rotationQuarterTurns,
+                alignmentMode: alignmentMode,
+                anchorsJson: anchorsJson,
+                reprojectionRmsMm: reprojectionRmsMm,
+                reprojectionMaxMm: reprojectionMaxMm,
+                planarityStatus: planarityStatus,
+                confirmedAtUtc: confirmedAtUtc,
                 updatedAtUtc: updatedAtUtc,
                 rowid: rowid,
               ),
@@ -15574,6 +23883,2497 @@ typedef $$TargetProfilesTableProcessedTableManager =
       TargetProfileRecord,
       PrefetchHooks Function()
     >;
+typedef $$TrainingActivitiesTableCreateCompanionBuilder =
+    TrainingActivitiesCompanion Function({
+      required String id,
+      required String kind,
+      Value<int> schemaVersion,
+      required String status,
+      Value<String?> sessionId,
+      required String configurationJson,
+      required String summaryJson,
+      Value<String?> detectorVersion,
+      required DateTime startedAtUtc,
+      required int localUtcOffsetMinutes,
+      Value<DateTime?> completedAtUtc,
+      Value<String?> notes,
+      required DateTime createdAtUtc,
+      required DateTime updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$TrainingActivitiesTableUpdateCompanionBuilder =
+    TrainingActivitiesCompanion Function({
+      Value<String> id,
+      Value<String> kind,
+      Value<int> schemaVersion,
+      Value<String> status,
+      Value<String?> sessionId,
+      Value<String> configurationJson,
+      Value<String> summaryJson,
+      Value<String?> detectorVersion,
+      Value<DateTime> startedAtUtc,
+      Value<int> localUtcOffsetMinutes,
+      Value<DateTime?> completedAtUtc,
+      Value<String?> notes,
+      Value<DateTime> createdAtUtc,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+final class $$TrainingActivitiesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $TrainingActivitiesTable,
+          TrainingActivityRecord
+        > {
+  $$TrainingActivitiesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $TrainingSessionsTable _sessionIdTable(_$AppDatabase db) => db
+      .trainingSessions
+      .createAlias('training_activities__session_id__training_sessions__id');
+
+  $$TrainingSessionsTableProcessedTableManager? get sessionId {
+    final $_column = $_itemColumn<String>('session_id');
+    if ($_column == null) return null;
+    final manager = $$TrainingSessionsTableTableManager(
+      $_db,
+      $_db.trainingSessions,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sessionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $TrainingActivitySeriesLinksTable,
+    List<TrainingActivitySeriesLinkRecord>
+  >
+  _trainingActivitySeriesLinksRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.trainingActivitySeriesLinks,
+    aliasName:
+        'training_activities__id__training_activity_series_links__activity_id',
+  );
+
+  $$TrainingActivitySeriesLinksTableProcessedTableManager
+  get trainingActivitySeriesLinksRefs {
+    final manager = $$TrainingActivitySeriesLinksTableTableManager(
+      $_db,
+      $_db.trainingActivitySeriesLinks,
+    ).filter((f) => f.activityId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _trainingActivitySeriesLinksRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ShotTimerEventsTable, List<ShotTimerEventRecord>>
+  _shotTimerEventsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.shotTimerEvents,
+    aliasName: 'training_activities__id__shot_timer_events__activity_id',
+  );
+
+  $$ShotTimerEventsTableProcessedTableManager get shotTimerEventsRefs {
+    final manager = $$ShotTimerEventsTableTableManager(
+      $_db,
+      $_db.shotTimerEvents,
+    ).filter((f) => f.activityId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _shotTimerEventsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$TrainingActivitiesTableFilterComposer
+    extends Composer<_$AppDatabase, $TrainingActivitiesTable> {
+  $$TrainingActivitiesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get schemaVersion => $composableBuilder(
+    column: $table.schemaVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get configurationJson => $composableBuilder(
+    column: $table.configurationJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get summaryJson => $composableBuilder(
+    column: $table.summaryJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get detectorVersion => $composableBuilder(
+    column: $table.detectorVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAtUtc => $composableBuilder(
+    column: $table.startedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get localUtcOffsetMinutes => $composableBuilder(
+    column: $table.localUtcOffsetMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAtUtc => $composableBuilder(
+    column: $table.completedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TrainingSessionsTableFilterComposer get sessionId {
+    final $$TrainingSessionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.trainingSessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrainingSessionsTableFilterComposer(
+            $db: $db,
+            $table: $db.trainingSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> trainingActivitySeriesLinksRefs(
+    Expression<bool> Function(
+      $$TrainingActivitySeriesLinksTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$TrainingActivitySeriesLinksTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.trainingActivitySeriesLinks,
+          getReferencedColumn: (t) => t.activityId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$TrainingActivitySeriesLinksTableFilterComposer(
+                $db: $db,
+                $table: $db.trainingActivitySeriesLinks,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> shotTimerEventsRefs(
+    Expression<bool> Function($$ShotTimerEventsTableFilterComposer f) f,
+  ) {
+    final $$ShotTimerEventsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.shotTimerEvents,
+      getReferencedColumn: (t) => t.activityId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShotTimerEventsTableFilterComposer(
+            $db: $db,
+            $table: $db.shotTimerEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$TrainingActivitiesTableOrderingComposer
+    extends Composer<_$AppDatabase, $TrainingActivitiesTable> {
+  $$TrainingActivitiesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get schemaVersion => $composableBuilder(
+    column: $table.schemaVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get configurationJson => $composableBuilder(
+    column: $table.configurationJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get summaryJson => $composableBuilder(
+    column: $table.summaryJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get detectorVersion => $composableBuilder(
+    column: $table.detectorVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAtUtc => $composableBuilder(
+    column: $table.startedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get localUtcOffsetMinutes => $composableBuilder(
+    column: $table.localUtcOffsetMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAtUtc => $composableBuilder(
+    column: $table.completedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TrainingSessionsTableOrderingComposer get sessionId {
+    final $$TrainingSessionsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.trainingSessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrainingSessionsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trainingSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TrainingActivitiesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TrainingActivitiesTable> {
+  $$TrainingActivitiesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get schemaVersion => $composableBuilder(
+    column: $table.schemaVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get configurationJson => $composableBuilder(
+    column: $table.configurationJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get summaryJson => $composableBuilder(
+    column: $table.summaryJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get detectorVersion => $composableBuilder(
+    column: $table.detectorVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get startedAtUtc => $composableBuilder(
+    column: $table.startedAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get localUtcOffsetMinutes => $composableBuilder(
+    column: $table.localUtcOffsetMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get completedAtUtc => $composableBuilder(
+    column: $table.completedAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => column,
+  );
+
+  $$TrainingSessionsTableAnnotationComposer get sessionId {
+    final $$TrainingSessionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.trainingSessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrainingSessionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trainingSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> trainingActivitySeriesLinksRefs<T extends Object>(
+    Expression<T> Function(
+      $$TrainingActivitySeriesLinksTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$TrainingActivitySeriesLinksTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.trainingActivitySeriesLinks,
+          getReferencedColumn: (t) => t.activityId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$TrainingActivitySeriesLinksTableAnnotationComposer(
+                $db: $db,
+                $table: $db.trainingActivitySeriesLinks,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> shotTimerEventsRefs<T extends Object>(
+    Expression<T> Function($$ShotTimerEventsTableAnnotationComposer a) f,
+  ) {
+    final $$ShotTimerEventsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.shotTimerEvents,
+      getReferencedColumn: (t) => t.activityId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShotTimerEventsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.shotTimerEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$TrainingActivitiesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TrainingActivitiesTable,
+          TrainingActivityRecord,
+          $$TrainingActivitiesTableFilterComposer,
+          $$TrainingActivitiesTableOrderingComposer,
+          $$TrainingActivitiesTableAnnotationComposer,
+          $$TrainingActivitiesTableCreateCompanionBuilder,
+          $$TrainingActivitiesTableUpdateCompanionBuilder,
+          (TrainingActivityRecord, $$TrainingActivitiesTableReferences),
+          TrainingActivityRecord,
+          PrefetchHooks Function({
+            bool sessionId,
+            bool trainingActivitySeriesLinksRefs,
+            bool shotTimerEventsRefs,
+          })
+        > {
+  $$TrainingActivitiesTableTableManager(
+    _$AppDatabase db,
+    $TrainingActivitiesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TrainingActivitiesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TrainingActivitiesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TrainingActivitiesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<int> schemaVersion = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> sessionId = const Value.absent(),
+                Value<String> configurationJson = const Value.absent(),
+                Value<String> summaryJson = const Value.absent(),
+                Value<String?> detectorVersion = const Value.absent(),
+                Value<DateTime> startedAtUtc = const Value.absent(),
+                Value<int> localUtcOffsetMinutes = const Value.absent(),
+                Value<DateTime?> completedAtUtc = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TrainingActivitiesCompanion(
+                id: id,
+                kind: kind,
+                schemaVersion: schemaVersion,
+                status: status,
+                sessionId: sessionId,
+                configurationJson: configurationJson,
+                summaryJson: summaryJson,
+                detectorVersion: detectorVersion,
+                startedAtUtc: startedAtUtc,
+                localUtcOffsetMinutes: localUtcOffsetMinutes,
+                completedAtUtc: completedAtUtc,
+                notes: notes,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String kind,
+                Value<int> schemaVersion = const Value.absent(),
+                required String status,
+                Value<String?> sessionId = const Value.absent(),
+                required String configurationJson,
+                required String summaryJson,
+                Value<String?> detectorVersion = const Value.absent(),
+                required DateTime startedAtUtc,
+                required int localUtcOffsetMinutes,
+                Value<DateTime?> completedAtUtc = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                required DateTime createdAtUtc,
+                required DateTime updatedAtUtc,
+                Value<int> rowid = const Value.absent(),
+              }) => TrainingActivitiesCompanion.insert(
+                id: id,
+                kind: kind,
+                schemaVersion: schemaVersion,
+                status: status,
+                sessionId: sessionId,
+                configurationJson: configurationJson,
+                summaryJson: summaryJson,
+                detectorVersion: detectorVersion,
+                startedAtUtc: startedAtUtc,
+                localUtcOffsetMinutes: localUtcOffsetMinutes,
+                completedAtUtc: completedAtUtc,
+                notes: notes,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$TrainingActivitiesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                sessionId = false,
+                trainingActivitySeriesLinksRefs = false,
+                shotTimerEventsRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (trainingActivitySeriesLinksRefs)
+                      db.trainingActivitySeriesLinks,
+                    if (shotTimerEventsRefs) db.shotTimerEvents,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (sessionId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.sessionId,
+                                    referencedTable:
+                                        $$TrainingActivitiesTableReferences
+                                            ._sessionIdTable(db),
+                                    referencedColumn:
+                                        $$TrainingActivitiesTableReferences
+                                            ._sessionIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (trainingActivitySeriesLinksRefs)
+                        await $_getPrefetchedData<
+                          TrainingActivityRecord,
+                          $TrainingActivitiesTable,
+                          TrainingActivitySeriesLinkRecord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TrainingActivitiesTableReferences
+                              ._trainingActivitySeriesLinksRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TrainingActivitiesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).trainingActivitySeriesLinksRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.activityId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (shotTimerEventsRefs)
+                        await $_getPrefetchedData<
+                          TrainingActivityRecord,
+                          $TrainingActivitiesTable,
+                          ShotTimerEventRecord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TrainingActivitiesTableReferences
+                              ._shotTimerEventsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TrainingActivitiesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).shotTimerEventsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.activityId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$TrainingActivitiesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TrainingActivitiesTable,
+      TrainingActivityRecord,
+      $$TrainingActivitiesTableFilterComposer,
+      $$TrainingActivitiesTableOrderingComposer,
+      $$TrainingActivitiesTableAnnotationComposer,
+      $$TrainingActivitiesTableCreateCompanionBuilder,
+      $$TrainingActivitiesTableUpdateCompanionBuilder,
+      (TrainingActivityRecord, $$TrainingActivitiesTableReferences),
+      TrainingActivityRecord,
+      PrefetchHooks Function({
+        bool sessionId,
+        bool trainingActivitySeriesLinksRefs,
+        bool shotTimerEventsRefs,
+      })
+    >;
+typedef $$TrainingActivitySeriesLinksTableCreateCompanionBuilder =
+    TrainingActivitySeriesLinksCompanion Function({
+      required String activityId,
+      required String seriesId,
+      required int sequenceNumber,
+      Value<String?> role,
+      Value<String?> variantId,
+      Value<int> rowid,
+    });
+typedef $$TrainingActivitySeriesLinksTableUpdateCompanionBuilder =
+    TrainingActivitySeriesLinksCompanion Function({
+      Value<String> activityId,
+      Value<String> seriesId,
+      Value<int> sequenceNumber,
+      Value<String?> role,
+      Value<String?> variantId,
+      Value<int> rowid,
+    });
+
+final class $$TrainingActivitySeriesLinksTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $TrainingActivitySeriesLinksTable,
+          TrainingActivitySeriesLinkRecord
+        > {
+  $$TrainingActivitySeriesLinksTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $TrainingActivitiesTable _activityIdTable(_$AppDatabase db) =>
+      db.trainingActivities.createAlias(
+        'training_activity_series_links__activity_id__training_activities__id',
+      );
+
+  $$TrainingActivitiesTableProcessedTableManager get activityId {
+    final $_column = $_itemColumn<String>('activity_id')!;
+
+    final manager = $$TrainingActivitiesTableTableManager(
+      $_db,
+      $_db.trainingActivities,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_activityIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ShootingSeriesTable _seriesIdTable(_$AppDatabase db) =>
+      db.shootingSeries.createAlias(
+        'training_activity_series_links__series_id__shooting_series__id',
+      );
+
+  $$ShootingSeriesTableProcessedTableManager get seriesId {
+    final $_column = $_itemColumn<String>('series_id')!;
+
+    final manager = $$ShootingSeriesTableTableManager(
+      $_db,
+      $_db.shootingSeries,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_seriesIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TrainingActivitySeriesLinksTableFilterComposer
+    extends Composer<_$AppDatabase, $TrainingActivitySeriesLinksTable> {
+  $$TrainingActivitySeriesLinksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get sequenceNumber => $composableBuilder(
+    column: $table.sequenceNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get role => $composableBuilder(
+    column: $table.role,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get variantId => $composableBuilder(
+    column: $table.variantId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TrainingActivitiesTableFilterComposer get activityId {
+    final $$TrainingActivitiesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.activityId,
+      referencedTable: $db.trainingActivities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrainingActivitiesTableFilterComposer(
+            $db: $db,
+            $table: $db.trainingActivities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ShootingSeriesTableFilterComposer get seriesId {
+    final $$ShootingSeriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.shootingSeries,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShootingSeriesTableFilterComposer(
+            $db: $db,
+            $table: $db.shootingSeries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TrainingActivitySeriesLinksTableOrderingComposer
+    extends Composer<_$AppDatabase, $TrainingActivitySeriesLinksTable> {
+  $$TrainingActivitySeriesLinksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get sequenceNumber => $composableBuilder(
+    column: $table.sequenceNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get role => $composableBuilder(
+    column: $table.role,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get variantId => $composableBuilder(
+    column: $table.variantId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TrainingActivitiesTableOrderingComposer get activityId {
+    final $$TrainingActivitiesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.activityId,
+      referencedTable: $db.trainingActivities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrainingActivitiesTableOrderingComposer(
+            $db: $db,
+            $table: $db.trainingActivities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ShootingSeriesTableOrderingComposer get seriesId {
+    final $$ShootingSeriesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.shootingSeries,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShootingSeriesTableOrderingComposer(
+            $db: $db,
+            $table: $db.shootingSeries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TrainingActivitySeriesLinksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TrainingActivitySeriesLinksTable> {
+  $$TrainingActivitySeriesLinksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get sequenceNumber => $composableBuilder(
+    column: $table.sequenceNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get role =>
+      $composableBuilder(column: $table.role, builder: (column) => column);
+
+  GeneratedColumn<String> get variantId =>
+      $composableBuilder(column: $table.variantId, builder: (column) => column);
+
+  $$TrainingActivitiesTableAnnotationComposer get activityId {
+    final $$TrainingActivitiesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.activityId,
+          referencedTable: $db.trainingActivities,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$TrainingActivitiesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.trainingActivities,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$ShootingSeriesTableAnnotationComposer get seriesId {
+    final $$ShootingSeriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.seriesId,
+      referencedTable: $db.shootingSeries,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShootingSeriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.shootingSeries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TrainingActivitySeriesLinksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TrainingActivitySeriesLinksTable,
+          TrainingActivitySeriesLinkRecord,
+          $$TrainingActivitySeriesLinksTableFilterComposer,
+          $$TrainingActivitySeriesLinksTableOrderingComposer,
+          $$TrainingActivitySeriesLinksTableAnnotationComposer,
+          $$TrainingActivitySeriesLinksTableCreateCompanionBuilder,
+          $$TrainingActivitySeriesLinksTableUpdateCompanionBuilder,
+          (
+            TrainingActivitySeriesLinkRecord,
+            $$TrainingActivitySeriesLinksTableReferences,
+          ),
+          TrainingActivitySeriesLinkRecord,
+          PrefetchHooks Function({bool activityId, bool seriesId})
+        > {
+  $$TrainingActivitySeriesLinksTableTableManager(
+    _$AppDatabase db,
+    $TrainingActivitySeriesLinksTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TrainingActivitySeriesLinksTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$TrainingActivitySeriesLinksTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$TrainingActivitySeriesLinksTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> activityId = const Value.absent(),
+                Value<String> seriesId = const Value.absent(),
+                Value<int> sequenceNumber = const Value.absent(),
+                Value<String?> role = const Value.absent(),
+                Value<String?> variantId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TrainingActivitySeriesLinksCompanion(
+                activityId: activityId,
+                seriesId: seriesId,
+                sequenceNumber: sequenceNumber,
+                role: role,
+                variantId: variantId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String activityId,
+                required String seriesId,
+                required int sequenceNumber,
+                Value<String?> role = const Value.absent(),
+                Value<String?> variantId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TrainingActivitySeriesLinksCompanion.insert(
+                activityId: activityId,
+                seriesId: seriesId,
+                sequenceNumber: sequenceNumber,
+                role: role,
+                variantId: variantId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$TrainingActivitySeriesLinksTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({activityId = false, seriesId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (activityId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.activityId,
+                                referencedTable:
+                                    $$TrainingActivitySeriesLinksTableReferences
+                                        ._activityIdTable(db),
+                                referencedColumn:
+                                    $$TrainingActivitySeriesLinksTableReferences
+                                        ._activityIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (seriesId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.seriesId,
+                                referencedTable:
+                                    $$TrainingActivitySeriesLinksTableReferences
+                                        ._seriesIdTable(db),
+                                referencedColumn:
+                                    $$TrainingActivitySeriesLinksTableReferences
+                                        ._seriesIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TrainingActivitySeriesLinksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TrainingActivitySeriesLinksTable,
+      TrainingActivitySeriesLinkRecord,
+      $$TrainingActivitySeriesLinksTableFilterComposer,
+      $$TrainingActivitySeriesLinksTableOrderingComposer,
+      $$TrainingActivitySeriesLinksTableAnnotationComposer,
+      $$TrainingActivitySeriesLinksTableCreateCompanionBuilder,
+      $$TrainingActivitySeriesLinksTableUpdateCompanionBuilder,
+      (
+        TrainingActivitySeriesLinkRecord,
+        $$TrainingActivitySeriesLinksTableReferences,
+      ),
+      TrainingActivitySeriesLinkRecord,
+      PrefetchHooks Function({bool activityId, bool seriesId})
+    >;
+typedef $$ShotTimerEventsTableCreateCompanionBuilder =
+    ShotTimerEventsCompanion Function({
+      required String id,
+      required String activityId,
+      required int sequenceNumber,
+      required int elapsedMicroseconds,
+      required int splitMicroseconds,
+      required String source,
+      required String disposition,
+      Value<double?> normalizedPeak,
+      Value<String?> detectionQuality,
+      Value<String?> exclusionReason,
+      Value<int> rowid,
+    });
+typedef $$ShotTimerEventsTableUpdateCompanionBuilder =
+    ShotTimerEventsCompanion Function({
+      Value<String> id,
+      Value<String> activityId,
+      Value<int> sequenceNumber,
+      Value<int> elapsedMicroseconds,
+      Value<int> splitMicroseconds,
+      Value<String> source,
+      Value<String> disposition,
+      Value<double?> normalizedPeak,
+      Value<String?> detectionQuality,
+      Value<String?> exclusionReason,
+      Value<int> rowid,
+    });
+
+final class $$ShotTimerEventsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ShotTimerEventsTable,
+          ShotTimerEventRecord
+        > {
+  $$ShotTimerEventsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $TrainingActivitiesTable _activityIdTable(_$AppDatabase db) => db
+      .trainingActivities
+      .createAlias('shot_timer_events__activity_id__training_activities__id');
+
+  $$TrainingActivitiesTableProcessedTableManager get activityId {
+    final $_column = $_itemColumn<String>('activity_id')!;
+
+    final manager = $$TrainingActivitiesTableTableManager(
+      $_db,
+      $_db.trainingActivities,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_activityIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ShotTimerEventsTableFilterComposer
+    extends Composer<_$AppDatabase, $ShotTimerEventsTable> {
+  $$ShotTimerEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sequenceNumber => $composableBuilder(
+    column: $table.sequenceNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get elapsedMicroseconds => $composableBuilder(
+    column: $table.elapsedMicroseconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get splitMicroseconds => $composableBuilder(
+    column: $table.splitMicroseconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get disposition => $composableBuilder(
+    column: $table.disposition,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get normalizedPeak => $composableBuilder(
+    column: $table.normalizedPeak,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get detectionQuality => $composableBuilder(
+    column: $table.detectionQuality,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get exclusionReason => $composableBuilder(
+    column: $table.exclusionReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TrainingActivitiesTableFilterComposer get activityId {
+    final $$TrainingActivitiesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.activityId,
+      referencedTable: $db.trainingActivities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrainingActivitiesTableFilterComposer(
+            $db: $db,
+            $table: $db.trainingActivities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ShotTimerEventsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ShotTimerEventsTable> {
+  $$ShotTimerEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sequenceNumber => $composableBuilder(
+    column: $table.sequenceNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get elapsedMicroseconds => $composableBuilder(
+    column: $table.elapsedMicroseconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get splitMicroseconds => $composableBuilder(
+    column: $table.splitMicroseconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get disposition => $composableBuilder(
+    column: $table.disposition,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get normalizedPeak => $composableBuilder(
+    column: $table.normalizedPeak,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get detectionQuality => $composableBuilder(
+    column: $table.detectionQuality,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get exclusionReason => $composableBuilder(
+    column: $table.exclusionReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TrainingActivitiesTableOrderingComposer get activityId {
+    final $$TrainingActivitiesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.activityId,
+      referencedTable: $db.trainingActivities,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrainingActivitiesTableOrderingComposer(
+            $db: $db,
+            $table: $db.trainingActivities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ShotTimerEventsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ShotTimerEventsTable> {
+  $$ShotTimerEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get sequenceNumber => $composableBuilder(
+    column: $table.sequenceNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get elapsedMicroseconds => $composableBuilder(
+    column: $table.elapsedMicroseconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get splitMicroseconds => $composableBuilder(
+    column: $table.splitMicroseconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<String> get disposition => $composableBuilder(
+    column: $table.disposition,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get normalizedPeak => $composableBuilder(
+    column: $table.normalizedPeak,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get detectionQuality => $composableBuilder(
+    column: $table.detectionQuality,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get exclusionReason => $composableBuilder(
+    column: $table.exclusionReason,
+    builder: (column) => column,
+  );
+
+  $$TrainingActivitiesTableAnnotationComposer get activityId {
+    final $$TrainingActivitiesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.activityId,
+          referencedTable: $db.trainingActivities,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$TrainingActivitiesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.trainingActivities,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$ShotTimerEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ShotTimerEventsTable,
+          ShotTimerEventRecord,
+          $$ShotTimerEventsTableFilterComposer,
+          $$ShotTimerEventsTableOrderingComposer,
+          $$ShotTimerEventsTableAnnotationComposer,
+          $$ShotTimerEventsTableCreateCompanionBuilder,
+          $$ShotTimerEventsTableUpdateCompanionBuilder,
+          (ShotTimerEventRecord, $$ShotTimerEventsTableReferences),
+          ShotTimerEventRecord,
+          PrefetchHooks Function({bool activityId})
+        > {
+  $$ShotTimerEventsTableTableManager(
+    _$AppDatabase db,
+    $ShotTimerEventsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ShotTimerEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ShotTimerEventsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ShotTimerEventsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> activityId = const Value.absent(),
+                Value<int> sequenceNumber = const Value.absent(),
+                Value<int> elapsedMicroseconds = const Value.absent(),
+                Value<int> splitMicroseconds = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String> disposition = const Value.absent(),
+                Value<double?> normalizedPeak = const Value.absent(),
+                Value<String?> detectionQuality = const Value.absent(),
+                Value<String?> exclusionReason = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ShotTimerEventsCompanion(
+                id: id,
+                activityId: activityId,
+                sequenceNumber: sequenceNumber,
+                elapsedMicroseconds: elapsedMicroseconds,
+                splitMicroseconds: splitMicroseconds,
+                source: source,
+                disposition: disposition,
+                normalizedPeak: normalizedPeak,
+                detectionQuality: detectionQuality,
+                exclusionReason: exclusionReason,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String activityId,
+                required int sequenceNumber,
+                required int elapsedMicroseconds,
+                required int splitMicroseconds,
+                required String source,
+                required String disposition,
+                Value<double?> normalizedPeak = const Value.absent(),
+                Value<String?> detectionQuality = const Value.absent(),
+                Value<String?> exclusionReason = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ShotTimerEventsCompanion.insert(
+                id: id,
+                activityId: activityId,
+                sequenceNumber: sequenceNumber,
+                elapsedMicroseconds: elapsedMicroseconds,
+                splitMicroseconds: splitMicroseconds,
+                source: source,
+                disposition: disposition,
+                normalizedPeak: normalizedPeak,
+                detectionQuality: detectionQuality,
+                exclusionReason: exclusionReason,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ShotTimerEventsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({activityId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (activityId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.activityId,
+                                referencedTable:
+                                    $$ShotTimerEventsTableReferences
+                                        ._activityIdTable(db),
+                                referencedColumn:
+                                    $$ShotTimerEventsTableReferences
+                                        ._activityIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ShotTimerEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ShotTimerEventsTable,
+      ShotTimerEventRecord,
+      $$ShotTimerEventsTableFilterComposer,
+      $$ShotTimerEventsTableOrderingComposer,
+      $$ShotTimerEventsTableAnnotationComposer,
+      $$ShotTimerEventsTableCreateCompanionBuilder,
+      $$ShotTimerEventsTableUpdateCompanionBuilder,
+      (ShotTimerEventRecord, $$ShotTimerEventsTableReferences),
+      ShotTimerEventRecord,
+      PrefetchHooks Function({bool activityId})
+    >;
+typedef $$TimerPresetsTableCreateCompanionBuilder =
+    TimerPresetsCompanion Function({
+      required String id,
+      required String name,
+      required String mode,
+      required String configurationJson,
+      Value<bool> builtIn,
+      Value<bool> archived,
+      required DateTime createdAtUtc,
+      required DateTime updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$TimerPresetsTableUpdateCompanionBuilder =
+    TimerPresetsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> mode,
+      Value<String> configurationJson,
+      Value<bool> builtIn,
+      Value<bool> archived,
+      Value<DateTime> createdAtUtc,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+class $$TimerPresetsTableFilterComposer
+    extends Composer<_$AppDatabase, $TimerPresetsTable> {
+  $$TimerPresetsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get configurationJson => $composableBuilder(
+    column: $table.configurationJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get builtIn => $composableBuilder(
+    column: $table.builtIn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get archived => $composableBuilder(
+    column: $table.archived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TimerPresetsTableOrderingComposer
+    extends Composer<_$AppDatabase, $TimerPresetsTable> {
+  $$TimerPresetsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get configurationJson => $composableBuilder(
+    column: $table.configurationJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get builtIn => $composableBuilder(
+    column: $table.builtIn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get archived => $composableBuilder(
+    column: $table.archived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TimerPresetsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TimerPresetsTable> {
+  $$TimerPresetsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get mode =>
+      $composableBuilder(column: $table.mode, builder: (column) => column);
+
+  GeneratedColumn<String> get configurationJson => $composableBuilder(
+    column: $table.configurationJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get builtIn =>
+      $composableBuilder(column: $table.builtIn, builder: (column) => column);
+
+  GeneratedColumn<bool> get archived =>
+      $composableBuilder(column: $table.archived, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => column,
+  );
+}
+
+class $$TimerPresetsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TimerPresetsTable,
+          TimerPresetRecord,
+          $$TimerPresetsTableFilterComposer,
+          $$TimerPresetsTableOrderingComposer,
+          $$TimerPresetsTableAnnotationComposer,
+          $$TimerPresetsTableCreateCompanionBuilder,
+          $$TimerPresetsTableUpdateCompanionBuilder,
+          (
+            TimerPresetRecord,
+            BaseReferences<
+              _$AppDatabase,
+              $TimerPresetsTable,
+              TimerPresetRecord
+            >,
+          ),
+          TimerPresetRecord,
+          PrefetchHooks Function()
+        > {
+  $$TimerPresetsTableTableManager(_$AppDatabase db, $TimerPresetsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TimerPresetsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TimerPresetsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TimerPresetsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> mode = const Value.absent(),
+                Value<String> configurationJson = const Value.absent(),
+                Value<bool> builtIn = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TimerPresetsCompanion(
+                id: id,
+                name: name,
+                mode: mode,
+                configurationJson: configurationJson,
+                builtIn: builtIn,
+                archived: archived,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required String mode,
+                required String configurationJson,
+                Value<bool> builtIn = const Value.absent(),
+                Value<bool> archived = const Value.absent(),
+                required DateTime createdAtUtc,
+                required DateTime updatedAtUtc,
+                Value<int> rowid = const Value.absent(),
+              }) => TimerPresetsCompanion.insert(
+                id: id,
+                name: name,
+                mode: mode,
+                configurationJson: configurationJson,
+                builtIn: builtIn,
+                archived: archived,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TimerPresetsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TimerPresetsTable,
+      TimerPresetRecord,
+      $$TimerPresetsTableFilterComposer,
+      $$TimerPresetsTableOrderingComposer,
+      $$TimerPresetsTableAnnotationComposer,
+      $$TimerPresetsTableCreateCompanionBuilder,
+      $$TimerPresetsTableUpdateCompanionBuilder,
+      (
+        TimerPresetRecord,
+        BaseReferences<_$AppDatabase, $TimerPresetsTable, TimerPresetRecord>,
+      ),
+      TimerPresetRecord,
+      PrefetchHooks Function()
+    >;
+typedef $$AcousticCalibrationProfilesTableCreateCompanionBuilder =
+    AcousticCalibrationProfilesCompanion Function({
+      required String id,
+      required String name,
+      Value<String?> firearmId,
+      Value<String?> cartridgeId,
+      required String environment,
+      required String audioRoute,
+      required int sampleRate,
+      required double sensitivity,
+      required int echoLockoutMicroseconds,
+      required int beepBlankingMicroseconds,
+      required String detectorVersion,
+      required DateTime createdAtUtc,
+      required DateTime updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$AcousticCalibrationProfilesTableUpdateCompanionBuilder =
+    AcousticCalibrationProfilesCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String?> firearmId,
+      Value<String?> cartridgeId,
+      Value<String> environment,
+      Value<String> audioRoute,
+      Value<int> sampleRate,
+      Value<double> sensitivity,
+      Value<int> echoLockoutMicroseconds,
+      Value<int> beepBlankingMicroseconds,
+      Value<String> detectorVersion,
+      Value<DateTime> createdAtUtc,
+      Value<DateTime> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+final class $$AcousticCalibrationProfilesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $AcousticCalibrationProfilesTable,
+          AcousticCalibrationProfileRecord
+        > {
+  $$AcousticCalibrationProfilesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $FirearmsTable _firearmIdTable(_$AppDatabase db) => db.firearms
+      .createAlias('acoustic_calibration_profiles__firearm_id__firearms__id');
+
+  $$FirearmsTableProcessedTableManager? get firearmId {
+    final $_column = $_itemColumn<String>('firearm_id');
+    if ($_column == null) return null;
+    final manager = $$FirearmsTableTableManager(
+      $_db,
+      $_db.firearms,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_firearmIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $CartridgesTable _cartridgeIdTable(_$AppDatabase db) =>
+      db.cartridges.createAlias(
+        'acoustic_calibration_profiles__cartridge_id__cartridges__id',
+      );
+
+  $$CartridgesTableProcessedTableManager? get cartridgeId {
+    final $_column = $_itemColumn<String>('cartridge_id');
+    if ($_column == null) return null;
+    final manager = $$CartridgesTableTableManager(
+      $_db,
+      $_db.cartridges,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_cartridgeIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AcousticCalibrationProfilesTableFilterComposer
+    extends Composer<_$AppDatabase, $AcousticCalibrationProfilesTable> {
+  $$AcousticCalibrationProfilesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get environment => $composableBuilder(
+    column: $table.environment,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get audioRoute => $composableBuilder(
+    column: $table.audioRoute,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sampleRate => $composableBuilder(
+    column: $table.sampleRate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sensitivity => $composableBuilder(
+    column: $table.sensitivity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get echoLockoutMicroseconds => $composableBuilder(
+    column: $table.echoLockoutMicroseconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get beepBlankingMicroseconds => $composableBuilder(
+    column: $table.beepBlankingMicroseconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get detectorVersion => $composableBuilder(
+    column: $table.detectorVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$FirearmsTableFilterComposer get firearmId {
+    final $$FirearmsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.firearmId,
+      referencedTable: $db.firearms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FirearmsTableFilterComposer(
+            $db: $db,
+            $table: $db.firearms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CartridgesTableFilterComposer get cartridgeId {
+    final $$CartridgesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cartridgeId,
+      referencedTable: $db.cartridges,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CartridgesTableFilterComposer(
+            $db: $db,
+            $table: $db.cartridges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AcousticCalibrationProfilesTableOrderingComposer
+    extends Composer<_$AppDatabase, $AcousticCalibrationProfilesTable> {
+  $$AcousticCalibrationProfilesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get environment => $composableBuilder(
+    column: $table.environment,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get audioRoute => $composableBuilder(
+    column: $table.audioRoute,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sampleRate => $composableBuilder(
+    column: $table.sampleRate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get sensitivity => $composableBuilder(
+    column: $table.sensitivity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get echoLockoutMicroseconds => $composableBuilder(
+    column: $table.echoLockoutMicroseconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get beepBlankingMicroseconds => $composableBuilder(
+    column: $table.beepBlankingMicroseconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get detectorVersion => $composableBuilder(
+    column: $table.detectorVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$FirearmsTableOrderingComposer get firearmId {
+    final $$FirearmsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.firearmId,
+      referencedTable: $db.firearms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FirearmsTableOrderingComposer(
+            $db: $db,
+            $table: $db.firearms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CartridgesTableOrderingComposer get cartridgeId {
+    final $$CartridgesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cartridgeId,
+      referencedTable: $db.cartridges,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CartridgesTableOrderingComposer(
+            $db: $db,
+            $table: $db.cartridges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AcousticCalibrationProfilesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AcousticCalibrationProfilesTable> {
+  $$AcousticCalibrationProfilesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get environment => $composableBuilder(
+    column: $table.environment,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get audioRoute => $composableBuilder(
+    column: $table.audioRoute,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sampleRate => $composableBuilder(
+    column: $table.sampleRate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get sensitivity => $composableBuilder(
+    column: $table.sensitivity,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get echoLockoutMicroseconds => $composableBuilder(
+    column: $table.echoLockoutMicroseconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get beepBlankingMicroseconds => $composableBuilder(
+    column: $table.beepBlankingMicroseconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get detectorVersion => $composableBuilder(
+    column: $table.detectorVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => column,
+  );
+
+  $$FirearmsTableAnnotationComposer get firearmId {
+    final $$FirearmsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.firearmId,
+      referencedTable: $db.firearms,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FirearmsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.firearms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CartridgesTableAnnotationComposer get cartridgeId {
+    final $$CartridgesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.cartridgeId,
+      referencedTable: $db.cartridges,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CartridgesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.cartridges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AcousticCalibrationProfilesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AcousticCalibrationProfilesTable,
+          AcousticCalibrationProfileRecord,
+          $$AcousticCalibrationProfilesTableFilterComposer,
+          $$AcousticCalibrationProfilesTableOrderingComposer,
+          $$AcousticCalibrationProfilesTableAnnotationComposer,
+          $$AcousticCalibrationProfilesTableCreateCompanionBuilder,
+          $$AcousticCalibrationProfilesTableUpdateCompanionBuilder,
+          (
+            AcousticCalibrationProfileRecord,
+            $$AcousticCalibrationProfilesTableReferences,
+          ),
+          AcousticCalibrationProfileRecord,
+          PrefetchHooks Function({bool firearmId, bool cartridgeId})
+        > {
+  $$AcousticCalibrationProfilesTableTableManager(
+    _$AppDatabase db,
+    $AcousticCalibrationProfilesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AcousticCalibrationProfilesTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$AcousticCalibrationProfilesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$AcousticCalibrationProfilesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> firearmId = const Value.absent(),
+                Value<String?> cartridgeId = const Value.absent(),
+                Value<String> environment = const Value.absent(),
+                Value<String> audioRoute = const Value.absent(),
+                Value<int> sampleRate = const Value.absent(),
+                Value<double> sensitivity = const Value.absent(),
+                Value<int> echoLockoutMicroseconds = const Value.absent(),
+                Value<int> beepBlankingMicroseconds = const Value.absent(),
+                Value<String> detectorVersion = const Value.absent(),
+                Value<DateTime> createdAtUtc = const Value.absent(),
+                Value<DateTime> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AcousticCalibrationProfilesCompanion(
+                id: id,
+                name: name,
+                firearmId: firearmId,
+                cartridgeId: cartridgeId,
+                environment: environment,
+                audioRoute: audioRoute,
+                sampleRate: sampleRate,
+                sensitivity: sensitivity,
+                echoLockoutMicroseconds: echoLockoutMicroseconds,
+                beepBlankingMicroseconds: beepBlankingMicroseconds,
+                detectorVersion: detectorVersion,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                Value<String?> firearmId = const Value.absent(),
+                Value<String?> cartridgeId = const Value.absent(),
+                required String environment,
+                required String audioRoute,
+                required int sampleRate,
+                required double sensitivity,
+                required int echoLockoutMicroseconds,
+                required int beepBlankingMicroseconds,
+                required String detectorVersion,
+                required DateTime createdAtUtc,
+                required DateTime updatedAtUtc,
+                Value<int> rowid = const Value.absent(),
+              }) => AcousticCalibrationProfilesCompanion.insert(
+                id: id,
+                name: name,
+                firearmId: firearmId,
+                cartridgeId: cartridgeId,
+                environment: environment,
+                audioRoute: audioRoute,
+                sampleRate: sampleRate,
+                sensitivity: sensitivity,
+                echoLockoutMicroseconds: echoLockoutMicroseconds,
+                beepBlankingMicroseconds: beepBlankingMicroseconds,
+                detectorVersion: detectorVersion,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AcousticCalibrationProfilesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({firearmId = false, cartridgeId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (firearmId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.firearmId,
+                                referencedTable:
+                                    $$AcousticCalibrationProfilesTableReferences
+                                        ._firearmIdTable(db),
+                                referencedColumn:
+                                    $$AcousticCalibrationProfilesTableReferences
+                                        ._firearmIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (cartridgeId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.cartridgeId,
+                                referencedTable:
+                                    $$AcousticCalibrationProfilesTableReferences
+                                        ._cartridgeIdTable(db),
+                                referencedColumn:
+                                    $$AcousticCalibrationProfilesTableReferences
+                                        ._cartridgeIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AcousticCalibrationProfilesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AcousticCalibrationProfilesTable,
+      AcousticCalibrationProfileRecord,
+      $$AcousticCalibrationProfilesTableFilterComposer,
+      $$AcousticCalibrationProfilesTableOrderingComposer,
+      $$AcousticCalibrationProfilesTableAnnotationComposer,
+      $$AcousticCalibrationProfilesTableCreateCompanionBuilder,
+      $$AcousticCalibrationProfilesTableUpdateCompanionBuilder,
+      (
+        AcousticCalibrationProfileRecord,
+        $$AcousticCalibrationProfilesTableReferences,
+      ),
+      AcousticCalibrationProfileRecord,
+      PrefetchHooks Function({bool firearmId, bool cartridgeId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -15592,6 +26392,10 @@ class $AppDatabaseManager {
       $$ShootingSeriesTableTableManager(_db, _db.shootingSeries);
   $$ImageAssetsTableTableManager get imageAssets =>
       $$ImageAssetsTableTableManager(_db, _db.imageAssets);
+  $$VisionScanDraftsTableTableManager get visionScanDrafts =>
+      $$VisionScanDraftsTableTableManager(_db, _db.visionScanDrafts);
+  $$VisionAnalysesTableTableManager get visionAnalyses =>
+      $$VisionAnalysesTableTableManager(_db, _db.visionAnalyses);
   $$ShotImpactsTableTableManager get shotImpacts =>
       $$ShotImpactsTableTableManager(_db, _db.shotImpacts);
   $$PhotoAlignmentsTableTableManager get photoAlignments =>
@@ -15606,4 +26410,22 @@ class $AppDatabaseManager {
       $$PreferencesTableTableManager(_db, _db.preferences);
   $$TargetProfilesTableTableManager get targetProfiles =>
       $$TargetProfilesTableTableManager(_db, _db.targetProfiles);
+  $$TrainingActivitiesTableTableManager get trainingActivities =>
+      $$TrainingActivitiesTableTableManager(_db, _db.trainingActivities);
+  $$TrainingActivitySeriesLinksTableTableManager
+  get trainingActivitySeriesLinks =>
+      $$TrainingActivitySeriesLinksTableTableManager(
+        _db,
+        _db.trainingActivitySeriesLinks,
+      );
+  $$ShotTimerEventsTableTableManager get shotTimerEvents =>
+      $$ShotTimerEventsTableTableManager(_db, _db.shotTimerEvents);
+  $$TimerPresetsTableTableManager get timerPresets =>
+      $$TimerPresetsTableTableManager(_db, _db.timerPresets);
+  $$AcousticCalibrationProfilesTableTableManager
+  get acousticCalibrationProfiles =>
+      $$AcousticCalibrationProfilesTableTableManager(
+        _db,
+        _db.acousticCalibrationProfiles,
+      );
 }

@@ -37,8 +37,15 @@ tests are run as separate CI gates.
 Version 0.4 integrates the analysis and coaching foundations into the existing
 offline app:
 
-- `Analyse` contains `Overzicht`, `Groepen` and `Coach` without adding a fifth
+- `Analyse` contains `Overzicht`, `Vergelijken` and `Coach` without adding a fifth
   primary navigation destination;
+- every confirmed series has a contextual analysis screen, and a session can
+  analyse its own series without going through the global Analyse tab;
+- the global comparison view lets the user choose any historical source series
+  in the active filter range and explicitly compose a comparison of at most
+  five exactly compatible series;
+- metric cards open plain-language explanations containing the current value,
+  evidence counts, calculation, interpretation, minimum data and limitations;
 - the group view renders impacts, centroid, covariance ellipse, optional density
   and deterministic potential-score output;
 - typed goals, optional series reflections and coach feedback are stored in
@@ -63,7 +70,8 @@ repository integration preserve these rules:
 The remaining product and validation work is:
 
 - no versioned in-memory/isolate cache or measured 10,000-series benchmark;
-- no full cross-series heatmap/overlay control or inferential effect-size view;
+- no inferential effect-size or statistical-significance claim for material
+  comparisons;
 - no persisted user flyer tags or inferential material-comparison claim;
 - no custom drill duplication or repository for drill versions;
 - no stored experiment results, effect-size analysis or adaptive ordering;

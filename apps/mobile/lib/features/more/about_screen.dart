@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../release/release_contract.dart';
 import '../../widgets/compact_page_scaffold.dart';
+import 'build_information_screen.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -29,10 +31,15 @@ class AboutScreen extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 4),
-          Text(
-            'Versie 0.3.0 (build 5)',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium,
+          FutureBuilder<ReleaseContract>(
+            future: ReleaseContract.load(),
+            builder: (context, snapshot) => Text(
+              snapshot.data == null
+                  ? 'Versie laden…'
+                  : 'Versie ${snapshot.data!.displayVersion}',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ),
           const SizedBox(height: 28),
           const Text(
@@ -56,6 +63,30 @@ class AboutScreen extends StatelessWidget {
             title: Text('Privéfoto’s'),
             subtitle: Text(
               'Foto’s blijven lokaal en EXIF-gegevens worden bij import verwijderd.',
+            ),
+          ),
+          const Divider(),
+          const ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.mic_none_outlined),
+            title: Text('Lokale timerdetectie'),
+            subtitle: Text(
+              'De microfoon werkt alleen tijdens een zichtbare akoestische '
+              'timerrun. Er wordt geen audio-opname bewaard.',
+            ),
+          ),
+          const Divider(),
+          ListTile(
+            key: const Key('build-information-tile'),
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.developer_mode_outlined),
+            title: const Text('Buildinformatie'),
+            subtitle: const Text(
+              'App-, data-, back-up- en lokale engineversies.',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const BuildInformationScreen()),
             ),
           ),
           const Divider(),

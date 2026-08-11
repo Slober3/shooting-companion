@@ -872,6 +872,13 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  shooting_companion_shot_timer:
+    dependency: "direct main"
+    description:
+      path: "../../packages/shot_timer"
+      relative: true
+    source: path
+    version: "0.1.0"
   shooting_companion_target_profiles:
     dependency: "direct main"
     description:
@@ -883,6 +890,20 @@ packages:
     dependency: "direct main"
     description:
       path: "../../packages/training"
+      relative: true
+    source: path
+    version: "0.1.0"
+  shooting_companion_vision_api:
+    dependency: "direct main"
+    description:
+      path: "../../packages/vision_api"
+      relative: true
+    source: path
+    version: "0.1.0"
+  shooting_companion_vision_ffi:
+    dependency: "direct main"
+    description:
+      path: "../../packages/vision_ffi"
       relative: true
     source: path
     version: "0.1.0"

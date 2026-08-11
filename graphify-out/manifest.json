@@ -1,0 +1,1782 @@
+{
+  ".github/workflows/ci.yml": {
+    "ast_hash": "7336551876783de3a455e8e2d8f58e2d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "ast_hash": "6a4a2e13159f2d89a9ab83351766e72a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "CHANGELOG.md": {
+    "ast_hash": "9a5a236a56ddeba4a46a76576130ad49",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "CODE_OF_CONDUCT.md": {
+    "ast_hash": "8d19aafbfedad607d1de5d7934a1d450",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "CONTRIBUTING.md": {
+    "ast_hash": "2ebb5fc7b9a34a39ae00b2a649ba0cae",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "PRIVACY.md": {
+    "ast_hash": "fb94907db885dae716e481faf2203ea9",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "ast_hash": "1d27bc570da3341bf8a95ced90ad36e7",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "SECURITY.md": {
+    "ast_hash": "38961b9357aa50aad86d6e26af67e5d0",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "THIRD_PARTY_NOTICES.md": {
+    "ast_hash": "3770357124fb4aed77372d359bb04f6c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/README.md": {
+    "ast_hash": "69747ad30ffd4d3b11045af3cb32c217",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/analysis_options.yaml": {
+    "ast_hash": "e0ea485cfdbc3e12b93efb8679a5ea73",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/android/app/build.gradle.kts": {
+    "ast_hash": "38b45d9aafa16005c713810e7a77b316",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/android/app/src/main/kotlin/app/shootingcompanion/shooting_companion/MainActivity.kt": {
+    "ast_hash": "7ee58370d0ac158ab26e545eee0708ad",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/android/app/src/main/res/mipmap-hdpi/ic_launcher.png": {
+    "ast_hash": "42cb4314306975ec52ba163291b9f2f7",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/android/app/src/main/res/mipmap-mdpi/ic_launcher.png": {
+    "ast_hash": "d8abbe3a2fb8110cd28ebd4201f0b80d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png": {
+    "ast_hash": "17de790c7b9fa6db5ba5c9b20e344cea",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png": {
+    "ast_hash": "44fe9e40a7cba73bed32c60bea24225f",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
+    "ast_hash": "bfb05756eb0d25c442ded4c22950c699",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/android/build.gradle.kts": {
+    "ast_hash": "6a26dba2cb8dfba1e74f540b0d17a89d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/android/gradlew": {
+    "ast_hash": "ec56c02543666d92d9ac5ae7fcc48f88",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/android/settings.gradle.kts": {
+    "ast_hash": "b76d554153a63772dddbe2ee91abdf58",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/app/app.dart": {
+    "ast_hash": "c23590e3528efda6f961912acb98fbfe",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/app/providers.dart": {
+    "ast_hash": "0fc96d887bac13a675c088d1dc342e0b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/app/theme.dart": {
+    "ast_hash": "258900087a714a6a5312c3a98de2dbcc",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/data/app_database.dart": {
+    "ast_hash": "e7e3f2ba470a722ab934bdaa66bc0c61",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/data/appearance_repository.dart": {
+    "ast_hash": "92a2a114b62e18f23adfd1e4163e15b8",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/data/coaching_preferences_repository.dart": {
+    "ast_hash": "b42424ae2a133aebbb9dcfe882372027",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/data/shooting_repository.dart": {
+    "ast_hash": "993331bf5017a5837f3b88e593ba96f1",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/data/timer_preset_defaults.dart": {
+    "ast_hash": "36759db9e9c28e9ca72136e5022387f3",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/data/training_activity_snapshot_validator.dart": {
+    "ast_hash": "a73c7963f2906286e1dffc9e12a48a52",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/data/vision_scan_repository.dart": {
+    "ast_hash": "4af3e7dccd6a2f8ce7a2ce6b3e7293e0",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/history/history_screen.dart": {
+    "ast_hash": "8e31b1a5d929e1249578b697893856ed",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/library/library_screen.dart": {
+    "ast_hash": "d8c34c829446f8be27812cd23aa73b01",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/more/about_screen.dart": {
+    "ast_hash": "42e3123cb8f4bc588fce616df3521967",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/more/build_information_screen.dart": {
+    "ast_hash": "dcfcfc8575a8fc5551d8a8a77d3862bb",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/more/data_transfer_screen.dart": {
+    "ast_hash": "4691dbf6bb8fc50862af28c14b1d5f77",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/more/more_screen.dart": {
+    "ast_hash": "970b25399883b8dc48c8ddc27d6e3e4b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/photo/alignment_fine_tune_controls.dart": {
+    "ast_hash": "d2b7d50a2a6e1e17fd1ac3d3cdaba0cb",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/photo/four_point_alignment_editor.dart": {
+    "ast_hash": "743447913d28c16c5cf690074e4e02dc",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/photo/photo.dart": {
+    "ast_hash": "ffc98cfdaa297881d15f17fdb90598a4",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/photo/photo_actions_sheet.dart": {
+    "ast_hash": "2bdf4a29893d009cb298a6f034e90e5f",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/photo/photo_canvas_models.dart": {
+    "ast_hash": "c5f166418d26b712b3d3923932863da5",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/photo/photo_overlay_canvas.dart": {
+    "ast_hash": "02c6d31bfd32e5406ddfaf9e9ce44bbe",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/photo/photo_overlay_viewer.dart": {
+    "ast_hash": "68376c9131480bb01ed3478182c62aa9",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/photo/photo_thumbnail_tile.dart": {
+    "ast_hash": "fa74728ee18fbe7dca02fd9bf26b509d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/photo/photo_viewer_screen.dart": {
+    "ast_hash": "71021c6b37d6cd33cd619a124593e62c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/photo/ring_assisted_alignment_editor.dart": {
+    "ast_hash": "417a49c4dc1ca93b8a7da09a0a429704",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/accessible_chart_frame.dart": {
+    "ast_hash": "2dbdc82b50f493a0d76fa3e87f0f6ae4",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/analysis_adapter.dart": {
+    "ast_hash": "50400fa9ad2eff90eccb841c2a885ea0",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/analysis_context.dart": {
+    "ast_hash": "c4cb55b8cd0eab565e938a68ab532981",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/analysis_evidence.dart": {
+    "ast_hash": "20b6df22b4d264ab7e15b3cb29ee8635",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/analysis_explanations.dart": {
+    "ast_hash": "0ae2130089b7c229f90ca9c52b26e8f7",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/analysis_scope_bar.dart": {
+    "ast_hash": "d41a30b2e2834578561dbf98d00c118c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/analysis_series_picker_screen.dart": {
+    "ast_hash": "b6f09a4cab73ab96d4216f29b146ef73",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/goal_editor_sheet.dart": {
+    "ast_hash": "76e0d8f9a67ca7184c825d28f0d55e08",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/group_analysis_widgets.dart": {
+    "ast_hash": "d3e8ceadf9b5b1156a5b3ee6aef864e0",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/metric_definitions.dart": {
+    "ast_hash": "c0dd8d2f7106fa5f5ef35d1e849eb7bf",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/metric_explanation_sheet.dart": {
+    "ast_hash": "90156bdc49c86661173193b4edc4f658",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/potential_score_compute_service.dart": {
+    "ast_hash": "ed0b03576393f77dfd3fffaa4bf5464b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/progress_screen.dart": {
+    "ast_hash": "7a39afbc72e1a059d7d6fac73553e6ca",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/series_analysis_screen.dart": {
+    "ast_hash": "cce657418588505465c27fd3bcf0012b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/progress/session_analysis_screen.dart": {
+    "ast_hash": "14f85b90eb96c79c6bc5e40b49cabe91",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/scoring/target_canvas.dart": {
+    "ast_hash": "cbca3453677eaa69a309acd2f4c46ff4",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/scoring/transformable_scoring_viewport.dart": {
+    "ast_hash": "d9bd20cec3f0ecd43c01ecd42f5330ae",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/session/active_session_screen.dart": {
+    "ast_hash": "cd5b5c089b1c9f72a52d06452d36d643",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/session/manual_series_screen.dart": {
+    "ast_hash": "bb7544503ea8e946f70ad96e07a03cac",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/session/series_detail_screen.dart": {
+    "ast_hash": "73b9106d601d430a8cb5e3db673c38ee",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/session/series_reflection_sheet.dart": {
+    "ast_hash": "18e03a6b5dc28d714cdec7cfcf675b4b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/session/series_settings_sheet.dart": {
+    "ast_hash": "3adc5ce355b805a107b658f1a2306c37",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/session/session_completion_flow.dart": {
+    "ast_hash": "315929d226b1910c946305c7be572e46",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/session/session_edit_sheet.dart": {
+    "ast_hash": "727691e5f17cc6286ea8f7b1a3edc2b7",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/settings/appearance_providers.dart": {
+    "ast_hash": "106078c04f8e39d32e3bec538e055c5a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/settings/appearance_settings_screen.dart": {
+    "ast_hash": "cb435a794ab959dd4d7bbcede49f2beb",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/settings/settings_screen.dart": {
+    "ast_hash": "665b87eb20e5bdca7641eeed901d04a3",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/settings/storage_details_screen.dart": {
+    "ast_hash": "ed30de9088c0d3f6af6c22ef4237a71e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/shell/home_shell.dart": {
+    "ast_hash": "04b68fddbb1a1dd8421addbc75fed2f8",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/today/today_screen.dart": {
+    "ast_hash": "72fa8648b34c4b033afc1d129687a160",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/drill_plan_screen.dart": {
+    "ast_hash": "9e43e6686462116db9a36b1d8b633e64",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/drill_screens.dart": {
+    "ast_hash": "55b4c80a4d0dfa0046d79a8500900835",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/experiment_planner_screen.dart": {
+    "ast_hash": "077d5b3ad99a2927a23c0e06ddd62102",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/external_timer_input.dart": {
+    "ast_hash": "a6040fab6d492b2ae8fd9ac0aef5eb30",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/guided_drill_runner_screen.dart": {
+    "ast_hash": "536996e94fc3973429d15e80c621771b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/learning_path_screens.dart": {
+    "ast_hash": "344bda0a2d579f543de3c07db679d5b1",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/live_fire_timer_screen.dart": {
+    "ast_hash": "44c2ba5a57367763d5d81b30934f880b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/shot_timer_flow.dart": {
+    "ast_hash": "9e728f6e38d13ea6fab87614c5cbb12b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/shot_timer_screens.dart": {
+    "ast_hash": "1da90cc80c54be1fa6ef6b47e196a870",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/sight_calculator_screen.dart": {
+    "ast_hash": "1529a77033ba0ecd19b3734a77ec6b7a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/technique_screens.dart": {
+    "ast_hash": "deab30d7f4f9a817e04dfd457f243c9e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/timer_history_screen.dart": {
+    "ast_hash": "41dec98618ea32c118a007bf162a1a9d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/training_diagram_canvas.dart": {
+    "ast_hash": "f414eab1f08753f1a064f4e6cea71b87",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/training_plan_models.dart": {
+    "ast_hash": "eee0cbd5fd6f649331067283ca463200",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/training_tools.dart": {
+    "ast_hash": "0c00ad5f20131cb9c2dd59db22b438d7",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/training_tools/training_tools_screen.dart": {
+    "ast_hash": "86ab1e99786b060f267567eecbfd365d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/vision/experimental_photo_score_screen.dart": {
+    "ast_hash": "0e5a36d605b291bb2c37c7cf38ddc32d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/vision/vision_candidate_geometry.dart": {
+    "ast_hash": "1c1ad91fe28126de2c202758d49cd921",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/features/vision/vision_review_screen.dart": {
+    "ast_hash": "e85daa163b0f3b181cf7e89c27243d41",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/main.dart": {
+    "ast_hash": "8be52378bcfed527430086e54d7bf4ce",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/release/release_contract.dart": {
+    "ast_hash": "674bdb210dfc7a73a8ffd4ab0a8f03c2",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/services/backup_service.dart": {
+    "ast_hash": "5ef96373822f0d200653c82998727b46",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/services/export_service.dart": {
+    "ast_hash": "3261af08cfdb8ca8426147992a6bd367",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/services/image_storage_service.dart": {
+    "ast_hash": "627752bfe5257f850cc79b125363923d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/widgets/app_action_dock.dart": {
+    "ast_hash": "1719b198c852918f724e91396a3588d4",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/widgets/app_decision_dialog.dart": {
+    "ast_hash": "befa47b8611fcf23ee22ca2abcc37d1b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/widgets/app_expandable_section.dart": {
+    "ast_hash": "849542b7d12c692d8eff073c30496f4a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/widgets/app_form_group.dart": {
+    "ast_hash": "8ff2f2d7111f307a0d92abfd8b14b6db",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/widgets/app_form_scaffold.dart": {
+    "ast_hash": "d1a7bd4cb6aa26dd2aa5aef2779e6654",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/widgets/app_multiline_field.dart": {
+    "ast_hash": "1f7c663239656a461f5e256e358b7674",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/widgets/app_notice.dart": {
+    "ast_hash": "f2346d2bd9215c6540a895af23efca7e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/widgets/app_select_field.dart": {
+    "ast_hash": "a65b5436cd305ac131e7868e25858996",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/widgets/compact_page_scaffold.dart": {
+    "ast_hash": "1f1b4820c21e3a4a0e4e6be7bf6b6c80",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/widgets/responsive_metric_grid.dart": {
+    "ast_hash": "bfd36443a3ddaa4ccd05b9a9efcbc032",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/widgets/safe_bottom_action_bar.dart": {
+    "ast_hash": "8c37cd751cb93f0620a262f87c177429",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/lib/widgets/safe_sheet_scaffold.dart": {
+    "ast_hash": "d56bc2dbbd1b959b11eefd013bce2d3d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/pubspec.yaml": {
+    "ast_hash": "26e8744452b1a73c336026da7e5acb4b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/analysis_context_test.dart": {
+    "ast_hash": "a9238e98046f07025613f4c920ef8577",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/analysis_explanation_components_test.dart": {
+    "ast_hash": "c33796f1e0b706fa5234432717db303e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/analysis_filter_sheet_test.dart": {
+    "ast_hash": "03fb505ec2a311dede110675d09caf80",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/app_notice_test.dart": {
+    "ast_hash": "8ef6a3b2ecaebb2b4b8c8a79ba000116",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/app_select_field_test.dart": {
+    "ast_hash": "54e17e9654cb561853b3de47370ce46b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/appearance_repository_test.dart": {
+    "ast_hash": "33097f9b546acf1df3b04c1ad565568c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/appearance_theme_test.dart": {
+    "ast_hash": "ace686d1e5d2f6f035f3793eb81c5a1e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/backup_password_sheet_test.dart": {
+    "ast_hash": "d80cc5d0b9a6bec7db397ad6bd25ac76",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/coaching_data_integration_test.dart": {
+    "ast_hash": "faf1fd2aec5ede00359eeea0e97cbd16",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/coaching_preferences_repository_test.dart": {
+    "ast_hash": "e143ebd91611905a3e63530af7401583",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/database_test.dart": {
+    "ast_hash": "641bd8c1ff48bfd0bb2021f16f933fab",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/drill_library_v2_test.dart": {
+    "ast_hash": "4fbe5893c9c26136ff3d3a12e1ef9ccf",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/drill_measurement_evaluator_test.dart": {
+    "ast_hash": "aa304c71c16315c3866918c39542fb81",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/drill_plan_test.dart": {
+    "ast_hash": "27374a2ae5465e5a6b8f4a25ee111f4b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/drill_runner_resume_test.dart": {
+    "ast_hash": "fefea6972a2eda54441be106bf25e6b8",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/experimental_photo_score_screen_test.dart": {
+    "ast_hash": "64fa685cfcc75d6009d4c5653a61104f",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/external_timer_entry_screen_test.dart": {
+    "ast_hash": "50899df4d9a4da176f3fed0733b1a87a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/external_timer_input_test.dart": {
+    "ast_hash": "86dbba22525166eef3527f035f81fa07",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/abba-experiment.png": {
+    "ast_hash": "5187488ac6ba827795610a17cbeb5783",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/br50-condition-blocks.png": {
+    "ast_hash": "d2109a25676ecf784c4dbf2c705e0def",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/br50-contact-map.png": {
+    "ast_hash": "0de435a3b9bb92db4b82c493f43b1dee",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/br50-five-blocks.png": {
+    "ast_hash": "e091b6253afe75d9743bb3990bbb3bfb",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/br50-recoil-return.png": {
+    "ast_hash": "68e3528541d9f04400e37022bdcff50c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/br50-rest-axis-top-side.png": {
+    "ast_hash": "fe4d92092c1b0f422a31f529b960d27a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/br50-rest-overview.png": {
+    "ast_hash": "5e12039dd02cc8c96c3b722d240ab007",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/br50-sighter-record-map.png": {
+    "ast_hash": "aaec008dea4e12ccd2e0406af8524304",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/pistol-abort-reset-tree.png": {
+    "ast_hash": "3abeaebe3264df4ca06d21b86a3b58a0",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/pistol-breath-trigger-timeline.png": {
+    "ast_hash": "73ba122b1107ef016df9c273a0eafd83",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/pistol-grip-contact.png": {
+    "ast_hash": "ebc650004891dff17b25a8459b41cf51",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/pistol-lift-approach.png": {
+    "ast_hash": "7d5a2cab3d10237de4556ecd08e4afb9",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/pistol-movement-zone.png": {
+    "ast_hash": "1327f9cccb87cad6af880ad161f8f558",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/pistol-natural-alignment-top.png": {
+    "ast_hash": "4b35a21773667726b313b8a64a8fc8c2",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/pistol-sight-relationship.png": {
+    "ast_hash": "1d2c5837a77fbfa5b3901b8bdcbf1505",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/pistol-stance-chain.png": {
+    "ast_hash": "16624d4f680aa320c2495d340d245b5b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/pistol-trigger-contact.png": {
+    "ast_hash": "fa462e4120058ce5bf5b0246000e12be",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/safe-phone-workflow.png": {
+    "ast_hash": "46d15a9a4d9aeb8f1e9385513a829ca2",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/goldens/training_diagrams/target-evidence-layers.png": {
+    "ast_hash": "06d724104984ecf2e0edddbc7d79070d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/library_forms_test.dart": {
+    "ast_hash": "566c20254923d750e5e76ea443803056",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/manual_series_layout_test.dart": {
+    "ast_hash": "0b745cf8bf07da0a28cac21ed4f41f02",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/migration_test.dart": {
+    "ast_hash": "b6fc362bc1a953f5445540a52679e1f1",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/photo_alignment_overlay_v2_test.dart": {
+    "ast_hash": "65da901a18ad2595e3200530bd184fd5",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/photo_ux_test.dart": {
+    "ast_hash": "2685737738c6c7da85807fb1f79b8dea",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/potential_score_compute_service_test.dart": {
+    "ast_hash": "9350a1d604a1a73ab89929dca891b59a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/release_contract_test.dart": {
+    "ast_hash": "3152db1fbbc5a6f0545a45896c5e31f9",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/safe_sheet_scaffold_test.dart": {
+    "ast_hash": "238f17034974e32a8b350cd220eb8b07",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/series_analysis_screen_test.dart": {
+    "ast_hash": "500c2660b3e1cc8859a7ad982f4a46b0",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/series_reflection_sheet_test.dart": {
+    "ast_hash": "5e772a5b6afffd748faf068e7a799d4f",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/services/backup_service_test.dart": {
+    "ast_hash": "2778f06deb9cf58fa655aacb0b8345cf",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/services/export_service_test.dart": {
+    "ast_hash": "fb792bb7b57bf2c86f10aa70f0325aca",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/services/image_storage_service_test.dart": {
+    "ast_hash": "e4f6a999b8b87c10856b01864f2b6d3a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/session_list_filter_test.dart": {
+    "ast_hash": "643e04582b37eac16c0d685e0174fef9",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/settings_sheets_test.dart": {
+    "ast_hash": "ea059a66bc8134aa779b5919fa7aea00",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/settings_structure_test.dart": {
+    "ast_hash": "5cedb0675a5ad73eac206a3c8cbcd28b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/start_log_analysis_test.dart": {
+    "ast_hash": "ef49b2331ad2dbeb88b2e8017cdd8b55",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/technique_learning_v2_test.dart": {
+    "ast_hash": "a42d3951740837010b21af7be91e1f5c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/training_activity_data_test.dart": {
+    "ast_hash": "2bb056dee12ce2144758b8ac2f41fd0b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/training_diagram_canvas_test.dart": {
+    "ast_hash": "ed1d1937d5f2269f56dbcc8f8e0551bc",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/training_snapshot_compatibility_test.dart": {
+    "ast_hash": "185ce530318a4fea70d1f4b31b7c75ad",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/training_tools_screen_test.dart": {
+    "ast_hash": "500a62208cfc44c59919945b2ecb345c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/ux_shell_test.dart": {
+    "ast_hash": "b72109647eabe9d01d7121dc9e749c99",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/vision_candidate_geometry_test.dart": {
+    "ast_hash": "ca2b6bedadbf8500cb266088e469ab27",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/vision_scan_repository_test.dart": {
+    "ast_hash": "b926fca577ff0d2619577dcd9fd61fd3",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/widget_test.dart": {
+    "ast_hash": "2d2b84e4e3c174cec761ec4578682473",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "apps/mobile/test/workflow_data_test.dart": {
+    "ast_hash": "60838785ce6ff0f80345c7153b0d2c96",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/adr/0001-flutter-android.md": {
+    "ast_hash": "8179d76c6c3b32f2beed95b5951e5e57",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/adr/0002-offline-only.md": {
+    "ast_hash": "198cb8ac5b9f8640a90b9709a74d352f",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/adr/0003-manual-photo-scoring.md": {
+    "ast_hash": "bbfd651fa51636af17009c7c76ac6daf",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/appearance-and-pdf.md": {
+    "ast_hash": "a8d3619e9882385ffef756fa53b0316b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/architecture.md": {
+    "ast_hash": "bbac2e1442de17d940aa7d0aee91e46d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/backup-format.md": {
+    "ast_hash": "4365028822872dc777d52a7d95595660",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/contextual-analysis.md": {
+    "ast_hash": "a86ac1b102bd3acc4b1bef3fba3b1a87",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/database-migration-v2.md": {
+    "ast_hash": "a24bcb63721440d38b9be0f1c52fe1bc",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/database-migration-v3.md": {
+    "ast_hash": "854940cf1ca7e3451d25994630d35c4f",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/database-migration-v4.md": {
+    "ast_hash": "e3896329946ea03a0c8ee17d7c8cc9fc",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/database-migration-v5.md": {
+    "ast_hash": "00b472232632ac014c72f59e51cb9940",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/database-migration-v6.md": {
+    "ast_hash": "572cc7f429c3084f12eefb364c68a9dd",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/database-migration-v7.md": {
+    "ast_hash": "96b4f5c613f871b589f30ed4235b115e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/database-migration-v8.md": {
+    "ast_hash": "28471baf341c2da7f686953e9e4a2c5c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/graphify.md": {
+    "ast_hash": "141591228b789b2247edf3fe87eb1c0f",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/insights-training-foundation.md": {
+    "ast_hash": "342897ede1033a4c40ed708c5a61a345",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/photo-alignment-and-detector.md": {
+    "ast_hash": "38dc26e33c9153d9a3744528b04eb44b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/photo-alignment.md": {
+    "ast_hash": "c62daafa8d591446593292e947430134",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/precision-editor.md": {
+    "ast_hash": "6e9d568681d4148647508b6880712726",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/release-integrity.md": {
+    "ast_hash": "bb1fd15472f30a76c7e6ca7129c39b34",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/release.md": {
+    "ast_hash": "8ed0f485607fa92090dbd49a95794286",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/scoring.md": {
+    "ast_hash": "7b013a86bfae04b052b55eb78e2a8941",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/shot-timer.md": {
+    "ast_hash": "81e03b6198e4b95c5633723c8eb7708b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/target-profiles.md": {
+    "ast_hash": "e7d4e15673dac003f0cd32938554f822",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/testing.md": {
+    "ast_hash": "f8349d86ed62ad1a50fc9113d86842fb",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/training-tools.md": {
+    "ast_hash": "7addebf77c42b2903f64a51aae4668f2",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/vision-foundation.md": {
+    "ast_hash": "d78bc8257ef8f9f17922aa72279e1a75",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "docs/vision-validation-privacy.md": {
+    "ast_hash": "1cd5a86790444d654b1f576c197cb7c8",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/CMakeLists.txt": {
+    "ast_hash": "b1ca2a15b92524d7fa480ebd4577324a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/DETECTOR.md": {
+    "ast_hash": "7e5d4969c75eca1759a188db2528f425",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/cli/main.cpp": {
+    "ast_hash": "440c831e5b216a84c603fc8b3f86dd68",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/include/vision_core/vision_core.hpp": {
+    "ast_hash": "2e546bf1002740165f2535985d4b739a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/include/vision_core/vision_core_c.h": {
+    "ast_hash": "3c1c598c9d4e12755474471d6d8e0eaa",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/src/c_api.cpp": {
+    "ast_hash": "c2d0b6415dc184e6487b17530034ac05",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/src/geometry.cpp": {
+    "ast_hash": "b3f94b56d49e3cfc59c02e54c4736785",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/src/image_probe.cpp": {
+    "ast_hash": "fc92ca3a1c0ce8a28c12ff15d8bc46c3",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/src/opencv_backend.cpp": {
+    "ast_hash": "c64a7580b312b6acfd2fca783dc30f62",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/src/opencv_backend.hpp": {
+    "ast_hash": "f706a949b411dc0d1a1b1ac1a5c16ee9",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/src/opencv_backend_stub.cpp": {
+    "ast_hash": "f1df4cebe31015a7922f9b7f2b33179a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/src/opencv_candidate_detector.cpp": {
+    "ast_hash": "4e5dcc9cdfdd0b8c49b9f092c3fc50b8",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/src/opencv_candidate_detector.hpp": {
+    "ast_hash": "78ce3f7559eade10d9d780a5a0d95fce",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/src/vision_core.cpp": {
+    "ast_hash": "e94807b81f7fdf780101a90c0ad69f9c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/test/fixtures/README.md": {
+    "ast_hash": "ff560ebabcf675efced67597f672240e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/tests/c_abi_smoke.c": {
+    "ast_hash": "ab317704160bbef8e85a624da692389d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/tests/opencv_candidate_detector_test.cpp": {
+    "ast_hash": "9f22714c1ae99106093135864f5cbb84",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "native/vision_core/tests/vision_core_test.cpp": {
+    "ast_hash": "5781a43ee528e092271cfadb3ce7a51f",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/analysis/analysis_options.yaml": {
+    "ast_hash": "69d5fc7c4dc082613882215d52d18b02",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/analysis/lib/analysis.dart": {
+    "ast_hash": "d38df70983a5fbb433f9eaca3561a901",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/analysis/lib/src/cohort_analyzer.dart": {
+    "ast_hash": "58dff831b3721b67a8b0ca502aea8983",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/analysis/lib/src/group_analyzer.dart": {
+    "ast_hash": "ce6e5b1bd410c609270e2789e4467621",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/analysis/lib/src/models.dart": {
+    "ast_hash": "b211f3568aa2260f39ba3c78e9385241",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/analysis/lib/src/potential_score_analyzer.dart": {
+    "ast_hash": "0e0a00f7f709ca135bd88dd8374dd407",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/analysis/pubspec.yaml": {
+    "ast_hash": "bde40d1d52162601be29544f7c343aab",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/analysis/test/cohort_analyzer_test.dart": {
+    "ast_hash": "47b6b58c4f19d4a3c73d9c551c2feb6c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/analysis/test/group_analyzer_test.dart": {
+    "ast_hash": "774b1105b7132ab436162a5bc76b56e9",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/analysis/test/potential_score_analyzer_test.dart": {
+    "ast_hash": "c31e9ca3bf11c4cd41cf7395cdbf30a1",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/coaching/analysis_options.yaml": {
+    "ast_hash": "69d5fc7c4dc082613882215d52d18b02",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/coaching/lib/coaching.dart": {
+    "ast_hash": "52e81cf4fd49ea0a173d2cc25a99f4f2",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/coaching/lib/src/fingerprint.dart": {
+    "ast_hash": "a073cd649f1923d358c2141f03c38e36",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/coaching/lib/src/models.dart": {
+    "ast_hash": "7ec5bdb8b7c9cfd54eff59cc79167c4e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/coaching/lib/src/rule_engine.dart": {
+    "ast_hash": "2ccf1dc824815d0f788435cdb8056878",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/coaching/lib/src/safety_policy.dart": {
+    "ast_hash": "a1f8a9b0071a2296ff16abfc7f0cc590",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/coaching/pubspec.yaml": {
+    "ast_hash": "74abd906f17e7b05a98b30e73cd9669d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/coaching/test/coaching_test.dart": {
+    "ast_hash": "6751fef12ea6822ab6b3d23607e4205a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/domain/analysis_options.yaml": {
+    "ast_hash": "69d5fc7c4dc082613882215d52d18b02",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/domain/lib/domain.dart": {
+    "ast_hash": "a4cbe96dcdbc0ceeb16637fd53ad573b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/domain/lib/src/models.dart": {
+    "ast_hash": "7d75d1efdd70298da94d3bf7943aef3a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/domain/lib/src/validation.dart": {
+    "ast_hash": "c561a6a43a65758e83adb58f9827f19f",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/domain/pubspec.yaml": {
+    "ast_hash": "811cac7ff384ebec790ccc26532ce588",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/domain/test/models_test.dart": {
+    "ast_hash": "3534fc9d2d0ab517c14ead299c274003",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/domain/test/validation_test.dart": {
+    "ast_hash": "e15c3f3528f00c72656257f033f5862d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/photo_geometry/analysis_options.yaml": {
+    "ast_hash": "69d5fc7c4dc082613882215d52d18b02",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/photo_geometry/lib/photo_geometry.dart": {
+    "ast_hash": "cc12d01875c98b64791e7d67af3c47cd",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/photo_geometry/lib/src/alignment.dart": {
+    "ast_hash": "982c8297711179c14d3a2a05e63a7f12",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/photo_geometry/lib/src/alignment_refinement.dart": {
+    "ast_hash": "afb9a2a87510b1c54ff6fa7d04ba4cfa",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/photo_geometry/lib/src/geometry_models.dart": {
+    "ast_hash": "176a3564c26576604669d54d3ed901ae",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/photo_geometry/lib/src/projective_transform.dart": {
+    "ast_hash": "32598c1253bad4a177c5e69ea7ff04bc",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/photo_geometry/lib/src/quad_validator.dart": {
+    "ast_hash": "57ab4b75a0e2c895467730f3498afab4",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/photo_geometry/pubspec.yaml": {
+    "ast_hash": "360e89be05246566ce500ee70e2a39b6",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/photo_geometry/test/alignment_refinement_test.dart": {
+    "ast_hash": "d483d698294ca70e65ca70aa89740a6b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/photo_geometry/test/alignment_v2_test.dart": {
+    "ast_hash": "722cacc772e9f3ae1a9197af7dec1d7b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/photo_geometry/test/photo_geometry_test.dart": {
+    "ast_hash": "5bcb1ea1bc72020f4fe843660250ddca",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/scoring/analysis_options.yaml": {
+    "ast_hash": "69d5fc7c4dc082613882215d52d18b02",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/scoring/lib/scoring.dart": {
+    "ast_hash": "dd83d5d285558163d417cde26f25bba1",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/scoring/lib/src/group_metrics.dart": {
+    "ast_hash": "8212461831fca2746acda30d91945dba",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/scoring/lib/src/radial_score_evaluator.dart": {
+    "ast_hash": "e7e725f40fddf9a9e9a26e631736564f",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/scoring/lib/src/score_engine.dart": {
+    "ast_hash": "7ad7410e0e7ee8ac88aec33c70569d55",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/scoring/pubspec.yaml": {
+    "ast_hash": "223fa3a9cf3eb2053dfe390f8a3b111a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/scoring/test/group_metrics_test.dart": {
+    "ast_hash": "a0d7484738b19ca76a5e2f1e911a0aba",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/scoring/test/issf_boundary_golden_test.dart": {
+    "ast_hash": "15bb6e187ba74f6d18b3981313edd4b3",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/scoring/test/radial_score_evaluator_test.dart": {
+    "ast_hash": "b4598bc709d4f265317acc7ee8fc8b2d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/scoring/test/score_engine_test.dart": {
+    "ast_hash": "17f6f8f3e75299910522ca54efefbd1b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/analysis_options.yaml": {
+    "ast_hash": "69d5fc7c4dc082613882215d52d18b02",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/android/build.gradle.kts": {
+    "ast_hash": "6fdcb62580c94c421a52dd22c4d4d06d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/android/src/main/kotlin/app/shootingcompanion/shot_timer/AcousticShotTimerEngine.kt": {
+    "ast_hash": "c12fc6381815c327014b8ace2c2fba7e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/android/src/main/kotlin/app/shootingcompanion/shot_timer/ImpulseDetector.kt": {
+    "ast_hash": "e5a2a3f74f8dd3d6f5ac285383b39c63",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/android/src/main/kotlin/app/shootingcompanion/shot_timer/NativeTimerConfiguration.kt": {
+    "ast_hash": "8f02452ce088ad99e518b88bd057ffd0",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/android/src/main/kotlin/app/shootingcompanion/shot_timer/ShootingCompanionShotTimerPlugin.kt": {
+    "ast_hash": "7f47f17b86246f60ac90f04e549981b6",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/android/src/test/kotlin/app/shootingcompanion/shot_timer/AcousticShotTimerEngineTest.kt": {
+    "ast_hash": "34b415de2a9fe8c4cd797acf4588511c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/android/src/test/kotlin/app/shootingcompanion/shot_timer/ImpulseDetectorTest.kt": {
+    "ast_hash": "62131f6820bc1d336ca06523cc95b4a6",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/android/src/test/kotlin/app/shootingcompanion/shot_timer/KeepScreenOnPolicyTest.kt": {
+    "ast_hash": "c92c81600ab26b748d7fa576a5da60f1",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/android/src/test/kotlin/app/shootingcompanion/shot_timer/NativeTimerConfigurationTest.kt": {
+    "ast_hash": "7f5cb83c96898e4b646f0d9905ed9e6c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/lib/shot_timer.dart": {
+    "ast_hash": "9a5dce5ab3893343c47e988f9e74de28",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/lib/src/dart_signal_engine.dart": {
+    "ast_hash": "72ea71908256232027c4c41cd12c7113",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/lib/src/engine.dart": {
+    "ast_hash": "7ddd09856c3421911f2e67aa18d68ef2",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/lib/src/fake_engine.dart": {
+    "ast_hash": "3a9ef18a80d66224db1d9bd9189d510c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/lib/src/method_channel_engine.dart": {
+    "ast_hash": "6c69bb364da0720f957d2bf932a2322c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/lib/src/models.dart": {
+    "ast_hash": "2f3ec017edda0dc1483ac8a7595c14e2",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/lib/src/state_machine.dart": {
+    "ast_hash": "936c3440f48271a7f43c68b76fd14496",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/lib/src/statistics.dart": {
+    "ast_hash": "0b70dd9343a8dd1a742c1532c4acc682",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/pubspec.yaml": {
+    "ast_hash": "7f92e26c0d27b100ac346e44ea6db30e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/test/dart_signal_engine_test.dart": {
+    "ast_hash": "eacc7e09e3389659c990544677ed3796",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/test/fake_engine_test.dart": {
+    "ast_hash": "a77a09f2d3c525ac0a9e5adf8a5e9299",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/test/method_channel_engine_test.dart": {
+    "ast_hash": "db87a09eb1ce4ad3addb41901376c079",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/test/models_test.dart": {
+    "ast_hash": "7b971130711f466f6f895803926e3c3d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/test/state_machine_test.dart": {
+    "ast_hash": "bdf8d1171beecddeea8b9ec355b4e30f",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/shot_timer/test/statistics_test.dart": {
+    "ast_hash": "42c9acd2b69088bccecd61f83d59cd80",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/target_profiles/analysis_options.yaml": {
+    "ast_hash": "69d5fc7c4dc082613882215d52d18b02",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/target_profiles/lib/src/cartridge_presets.dart": {
+    "ast_hash": "3b9cc2dec4b29ab1dffda8a3e28f3069",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/target_profiles/lib/src/issf_profiles.dart": {
+    "ast_hash": "f65fe71d70b7728534090aaa0ac42d91",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/target_profiles/lib/src/wrabf_profiles.dart": {
+    "ast_hash": "0afa2b7c924ce382244fcc1850b03629",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/target_profiles/lib/target_profiles.dart": {
+    "ast_hash": "695c96ba5131f79f92ac9a5f8e44d511",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/target_profiles/pubspec.yaml": {
+    "ast_hash": "6f9daed2b74baea7df94c3fb52486077",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/target_profiles/test/issf_profiles_test.dart": {
+    "ast_hash": "b6308009eba35f02f3e53d80ac531693",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/target_profiles/test/wrabf_profiles_test.dart": {
+    "ast_hash": "bd1344068773e632c146dc72e587d55e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/analysis_options.yaml": {
+    "ast_hash": "69d5fc7c4dc082613882215d52d18b02",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/lib/src/content_catalog.dart": {
+    "ast_hash": "b839017935ac362cb00b3440aa8e845b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/lib/src/content_lint.dart": {
+    "ast_hash": "ecac40d688047725d259a8fa1acad80e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/lib/src/content_v2.dart": {
+    "ast_hash": "a9f43c025c164160cb80885e28390d72",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/lib/src/drills.dart": {
+    "ast_hash": "b072b447da7de9f6bf01a8ac8e25fa3d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/lib/src/experiments.dart": {
+    "ast_hash": "23571fdbaeb10978427fb2cde6f5ff8b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/lib/src/generated/built_in_content_json.g.dart": {
+    "ast_hash": "5d8e5b1ab5021f31b0ae95d972984a41",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/lib/src/legacy_adapters.dart": {
+    "ast_hash": "6bf503519bb2d252359bd17636ebf17b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/lib/src/sight_adjustment.dart": {
+    "ast_hash": "308e3944445751393a4526ddfcc502a9",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/lib/src/techniques.dart": {
+    "ast_hash": "d06e088e22d901272c2153325461b2a1",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/lib/training.dart": {
+    "ast_hash": "120c62e15274e41923638980c4f27542",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/pubspec.yaml": {
+    "ast_hash": "9695146cc922e158d7ccd47ed50e3946",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/test/content_v2_test.dart": {
+    "ast_hash": "4c8b522b4c5b8398b501df934c3d5cee",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/test/drills_test.dart": {
+    "ast_hash": "fdaa10c9bea3bfa5c7eb7a684c4bff4b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/test/experiments_test.dart": {
+    "ast_hash": "1fc3e566850aa544635588433cedc994",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/test/sight_adjustment_test.dart": {
+    "ast_hash": "e22648655088c500680a81ad6f94be8b",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/test/techniques_test.dart": {
+    "ast_hash": "7b4b191a8eea36c99e69f3b34727eab2",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/training/tool/embed_content.dart": {
+    "ast_hash": "390ccee4d6757e907591012b35299a82",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_api/analysis_options.yaml": {
+    "ast_hash": "69d5fc7c4dc082613882215d52d18b02",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_api/lib/src/vision_analyzer.dart": {
+    "ast_hash": "9ae2aaf8edc7b7c38043bf8b9eef02ca",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_api/lib/src/vision_models.dart": {
+    "ast_hash": "83085e1e322f1eb9649ea7fff7bbe69d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_api/lib/vision_api.dart": {
+    "ast_hash": "b1978a7d9816f0d1bf6dc464fa8c603e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_api/pubspec.yaml": {
+    "ast_hash": "ffccabe0069d528dd1d9a3148d51b24a",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_api/test/vision_contract_test.dart": {
+    "ast_hash": "53d6cbcf2c45afff36f590d4ff95e05c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_ffi/CMakeLists.txt": {
+    "ast_hash": "2081c99e47941e9564d70736984a85ca",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_ffi/analysis_options.yaml": {
+    "ast_hash": "c1e9534c05acb3643e72a82ad3d92d56",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_ffi/android/build.gradle": {
+    "ast_hash": "2eaa566ac354dea1d776c63f1823c862",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_ffi/lib/src/vision_ffi_analyzer.dart": {
+    "ast_hash": "debf0d9f803220a1c10e256307ed1c73",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_ffi/lib/vision_ffi.dart": {
+    "ast_hash": "46431d641caa339c39edc302922b5d0d",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_ffi/pubspec.yaml": {
+    "ast_hash": "ed9d75e8f00a3269bf1f34fb652aa10e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_ffi/src/CMakeLists.txt": {
+    "ast_hash": "3cefa688311e84a1a43265a1d956d61f",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_ffi/test/vision_ffi_analyzer_test.dart": {
+    "ast_hash": "ad1d4a4685af643abc4d382593bc9f74",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_research/README.md": {
+    "ast_hash": "dafcbc03d284d8cf4e79fceea81985b8",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_research/analysis_options.yaml": {
+    "ast_hash": "69d5fc7c4dc082613882215d52d18b02",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_research/lib/src/models.dart": {
+    "ast_hash": "574563945fb454fa5398be402bd94ae8",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_research/lib/src/vision_research_export_service.dart": {
+    "ast_hash": "db473e22aed49a88bbfcb89d38138168",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_research/lib/vision_research.dart": {
+    "ast_hash": "dcc13be19485c5d7560f92278b04b93e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_research/pubspec.yaml": {
+    "ast_hash": "6d407afcd4011c950f66741ff072d925",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "packages/vision_research/test/vision_research_export_service_test.dart": {
+    "ast_hash": "e6d7ff5ca953d404f60af9606b5cad4c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "tools/check_privacy_leaks.py": {
+    "ast_hash": "ec5685b498faf81e06199ea9a619ad6e",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "tools/normalize_graphify_output.py": {
+    "ast_hash": "b2987b8b20dcc9906541dd72d7c3f613",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "tools/setup_graphify.ps1": {
+    "ast_hash": "ccc5833aaaee3ca95fcc9adad8f1f754",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "tools/setup_opencv_android.ps1": {
+    "ast_hash": "3785241b6a23308fc2cec4b87a9e5133",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "tools/tests/test_check_privacy_leaks.py": {
+    "ast_hash": "54c55a5f3ff4b5e38007e25e738bb4cc",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "tools/tests/test_normalize_graphify_output.py": {
+    "ast_hash": "23aaf6b01c4db1fc35acb59d33e0b88c",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "tools/tests/test_verify_docs.py": {
+    "ast_hash": "40ff02b2b0477df354653f539d248faa",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "tools/tests/test_verify_graphify.py": {
+    "ast_hash": "51b3e88855594f1a707f2a07d61c2c28",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "tools/tests/test_verify_release_contract.py": {
+    "ast_hash": "9c5fc7c188e13bf08b4a310215b11101",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "tools/tests/test_vision_validation_wizard.py": {
+    "ast_hash": "d1015c2b5c1d4395ccc0d3bdefe5ff11",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "tools/verify_docs.py": {
+    "ast_hash": "b7b82c03a2c75de5e259b3e55b0ccfe5",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "tools/verify_graphify.py": {
+    "ast_hash": "187a331a7c91b2aaf96c9d4d35e577ba",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "tools/verify_release_contract.py": {
+    "ast_hash": "2b116673a0afd1de6629a8ab34a0f451",
+    "mtime": 0,
+    "semantic_hash": ""
+  },
+  "tools/vision_validation_wizard.html": {
+    "ast_hash": "2d1673958105b6def7462ee064d6d609",
+    "mtime": 0,
+    "semantic_hash": ""
+  }
+}

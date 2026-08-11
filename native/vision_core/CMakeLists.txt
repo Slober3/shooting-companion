@@ -34,7 +34,10 @@ set(VISION_CORE_IMPLEMENTATION_SOURCES
 )
 
 if(OpenCV_FOUND)
-  list(APPEND VISION_CORE_IMPLEMENTATION_SOURCES src/opencv_backend.cpp)
+  list(APPEND VISION_CORE_IMPLEMENTATION_SOURCES
+    src/opencv_backend.cpp
+    src/opencv_candidate_detector.cpp
+  )
   set(SC_VISION_HAS_OPENCV 1)
   message(STATUS "Vision core: OpenCV ${OpenCV_VERSION} enabled")
 else()
@@ -83,6 +86,26 @@ if(SC_VISION_BUILD_TESTS)
     COMMAND vision_core_tests
       ${CMAKE_CURRENT_SOURCE_DIR}/test/fixtures/checkerboard.pgm
   )
+  if(OpenCV_FOUND)
+    add_executable(
+      opencv_candidate_detector_tests
+      tests/opencv_candidate_detector_test.cpp
+    )
+    sc_vision_enable_strict_warnings(opencv_candidate_detector_tests)
+    target_include_directories(opencv_candidate_detector_tests PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+      ${CMAKE_CURRENT_SOURCE_DIR}/include
+      ${OpenCV_INCLUDE_DIRS}
+    )
+    target_link_libraries(
+      opencv_candidate_detector_tests
+      PRIVATE vision_core_impl ${OpenCV_LIBS}
+    )
+    add_test(
+      NAME opencv_candidate_detector_tests
+      COMMAND opencv_candidate_detector_tests
+    )
+  endif()
   add_executable(vision_c_abi_smoke tests/c_abi_smoke.c)
   sc_vision_enable_strict_warnings(vision_c_abi_smoke)
   target_link_libraries(vision_c_abi_smoke PRIVATE shooting_companion_vision)

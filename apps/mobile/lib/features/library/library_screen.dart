@@ -491,7 +491,7 @@ class _TargetList extends ConsumerWidget {
                         title: Text(item.displayName),
                         subtitle: Text(
                           item.builtIn
-                              ? 'ISSF 2026 • officieel profiel'
+                              ? 'ISSF 2025 • tweede druk 07/2026'
                               : 'Eigen profiel',
                         ),
                         onTap: () => _openTargetDetail(context, ref, item),
